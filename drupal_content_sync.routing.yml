@@ -1,0 +1,39 @@
+entity.drupal_content_sync.collection:
+  path: '/admin/config/system/drupal_content_sync/synchronizations'
+  defaults:
+    _entity_list: 'drupal_content_sync'
+    _title: 'Synchronizations configuration'
+  requirements:
+    _permission: 'administer site configuration'
+
+entity.drupal_content_sync.add_form:
+  path: '/admin/config/system/drupal_content_sync/synchronizations/add'
+  defaults:
+    _entity_form: 'drupal_content_sync.add'
+    _title: 'Add synchronization'
+  requirements:
+    _permission: 'administer site configuration'
+
+entity.drupal_content_sync.edit_form:
+  path: '/admin/config/system/drupal_content_sync/synchronizations/{drupal_content_sync}'
+  defaults:
+    _entity_form: 'drupal_content_sync.edit'
+    _title: 'Edit synchronization'
+  requirements:
+    _permission: 'administer site configuration'
+
+entity.drupal_content_sync.delete_form:
+  path: '/admin/config/system/drupal_content_sync/synchronizations/{drupal_content_sync}/delete'
+  defaults:
+    _entity_form: 'drupal_content_sync.delete'
+    _title: 'Delete synchronization'
+  requirements:
+    _permission: 'administer site configuration'
+
+entity.drupal_content_sync.content:
+  path: '/admin/content/drupal_content_synchronization/{drupal_content_sync}'
+  defaults:
+    _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSynchronizationController::content'
+    _title: 'Drupal Content Synchronization'
+  requirements:
+    _permission: 'administer content'

@@ -1,0 +1,5 @@
+services:
+  cachable_metadata_normalizer.typed_data:
+    class: Drupal\drupal_content_sync\Normalizer\CacheableMetadataNormalizer
+    tags:
+      - { name: normalizer, priority: 2 }

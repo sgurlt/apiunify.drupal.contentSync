@@ -1,0 +1,15 @@
+uuid: 3c2ad9b9-7c9a-4fbc-8bd5-39af4ad89eec
+langcode: en
+status: true
+dependencies: {  }
+id: webhook_drupal_content_sync_export
+label: 'Drupal Content Sync Export'
+payload_url: '[drupal-content-sync-url]'
+type: outgoing
+last_usage: null
+events: 'a:27:{s:19:"entity:media:create";s:19:"entity:media:create";s:19:"entity:media:update";s:19:"entity:media:update";s:19:"entity:media:delete";s:19:"entity:media:delete";s:18:"entity:node:create";s:18:"entity:node:create";s:18:"entity:node:update";s:18:"entity:node:update";s:18:"entity:node:delete";s:18:"entity:node:delete";s:27:"entity:taxonomy_term:create";s:27:"entity:taxonomy_term:create";s:27:"entity:taxonomy_term:update";s:27:"entity:taxonomy_term:update";s:27:"entity:taxonomy_term:delete";s:27:"entity:taxonomy_term:delete";s:27:"entity:block_content:create";i:0;s:27:"entity:block_content:update";i:0;s:27:"entity:block_content:delete";i:0;s:18:"entity:crop:create";i:0;s:18:"entity:crop:update";i:0;s:18:"entity:crop:delete";i:0;s:18:"entity:file:create";i:0;s:18:"entity:file:update";i:0;s:18:"entity:file:delete";i:0;s:31:"entity:menu_link_content:create";i:0;s:31:"entity:menu_link_content:update";i:0;s:31:"entity:menu_link_content:delete";i:0;s:23:"entity:paragraph:create";i:0;s:23:"entity:paragraph:update";i:0;s:23:"entity:paragraph:delete";i:0;s:18:"entity:user:create";i:0;s:18:"entity:user:update";i:0;s:18:"entity:user:delete";i:0;}'
+response_ok: null
+ref_entity_type: null
+ref_entity_id: null
+secret: null
+content_type: json

@@ -1,0 +1,25 @@
+drupal_content_sync.sync.*:
+  type: config_entity
+  label: 'DrupalContentSync config'
+  mapping:
+    id:
+      type: string
+      label: 'ID'
+    name:
+      type: label
+      label: 'Name'
+    api:
+      type: string
+      label: 'API'
+    url:
+      type: uri
+      label: 'Drupal Content Sync URL'
+    site_id:
+      type: string
+      label: 'Site Identifier'
+    sync_entities:
+      type: string
+      label: 'Sync entities'
+    local_connections:
+      type: string
+      label: 'Local Drupal Content Sync Connections'

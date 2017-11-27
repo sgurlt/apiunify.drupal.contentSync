@@ -1,0 +1,227 @@
+<?php
+
+/**
+ * @file
+ * Module file for drupal_content_sync.
+ */
+
+use Drupal\Core\Render\RenderContext;
+
+/**
+ * @param $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ * @param $form_id
+ */
+function drupal_content_sync_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  _drupal_content_sync_form_alter_disabled_fields($form, $form_state, $form_id);
+  _drupal_content_sync_form_alter_override_webhook_events($form, $form_state, $form_id);
+}
+
+/**
+ * @param $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ * @param $form_id
+ */
+function _drupal_content_sync_form_alter_override_webhook_events(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  if (0 !== strpos($form_id, 'webhook_config')) {
+    return;
+  }
+
+  $entity_types = \Drupal::service('entity_type.bundle.info')->getAllBundleInfo();
+  $field_map = \Drupal::service('entity_field.manager')->getFieldMap();
+
+  $form['events']['#options'] = [];
+
+  foreach ($entity_types as $type_key => $entity_type) {
+    // This entity type hasn't contained any fields.
+    if (!isset($field_map[$type_key])) {
+      continue;
+    }
+
+    $readableTypeName = str_replace('_', ' ', ucfirst($type_key));
+
+    $options = [
+      sprintf('entity:%s:create', $type_key) => [
+        'type' => $readableTypeName,
+        'event' => 'Create',
+      ],
+      sprintf('entity:%s:update', $type_key) => [
+        'type' => $readableTypeName,
+        'event' => 'Update',
+      ],
+      sprintf('entity:%s:delete', $type_key) => [
+        'type' => $readableTypeName,
+        'event' => 'Delete',
+      ]
+    ];
+
+    $form['events']['#options'] += $options;
+  }
+}
+
+/**
+ * @param $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ * @param $form_id
+ */
+function _drupal_content_sync_form_alter_disabled_fields(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  $form_object = $form_state
+    ->getFormObject();
+
+  if (!($form_object instanceof \Drupal\Core\Entity\ContentEntityForm)) {
+    return;
+  }
+
+  $entity = $form_object
+    ->getEntity();
+
+  $fields_list = $entity
+    ->getFields();
+
+  $fields_list_keys = array_keys($fields_list);
+
+  if (in_array('field_drupal_content_synced', $fields_list_keys)) {
+    $drupal_content_synched_value = $entity->get('field_drupal_content_synced')->getValue();
+    $field_drupal_content_synce_value = reset($drupal_content_synched_value);
+
+    if (isset($field_drupal_content_synce_value['value']) && '1' === $field_drupal_content_synce_value['value']) {
+      foreach ($form as $key => $form_item) {
+        if (0 === strpos($key, 'field_') || (is_array($form_item) && isset($form_item['#type']) && 'container' === $form_item['#type'])) {
+          $form[$key]['#disabled'] = TRUE;
+        }
+      }
+
+      drupal_set_message(t('The entity cannot be edited because it has been synced.'), 'warning');
+    }
+  }
+}
+
+/**
+ * Implements hook_theme().
+ * @return array
+ */
+function drupal_content_sync_theme() {
+  $theme['drupal_content_sync_content_dashboard'] = [
+    'variables' => ['configuration' => NULL],
+    'template' => 'drupal_content_sync_content_dashboard'
+  ];
+
+  return $theme;
+}
+
+function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle, $site_id = '', $file_content = false, $translation = false) {
+  $entityFieldManager = Drupal::service('entity_field.manager');
+  $field_definitions = $entityFieldManager->getFieldDefinitions($entity_type, $bundle);
+  $entityTypeManager = \Drupal::entityTypeManager();
+
+  $entity = [];
+  $fields_to_ignore = ['type', 'path', 'field_drupal_content_synced', 'nid', 'vid', 'thumbnail'];
+  foreach($original as $field_name => $field_value) {
+    if (in_array($field_name, $fields_to_ignore)) {
+      continue;
+    }
+    $field_value = reset($field_value);
+    if (!is_array($field_value)) {
+      continue;
+    }
+    if (isset($field_value[0])) {
+      $field_value = $field_value[0]->getValue();
+    }
+
+    if ($field_value) {
+      $type = $field_name == 'type' ? 'type' : $field_definitions[$field_name]->getType();
+      switch ($type) {
+        case 'integer':
+        case 'created':
+        case 'changed':
+          $entity[$field_name] = $field_value['value'] * 1;
+          break;
+        case 'boolean':
+          $entity[$field_name] = $field_value['value'] == 1;
+          break;
+        case 'entity_reference':
+          $target_id = $field_value['target_id'] * 1;
+          $field_definition = $field_definitions[$field_name];
+
+          if ($field_definition && method_exists($field_definition, 'getPropertyDefinition') && $entity_type != 'media') {
+            $type = $field_definitions[$field_name]->getPropertyDefinition('entity')
+              ->getTargetDefinition()
+              ->getEntityTypeId();
+            $reference = $entityTypeManager
+              ->getStorage($type)
+              ->load($target_id);
+            $entity[$field_name . '_id'] = $target_id;
+            $entity[$field_name . '_connection_id'] = 'drupal_' . $site_id . '_' . $reference->getEntityTypeId();
+          } else {
+            //TODO currently user references do not work
+            //$entity[$field_name] = 'field_not_goood Joe guckst du dir das bitte an?';
+          }
+          break;
+        case 'text_with_summary':
+          $entity[$field_name] = $field_value['value'];
+          $entity[$field_name . '_summary'] = $field_value['summary'];
+          $entity[$field_name . '_format'] = $field_value['format'];
+          break;
+        case 'type':
+          $entity[$field_name] = $field_value['target_id'];
+          break;
+        case 'image':
+          $uri = \Drupal::entityTypeManager()->getStorage('file')->load($field_value['target_id'])->getFileUri();
+          $entity[$field_name] = base64_encode(file_get_contents($uri));
+          break;
+        default:
+          $entity[$field_name] = $field_value['value'];
+      }
+    }
+  }
+  $entity['id'] = $entity['uuid'];
+
+  if (is_array($original)) {
+    $query = \Drupal::entityQuery($entity_type);
+
+    $entity_type_entity = \Drupal::entityTypeManager()
+      ->getStorage($entity_type)->getEntityType();
+    if ($bundle_field = $entity_type_entity->getKey('bundle')) {
+      $query->condition($bundle_field, $bundle);
+    }
+    $query->condition('uuid', $entity['uuid']);
+    $entity_ids = array_values($query->execute());
+    $entities = array_values(\Drupal::entityTypeManager()->getStorage($entity_type)->loadMultiple($entity_ids));
+    $original = array_shift($entities);
+  }
+
+  $view_builder = $entityTypeManager->getViewBuilder($entity_type);
+  $preview = $view_builder->view($original, 'drupal_content_sync_preview');
+  $rendered = \Drupal::service('renderer');
+  $html = $rendered->executeInRenderContext(
+    new RenderContext(),
+    function () use ($rendered, $preview) {
+      return $rendered->render($preview);
+    }
+  );
+  $entity['preview'] = $html;
+
+  if ($original->hasLinkTemplate('canonical')) {
+    $entity['url'] = $original->toUrl('canonical', ['absolute' => TRUE])
+      ->toString(TRUE)
+      ->getGeneratedUrl();
+  }
+
+  if ($entity_type == 'file' && $file_content) {
+    if (method_exists($original, 'getFileUri')) {
+      $uri = $original->getFileUri();
+      $entity['apiu_file_content'] = base64_encode(file_get_contents($uri));
+      $entity['preview'] = '<img style="max-height: 200px" src="'.file_create_url($uri).'"/>';
+    }
+    $entity['title'] = $original->getFilename();
+  }
+
+  if (!$translation && method_exists($original, 'getTranslationLanguages') && method_exists($original, 'getTranslation')) {
+    $translations = array_keys($original->getTranslationLanguages(false));
+    foreach ($translations as $t) {
+      $entity['apiu_translation'][$t] = _drupal_content_sync_preprocess_entity($original->getTranslation($t), $entity_type, $bundle, $site_id, $file_content, TRUE);
+    }
+  }
+
+  return $entity;
+}

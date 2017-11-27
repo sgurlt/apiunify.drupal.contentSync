@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - drupal_content_sync
+    - basic_auth
+    - serialization
+id: drupal_content_sync_entity_resource
+plugin_id: drupal_content_sync_entity_resource
+granularity: resource
+configuration:
+  methods:
+    - GET
+    - POST
+    - DELETE
+    - PATCH
+  formats:
+    - json
+  authentication:
+    - cookie

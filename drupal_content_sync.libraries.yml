@@ -1,0 +1,14 @@
+drupal-content-sync-form:
+  version: 1.x
+  js:
+    js/drupal-content-sync-form.js: {}
+
+drupal-content-synchronization:
+  version: 1.x
+  css:
+    layout:
+      content_dashboard/styles.bundle.css: {}
+  js:
+    content_dashboard/inline.bundle.js: {}
+    content_dashboard/polyfills.bundle.js: {}
+    content_dashboard/main.bundle.js: {}
