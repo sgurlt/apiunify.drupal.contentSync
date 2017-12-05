@@ -432,7 +432,7 @@ class DrupalContentSyncForm extends EntityForm {
       $client->get($url . '/status');
 
       //Create the API entity
-      $client->post($url . '/drupal_content_sync-drupal_content_sync-api-0_1', [
+      $client->post($url . '/api_unify-api_unify-api-0_1', [
         'json' => [
           'id' => $this->entity->{'api'} . '-0.1',
           'name' => $this->entity->{'api'},
@@ -441,7 +441,7 @@ class DrupalContentSyncForm extends EntityForm {
       ]);
 
       //Create the instance entity
-      $client->post($url . '/drupal_content_sync-drupal_content_sync-instance-0_1', [
+      $client->post($url . '/api_unify-api_unify-instance-0_1', [
         'json' => [
           'id' => $this->entity->{'site_id'},
           'api_id' => $this->entity->{'api'} . '-0.1',
@@ -449,7 +449,7 @@ class DrupalContentSyncForm extends EntityForm {
       ]);
 
       //Create the preview connection entity
-      $client->post($url . '/drupal_content_sync-drupal_content_sync-connection-0_1', [
+      $client->post($url . '/api_unify-api_unify-connection-0_1', [
         'json' => [
           'id' => 'drupal_drupal-content-sync_preview',
           'name' => 'Drupal preview connection',
@@ -492,7 +492,7 @@ class DrupalContentSyncForm extends EntityForm {
           'name_space' => $type['entity_type'],
           'name' => $type['entity_bundle'],
           'version' => $type['version_hash'],
-          'base_class' => "drupal-content-sync/services/drupal/v0.1/models/base.model",
+          'base_class' => "api-unify/services/drupal/v0.1/models/base.model",
           'custom' => true,
           'new_properties' => [
             'id' => [
@@ -715,12 +715,12 @@ class DrupalContentSyncForm extends EntityForm {
 
         try {
           //Create the entity type
-          $client->post($url . '/drupal_content_sync-drupal_content_sync-entity_type-0_1', [
+          $client->post($url . '/api_unify-api_unify-entity_type-0_1', [
             'json' => $entity_type,
           ]);
 
           //Create the pool connection entity for this entity type
-          $client->post($url . '/drupal_content_sync-drupal_content_sync-connection-0_1', [
+          $client->post($url . '/api_unify-api_unify-connection-0_1', [
             'json' => [
               'id' => 'drupal_pool_' . $entity_type['name'],
               'name' => 'Drupal pool connection for ' . $entity_type['name'],
@@ -738,7 +738,7 @@ class DrupalContentSyncForm extends EntityForm {
           ]);
 
           //Create a synchronization from the pool to the preview connection
-          $client->post($url . '/drupal_content_sync-drupal_content_sync-connection_synchronisation-0_1', [
+          $client->post($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
             'json' => [
               'id' => 'drupal_pool_' . $entity_type['id'] . '_synchronization_to_preview',
               'name' => 'Synchronization Pool ' . $entity_type['name'] . ' -> Preview',
@@ -758,7 +758,7 @@ class DrupalContentSyncForm extends EntityForm {
           ]);
 
           //Create the instance connection entity for this entity type
-          $client->post($url . '/drupal_content_sync-drupal_content_sync-connection-0_1', [
+          $client->post($url . '/api_unify-api_unify-connection-0_1', [
             'json' => [
               'id' => 'drupal_' . $this->entity->{'site_id'} . '_' . $entity_type['name'],
               'name' => 'Drupal connection on ' . $this->entity->{'site_id'} . ' for ' . $entity_type['name'],
@@ -796,7 +796,7 @@ class DrupalContentSyncForm extends EntityForm {
           $localConnections[] = 'drupal_' . $this->entity->{'site_id'} . '_' . $entity_type['name'];
 
           //Create a synchronization from the pool to the local connection
-          $client->post($url . '/drupal_content_sync-drupal_content_sync-connection_synchronisation-0_1', [
+          $client->post($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
             'json' => [
               'id' => 'drupal_' . $this->entity->{'site_id'} . '_' . $entity_type['id'] . '_synchronization_to_drupal',
               'name' => 'Synchronization for ' . $entity_type['name'] . ' from Pool -> ' . $this->entity->{'site_id'},
@@ -816,7 +816,7 @@ class DrupalContentSyncForm extends EntityForm {
           ]);
 
           if ($type['export'] == 1) {
-            $client->post($url . '/drupal_content_sync-drupal_content_sync-connection_synchronisation-0_1', [
+            $client->post($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
               'json' => [
                 'id' => 'drupal_' . $this->entity->{'site_id'} . '_' . $entity_type['id'] . '_synchronization_to_pool',
                 'name' => 'Synchronization for ' . $entity_type['name'] . ' from ' . $this->entity->{'site_id'} . ' -> Pool',
