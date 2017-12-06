@@ -780,7 +780,7 @@ class DrupalContentSyncForm extends EntityForm {
                     'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/0?_format=json',
                   ],
                   'create_item' => [
-                    'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '?_format=json',
+                    'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '?is_clone=[is_clone]&_format=json',
                   ],
                   'update_item' => [
                     'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/[id]?_format=json',
