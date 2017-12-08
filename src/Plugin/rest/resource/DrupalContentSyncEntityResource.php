@@ -278,6 +278,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   A list of entities of the given type and bundle.
    */
   public function post($entity_type_name, $entity_bundle, $data) {
+    $is_clone = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
 
     $entity_types_keys = array_keys($entity_types);
@@ -286,16 +287,20 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         ->getStorage($entity_type_name);
       $entity_type = $storage->getEntityType();
       $entity_data = [
-        $entity_type->getKey('uuid') => $data[$entity_type->getKey('uuid')],
         $entity_type->getKey('bundle') => $entity_bundle,
       ];
+
+      if (!$is_clone) {
+        $entity_data[$entity_type->getKey('uuid')] = $data[$entity_type->getKey('uuid')];
+      }
+
       if ($entity_type_name == 'file') {
         file_prepare_directory(\Drupal::service('file_system')->dirname($data['uri']), FILE_CREATE_DIRECTORY);
         $entity = file_save_data(base64_decode($data['apiu_file_content']), $data['uri']);
       } else {
         $entity = $storage->create($entity_data);
       }
-      $this->setEntityValues($entity, $data);
+      $this->setEntityValues($entity, $data, !$is_clone);
 
       $resource_response = new ResourceResponse($data);
 
@@ -313,7 +318,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     );
   }
 
-  private function setEntityValues($entity, $data) {
+  private function setEntityValues($entity, $data, $set_synced = TRUE) {
     $entityFieldManager = \Drupal::service('entity_field.manager');
     $type = $entity->getEntityTypeId();
     $bundle = method_exists($entity, 'getType') ? $entity->getType() : $type;
@@ -339,7 +344,11 @@ class DrupalContentSyncEntityResource extends ResourceBase {
           $entity->set($key, $field);
       }
     }
-    $entity->set('field_drupal_content_synced', true);
+
+    if ($set_synced) {
+      $entity->set('field_drupal_content_synced', TRUE);
+    }
+
     $entity->save();
     if (!empty($data['apiu_translation'])) {
       foreach($data['apiu_translation'] as $language => $translation_data) {
