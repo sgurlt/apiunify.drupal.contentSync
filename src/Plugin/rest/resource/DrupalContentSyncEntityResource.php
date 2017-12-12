@@ -212,11 +212,14 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       $query->condition('type', $entity_bundle);
       $query->condition('uuid', $entity_uuid);
       $entity_ids = array_values($query->execute());
-      $entity = \Drupal::entityTypeManager()
-        ->getStorage($entity_type)
-        ->load($entity_ids[0]);
 
-      $this->setEntityValues($entity, $data);
+      if ($entity_ids) {
+        $entity = \Drupal::entityTypeManager()->getStorage($entity_type)->load(reset($entity_ids));
+        $this->setEntityValues($entity, $data);
+      }
+      else {
+        $entity = NULL;
+      }
 
       $resource_response = new ResourceResponse($entity);
 
@@ -257,8 +260,10 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       $entity_ids = array_values($query->execute());
       $entities = array_values(\Drupal::entityTypeManager()->getStorage($entity_type)->loadMultiple($entity_ids));
 
-      $entities[0]->delete();
-      $this->logger->notice('Deleted entity %type with ID %id.', ['%type' => $entity_type, '%id' => $entity_ids[0]]);
+      if (isset($entities[0])) {
+        $entities[0]->delete();
+        $this->logger->notice('Deleted entity %type with ID %id.', ['%type' => $entity_type, '%id' => $entity_ids[0]]);
+      }
 
       // DELETE responses have an empty body.
       return new ModifiedResourceResponse(NULL, 204);
