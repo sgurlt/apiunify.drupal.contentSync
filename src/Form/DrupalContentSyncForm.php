@@ -493,14 +493,14 @@ class DrupalContentSyncForm extends EntityForm {
           'name' => $type['entity_bundle'],
           'version' => $type['version_hash'],
           'base_class' => "api-unify/services/drupal/v0.1/models/base.model",
-          'custom' => true,
+          'custom' => TRUE,
           'new_properties' => [
             'id' => [
               'type' => 'string',
             ],
             'source' => [
               'type' => 'reference',
-              'default_value' => null,
+              'default_value' => NULL,
               'connection_identifiers' => [
                 [
                   'properties' => [
@@ -519,23 +519,27 @@ class DrupalContentSyncForm extends EntityForm {
             ],
             'source_id' => [
               'type' => 'id',
-              'default_value' => null,
+              'default_value' => NULL,
             ],
             'source_connection_id' => [
               'type' => 'id',
-              'default_value' => null,
+              'default_value' => NULL,
             ],
             'preview' => [
               'type' => 'string',
-              'default_value' => null,
+              'default_value' => NULL,
             ],
             'url' => [
               'type' => 'string',
-              'default_value' => null,
+              'default_value' => NULL,
             ],
             'apiu_translation' => [
               'type' => 'object',
-              'default_value' => null
+              'default_value' => NULL,
+            ],
+            'metadata' => [
+              'type' => 'object',
+              'default_value' => NULL,
             ],
           ],
           'new_property_lists' => [
@@ -555,6 +559,7 @@ class DrupalContentSyncForm extends EntityForm {
               'id' => 'value',
               'source' => 'reference',
               'apiu_translation' => 'value',
+              'metadata' => 'value',
             ],
             'database' => [
               'id' => 'value',
@@ -563,6 +568,7 @@ class DrupalContentSyncForm extends EntityForm {
               'preview' => 'value',
               'url' => 'value',
               'apiu_translation' => 'value',
+              'metadata' => 'value',
             ],
             'modifiable' => [
               'preview' => 'value',
@@ -599,33 +605,51 @@ class DrupalContentSyncForm extends EntityForm {
             case 'changed':
               $field_type = 'int';
               break;
+
             case 'boolean':
               $field_type = 'bool';
               break;
+
             case 'entity_reference':
               $field_type = 'reference';
               break;
+
             case 'text_with_summary':
               $field_type = 'text_with_summary';
               break;
+
             case 'image':
               $field_type = 'file';
               break;
+
             default:
               $field_type = 'string';
           }
+
           if ($field_type == 'reference') {
             $entity_type['new_properties'][$key . '_id'] = [
               'type' => 'id',
-              'default_value' => null,
+              'default_value' => NULL,
             ];
+
             $entity_type['new_properties'][$key . '_connection_id'] = [
               'type' => 'id',
-              'default_value' => null,
+              'default_value' => NULL,
             ];
+
+            $entity_type['new_properties'][$key . '_uuid'] = [
+              'type' => 'string',
+              'default_value' => NULL,
+            ];
+
+            $entity_type['new_properties'][$key . '_type'] = [
+              'type' => 'string',
+              'default_value' => NULL,
+            ];
+
             $entity_type['new_properties'][$key] = [
               'type' => $field_type,
-              'default_value' => null,
+              'default_value' => NULL,
               'connection_identifiers' => [
                 [
                   'properties' => [
@@ -642,13 +666,20 @@ class DrupalContentSyncForm extends EntityForm {
               ],
               'multiple' => FALSE,
             ];
+
             $entity_type['new_property_lists']['details'][$key] = 'reference';
+            $entity_type['new_property_lists']['details'][$key . '_uuid'] = 'value';
+            $entity_type['new_property_lists']['details'][$key . '_type'] = 'value';
             $entity_type['new_property_lists']['database'][$key . '_id'] = 'value';
             $entity_type['new_property_lists']['database'][$key . '_connection_id'] = 'value';
+            $entity_type['new_property_lists']['database'][$key . '_uuid'] = 'value';
+            $entity_type['new_property_lists']['database'][$key . '_type'] = 'value';
+
             if ($field->isRequired()) {
               $entity_type['new_property_lists']['required'][$key . '_id'] = 'value';
               $entity_type['new_property_lists']['required'][$key . '_connection_id'] = 'value';
             }
+
             if (!$field->isReadOnly()) {
               $entity_type['new_property_lists']['modifiable'][$key . '_id'] = 'value';
               $entity_type['new_property_lists']['modifiable'][$key . '_connection_id'] = 'value';

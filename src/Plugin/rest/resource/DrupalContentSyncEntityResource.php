@@ -2,6 +2,7 @@
 
 namespace Drupal\drupal_content_sync\Plugin\rest\resource;
 
+use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\rest\Plugin\ResourceBase;
@@ -50,6 +51,11 @@ class DrupalContentSyncEntityResource extends ResourceBase {
   protected $renderedManager;
 
   /**
+   * @var EntityRepositoryInterface
+   */
+  protected $entityRepository;
+
+  /**
    * Constructs an object.
    *
    * @param array $configuration
@@ -77,7 +83,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     LoggerInterface $logger,
     EntityTypeBundleInfo $entity_type_bundle_info,
     EntityTypeManager $entity_type_manager,
-    Renderer $render_manager
+    Renderer $render_manager,
+    EntityRepositoryInterface $entity_repository
   ) {
     parent::__construct(
       $configuration,
@@ -90,6 +97,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
     $this->entityTypeManager = $entity_type_manager;
     $this->renderedManager = $render_manager;
+    $this->entityRepository = $entity_repository;
   }
 
   /**
@@ -109,7 +117,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       $container->get('logger.factory')->get('rest'),
       $container->get('entity_type.bundle.info'),
       $container->get('entity_type.manager'),
-      $container->get('renderer')
+      $container->get('renderer'),
+      $container->get('entity.repository')
     );
   }
 
@@ -325,23 +334,46 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     $field_definitions = $entityFieldManager->getFieldDefinitions($type, $bundle);
 
     $fields_to_ignore = ['nid', 'id', 'uuid', 'vid', 'field_drupal_content_synced', 'uri', 'apiu_file_content', 'apiu_translation'];
-    foreach($data as $key => $field) {
-      if (in_array($key, $fields_to_ignore) || !$entity->hasField($key)) {
+    $fields = array_diff(array_keys($field_definitions), $fields_to_ignore);
+
+    foreach ($fields as $key) {
+      if (in_array($key, $fields_to_ignore)) {
         continue;
       }
-      switch($field_definitions[$key]->getType()) {
-        case 'text_with_summary':
-          $entity->set($key, array(
-            'value' => $field,
-            'summary' => $data[$key . '_summary'],
-            'format' => $data[$key . '_format'],
-          ));
-          break;
-        case 'image':
 
+      switch ($field_definitions[$key]->getType()) {
+        case 'text_with_summary':
+          if (isset($data[$key])) {
+            $entity->set($key, array(
+              'value' => $data[$key],
+              'summary' => $data[$key . '_summary'],
+              'format' => $data[$key . '_format'],
+            ));
+          }
           break;
+
+        case 'image':
+          break;
+
+        case 'entity_reference':
+          if (empty($data[$key . '_uuid']) || empty($data[$key . '_type'])) {
+            continue;
+          }
+
+          try {
+            $reference = $this->entityRepository->loadEntityByUuid($data[$key . '_type'], $data[$key . '_uuid']);
+            if ($reference) {
+              $entity->set($key, $reference->id());
+            }
+          }
+          catch (Exception $exception) {
+          }
+          break;
+
         default:
-          $entity->set($key, $field);
+          if (isset($data[$key])) {
+            $entity->set($key, $data[$key]);
+          }
       }
     }
 

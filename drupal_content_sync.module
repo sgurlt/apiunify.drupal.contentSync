@@ -6,6 +6,8 @@
  */
 
 use Drupal\Core\Render\RenderContext;
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException;
 
 /**
  * @param $form
@@ -136,26 +138,34 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
         case 'changed':
           $entity[$field_name] = $field_value['value'] * 1;
           break;
+
         case 'boolean':
           $entity[$field_name] = $field_value['value'] == 1;
           break;
+
         case 'entity_reference':
           $target_id = $field_value['target_id'] * 1;
           $field_definition = $field_definitions[$field_name];
 
-          if ($field_definition && method_exists($field_definition, 'getPropertyDefinition') && $entity_type != 'media') {
-            $type = $field_definitions[$field_name]->getPropertyDefinition('entity')
-              ->getTargetDefinition()
-              ->getEntityTypeId();
-            $reference = $entityTypeManager
-              ->getStorage($type)
-              ->load($target_id);
-            $entity[$field_name . '_id'] = $target_id;
-            $entity[$field_name . '_connection_id'] = 'drupal_' . $site_id . '_' . $reference->getEntityTypeId();
-          } else {
+          if ($field_definition && $entity_type != 'media' && $field_definition instanceof FieldDefinitionInterface) {
+            try {
+              $type = $field_definition->getTargetEntityTypeId();
+
+              if ($reference = $entityTypeManager->getStorage($type)->load($target_id)) {
+                $entity[$field_name . '_id'] = $target_id;
+                $entity[$field_name . '_connection_id'] = 'drupal_' . $site_id . '_' . $reference->getEntityTypeId();
+                $entity[$field_name . '_type'] = $reference->getEntityTypeId();
+                $entity[$field_name . '_uuid'] = $reference->uuid();
+              }
+            }
+            catch (Exception $exception) {
+            }
+          }
+          else {
             //TODO currently user references do not work
             //$entity[$field_name] = 'field_not_goood Joe guckst du dir das bitte an?';
           }
+
           break;
         case 'text_with_summary':
           $entity[$field_name] = $field_value['value'];

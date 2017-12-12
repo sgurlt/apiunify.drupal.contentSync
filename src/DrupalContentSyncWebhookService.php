@@ -73,9 +73,13 @@ class DrupalContentSyncWebhookService extends WebhooksService {
       $bundle = reset($entity_payload['entity']['bundle']);
       if (isset($bundle['target_id'])) {
         $entity_bundle = ['target_id'];
-      } elseif (isset($bundle['value'])) {
+      }
+      elseif (isset($bundle['value'])) {
         $entity_bundle = $bundle['value'];
       }
+    }
+    elseif (isset($entity_payload['entity']['type'])) {
+      $entity_bundle = reset($entity_payload['entity']['type'])['target_id'];
     }
 
     if (is_null($entity_type) || is_null($entity_bundle)) {
