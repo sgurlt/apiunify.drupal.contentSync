@@ -116,7 +116,10 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
   $field_definitions = $entityFieldManager->getFieldDefinitions($entity_type, $bundle);
   $entityTypeManager = \Drupal::entityTypeManager();
 
-  $entity = [];
+  $entity = [
+    'embed_entities' => [],
+  ];
+
   $fields_to_ignore = ['type', 'path', 'field_drupal_content_synced', 'nid', 'vid', 'thumbnail'];
   foreach($original as $field_name => $field_value) {
     if (in_array($field_name, $fields_to_ignore)) {
@@ -156,6 +159,8 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
                 $entity[$field_name . '_connection_id'] = 'drupal_' . $site_id . '_' . $reference->getEntityTypeId();
                 $entity[$field_name . '_type'] = $reference->getEntityTypeId();
                 $entity[$field_name . '_uuid'] = $reference->uuid();
+
+                $entity['embed_entities'][$entity[$field_name . '_uuid']] = $entity[$field_name . '_connection_id'];
               }
             }
             catch (Exception $exception) {
@@ -167,18 +172,22 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
           }
 
           break;
+
         case 'text_with_summary':
           $entity[$field_name] = $field_value['value'];
           $entity[$field_name . '_summary'] = $field_value['summary'];
           $entity[$field_name . '_format'] = $field_value['format'];
           break;
+
         case 'type':
           $entity[$field_name] = $field_value['target_id'];
           break;
+
         case 'image':
           $uri = \Drupal::entityTypeManager()->getStorage('file')->load($field_value['target_id'])->getFileUri();
           $entity[$field_name] = base64_encode(file_get_contents($uri));
           break;
+
         default:
           $entity[$field_name] = $field_value['value'];
       }
@@ -233,5 +242,6 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     }
   }
 
+  \Drupal::moduleHandler()->alter('drupal_content_sync_preprocess_entity', $entity);
   return $entity;
 }

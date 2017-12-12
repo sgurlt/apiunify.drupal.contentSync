@@ -541,6 +541,10 @@ class DrupalContentSyncForm extends EntityForm {
               'type' => 'object',
               'default_value' => NULL,
             ],
+            'embed_entities' => [
+              'type' => 'object',
+              'default_value' => NULL,
+            ],
           ],
           'new_property_lists' => [
             'list' => [
@@ -560,6 +564,7 @@ class DrupalContentSyncForm extends EntityForm {
               'source' => 'reference',
               'apiu_translation' => 'value',
               'metadata' => 'value',
+              'embed_entities' => 'value',
             ],
             'database' => [
               'id' => 'value',
@@ -569,12 +574,14 @@ class DrupalContentSyncForm extends EntityForm {
               'url' => 'value',
               'apiu_translation' => 'value',
               'metadata' => 'value',
+              'embed_entities' => 'value',
             ],
             'modifiable' => [
               'preview' => 'value',
               'url' => 'value',
               'apiu_translation' => 'value',
               'metadata' => 'value',
+              'embed_entities' => 'value',
             ],
             'required' => [],
           ],

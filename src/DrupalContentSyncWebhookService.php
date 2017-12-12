@@ -20,6 +20,13 @@ class DrupalContentSyncWebhookService extends WebhooksService {
   const DRUPAL_CONTENT_SYNC_PAYLOAD_URL = '[drupal-content-sync-url]';
 
   /**
+   * An array of entities that has been exported.
+   *
+   * @var array
+   */
+  protected $exportedEntities = [];
+
+  /**
    * Send a webhook.
    *
    * @param \Drupal\webhooks\Entity\WebhookConfig $webhook_config
@@ -86,6 +93,9 @@ class DrupalContentSyncWebhookService extends WebhooksService {
       return;
     }
 
+    /** @var \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository */
+    $entity_repository = \Drupal::service('entity.repository');
+
     foreach ($drupal_content_syncs as $sync) {
       $sync_entities = json_decode($sync->{'sync_entities'}, TRUE);
 
@@ -98,6 +108,36 @@ class DrupalContentSyncWebhookService extends WebhooksService {
         $is_exported = (bool) $sync_entity['export'];
 
         if ($is_exported && $sync_entity_type_key === $entity_type && $sync_entity_bundle_key === $entity_bundle) {
+          if ('delete' != $event_type) {
+            $this->preFormatEntity($webhook, $sync->{'site_id'}, $entity_type, $entity_bundle);
+
+            $preprocessed_entity = $webhook->getPayload();
+            if (!empty($preprocessed_entity['embed_entities'])) {
+              foreach ($preprocessed_entity['embed_entities'] as $uuid => $connection_id) {
+                if (in_array($uuid, $this->exportedEntities)) {
+                  // Make sure that we won't export one entity twice.
+                  continue;
+                }
+
+                $type = str_replace('drupal_' . $sync->{'site_id'} . '_', '', $connection_id);
+
+                try {
+                  if ($embed_entity = $entity_repository->loadEntityByUuid($type, $uuid)) {
+                    $event = implode(':', ['entity', $embed_entity->getEntityTypeId(), 'create']);
+                    $embed_entity_webhook = new Webhook(['entity' => $embed_entity->toArray()], [], $event);
+
+                    $webhook_config->set('payload_url', self::DRUPAL_CONTENT_SYNC_PAYLOAD_URL);
+                    $this->send($webhook_config, $embed_entity_webhook);
+                  }
+                }
+                catch (\Exception $exception) {
+                }
+
+                $this->exportedEntities[] = $uuid;
+              }
+            }
+          }
+
           if ('create' === $event_type) {
             $url = sprintf('%s/drupal/%s/%s/%s', $sync->{'url'}, $sync->{'site_id'}, $entity_type, $entity_bundle);
           }
@@ -106,9 +146,6 @@ class DrupalContentSyncWebhookService extends WebhooksService {
           }
 
           $webhook_config->set('payload_url', $url);
-          if ('delete' != $event_type) {
-            $this->preFormatEntity($webhook, $sync->{'site_id'}, $entity_type, $entity_bundle);
-          }
           $this->sendRequest($webhook_config, $webhook, $event_type);
         }
       }
