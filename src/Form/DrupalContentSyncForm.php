@@ -574,6 +574,7 @@ class DrupalContentSyncForm extends EntityForm {
               'preview' => 'value',
               'url' => 'value',
               'apiu_translation' => 'value',
+              'metadata' => 'value',
             ],
             'required' => [],
           ],
@@ -678,11 +679,15 @@ class DrupalContentSyncForm extends EntityForm {
             if ($field->isRequired()) {
               $entity_type['new_property_lists']['required'][$key . '_id'] = 'value';
               $entity_type['new_property_lists']['required'][$key . '_connection_id'] = 'value';
+              $entity_type['new_property_lists']['required'][$key . '_uuid'] = 'value';
+              $entity_type['new_property_lists']['required'][$key . '_type'] = 'value';
             }
 
             if (!$field->isReadOnly()) {
               $entity_type['new_property_lists']['modifiable'][$key . '_id'] = 'value';
               $entity_type['new_property_lists']['modifiable'][$key . '_connection_id'] = 'value';
+              $entity_type['new_property_lists']['modifiable'][$key . '_uuid'] = 'value';
+              $entity_type['new_property_lists']['modifiable'][$key . '_type'] = 'value';
             }
           }
           elseif ($field_type == 'text_with_summary') {
