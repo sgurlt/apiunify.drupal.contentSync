@@ -239,6 +239,10 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     $entity['title'] = $original->getFilename();
   }
 
+  if ($entity_type == 'block_content') {
+    $entity['title'] = $entity['info'];
+  }
+
   if (!$translation && method_exists($original, 'getTranslationLanguages') && method_exists($original, 'getTranslation')) {
     $translations = array_keys($original->getTranslationLanguages(false));
     foreach ($translations as $t) {
@@ -246,6 +250,6 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     }
   }
 
-  \Drupal::moduleHandler()->alter('drupal_content_sync_preprocess_entity', $entity);
+  \Drupal::moduleHandler()->alter('drupal_content_sync_preprocess_entity', $entity, $original, $site_id);
   return $entity;
 }

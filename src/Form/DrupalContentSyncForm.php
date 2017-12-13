@@ -485,7 +485,7 @@ class DrupalContentSyncForm extends EntityForm {
       if ($type['export'] == 1 || $type['preview'] != 'excluded') {
         $fields = $this->entityFieldManager->getFieldDefinitions($type['entity_type'], $type['entity_bundle']);
 
-        $fields_to_ignore = ['id,', 'nid', 'vid', 'type', 'path', 'revision_log', 'revision_translation_affected', 'menu_link', 'field_drupal_content_synced', 'field_media_id', 'field_media_connection_id', 'field_media', 'field_term_ref_id', 'field_term_ref_connection_id', 'field_term_ref', 'field_drupal_content_synced'];
+        $fields_to_ignore = ['id', 'nid', 'vid', 'type', 'path', 'revision_log', 'revision_translation_affected', 'menu_link', 'field_drupal_content_synced', 'field_media_id', 'field_media_connection_id', 'field_media', 'field_term_ref_id', 'field_term_ref_connection_id', 'field_term_ref', 'field_drupal_content_synced'];
 
         $entity_type = [
           'id' => 'drupal-' . $type['entity_type'] . '-' . $type['entity_bundle'] . '-' . $type['version_hash'],
@@ -592,15 +592,24 @@ class DrupalContentSyncForm extends EntityForm {
         if ($type['entity_type'] == 'file') {
           $entity_type['new_properties']['apiu_file_content'] = [
             'type' => 'string',
-            'default_value' => null,
+            'default_value' => NULL,
           ];
           $entity_type['new_property_lists']['details']['apiu_file_content'] = 'value';
           $entity_type['new_property_lists']['filesystem']['apiu_file_content'] = 'value';
           $entity_type['new_property_lists']['required']['apiu_file_content'] = 'value';
           $entity_type['new_properties']['title'] = [
             'type' => 'string',
-            'default_value' => null,
+            'default_value' => NULL,
           ];
+          $entity_type['new_property_lists']['database']['title'] = 'value';
+        }
+
+        if (!isset($fields['title'])) {
+          $entity_type['new_properties']['title'] = [
+            'type' => 'string',
+            'default_value' => NULL,
+          ];
+
           $entity_type['new_property_lists']['database']['title'] = 'value';
         }
 
@@ -608,6 +617,7 @@ class DrupalContentSyncForm extends EntityForm {
           if (in_array($key, $fields_to_ignore)) {
             continue;
           }
+
           switch ($field->getType()) {
             case 'integer':
             case 'created':

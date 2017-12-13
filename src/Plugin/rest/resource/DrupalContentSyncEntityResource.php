@@ -386,6 +386,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       $entity->set('field_drupal_content_synced', TRUE);
     }
 
+    \Drupal::moduleHandler()->alter('drupal_content_sync_set_entity_values', $entity, $data);
     $entity->save();
     if (!empty($data['apiu_translation'])) {
       foreach($data['apiu_translation'] as $language => $translation_data) {
