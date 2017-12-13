@@ -113,16 +113,14 @@ class DrupalContentSyncWebhookService extends WebhooksService {
 
             $preprocessed_entity = $webhook->getPayload();
             if (!empty($preprocessed_entity['embed_entities'])) {
-              foreach ($preprocessed_entity['embed_entities'] as $uuid => $connection_id) {
-                if (in_array($uuid, $this->exportedEntities)) {
+              foreach ($preprocessed_entity['embed_entities'] as $data) {
+                if (in_array($data['uuid'], $this->exportedEntities)) {
                   // Make sure that we won't export one entity twice.
                   continue;
                 }
 
-                $type = str_replace('drupal_' . $sync->{'site_id'} . '_', '', $connection_id);
-
                 try {
-                  if ($embed_entity = $entity_repository->loadEntityByUuid($type, $uuid)) {
+                  if ($embed_entity = $entity_repository->loadEntityByUuid($data['type'], $data['uuid'])) {
                     $event = implode(':', ['entity', $embed_entity->getEntityTypeId(), 'create']);
                     $embed_entity_webhook = new Webhook(['entity' => $embed_entity->toArray()], [], $event);
 
@@ -133,7 +131,7 @@ class DrupalContentSyncWebhookService extends WebhooksService {
                 catch (\Exception $exception) {
                 }
 
-                $this->exportedEntities[] = $uuid;
+                $this->exportedEntities[] = $data['uuid'];
               }
             }
           }
