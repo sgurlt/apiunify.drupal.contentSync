@@ -544,6 +544,7 @@ class DrupalContentSyncForm extends EntityForm {
             'embed_entities' => [
               'type' => 'object',
               'default_value' => NULL,
+              'multiple' => TRUE,
             ],
           ],
           'new_property_lists' => [
