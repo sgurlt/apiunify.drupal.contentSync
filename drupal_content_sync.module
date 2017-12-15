@@ -192,6 +192,10 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
           $entity[$field_name] = base64_encode(file_get_contents($uri));
           break;
 
+        case 'link':
+          $entity[$field_name] = $field_value['uri'];
+          break;
+
         default:
           $entity[$field_name] = $field_value['value'];
       }
