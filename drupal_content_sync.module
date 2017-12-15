@@ -156,7 +156,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
 
               if ($reference = $entityTypeManager->getStorage($type)->load($target_id)) {
                 $entity[$field_name . '_id'] = $target_id;
-                $entity[$field_name . '_connection_id'] = 'drupal_' . $site_id . '_' . $reference->bundle();
+                $entity[$field_name . '_connection_id'] = 'drupal_pool_' . $reference->bundle();
                 $entity[$field_name . '_type'] = $reference->getEntityTypeId();
                 $entity[$field_name . '_uuid'] = $reference->uuid();
 
