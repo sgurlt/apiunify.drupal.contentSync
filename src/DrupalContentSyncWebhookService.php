@@ -119,6 +119,8 @@ class DrupalContentSyncWebhookService extends WebhooksService {
                   continue;
                 }
 
+                $this->exportedEntities[] = $data['uuid'];
+
                 try {
                   if ($embed_entity = $entity_repository->loadEntityByUuid($data['type'], $data['uuid'])) {
                     $event = implode(':', ['entity', $embed_entity->getEntityTypeId(), 'create']);
@@ -130,8 +132,6 @@ class DrupalContentSyncWebhookService extends WebhooksService {
                 }
                 catch (\Exception $exception) {
                 }
-
-                $this->exportedEntities[] = $data['uuid'];
               }
             }
           }
