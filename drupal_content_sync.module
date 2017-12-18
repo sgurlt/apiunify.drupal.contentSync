@@ -154,15 +154,16 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
             try {
               $type = $field_definition->getTargetEntityTypeId();
 
-              if ($reference = $entityTypeManager->getStorage($type)->load($target_id)) {
+              $reference = $entityTypeManager->getStorage($type)->load($target_id);
+              if ($reference && $reference->uuid() != $original['uuid'][0]) {
                 $entity[$field_name . '_id'] = $target_id;
                 $entity[$field_name . '_connection_id'] = 'drupal_pool_' . $reference->bundle();
                 $entity[$field_name . '_type'] = $reference->getEntityTypeId();
                 $entity[$field_name . '_uuid'] = $reference->uuid();
 
-                $entity['embed_entities'][] = [
+                $entity['embed_entities'][$entity[$field_name . '_uuid']] = [
                   'uuid' => $entity[$field_name . '_uuid'],
-                  'connection_id' => $entity[$field_name . '_connection_id'],
+                  'connection_id' => 'drupal_pool_' . $reference->bundle(),
                   'type' => $entity[$field_name . '_type'],
                 ];
               }
@@ -255,5 +256,8 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
   }
 
   \Drupal::moduleHandler()->alter('drupal_content_sync_preprocess_entity', $entity, $original, $site_id);
+  if ($entity['embed_entities']) {
+    $entity['embed_entities'] = array_values($entity['embed_entities']);
+  }
   return $entity;
 }
