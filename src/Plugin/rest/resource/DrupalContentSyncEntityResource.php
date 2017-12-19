@@ -2,9 +2,11 @@
 
 namespace Drupal\drupal_content_sync\Plugin\rest\resource;
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Entity\EntityTypeManager;
+use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\rest\Plugin\ResourceBase;
 use Drupal\Core\Render\Renderer;
 use Drupal\rest\ResourceResponse;
@@ -308,7 +310,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   A list of entities of the given type and bundle.
    */
   public function post($entity_type_name, $entity_bundle, $data) {
-    $is_clone = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
+     $is_clone = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
 
     $entity_types_keys = array_keys($entity_types);
@@ -324,13 +326,15 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         $entity_data[$entity_type->getKey('uuid')] = $data[$entity_type->getKey('uuid')];
       }
 
-      if ($entity_type_name == 'file') {
-        file_prepare_directory(\Drupal::service('file_system')->dirname($data['uri']), FILE_CREATE_DIRECTORY);
-        $entity = file_save_data(base64_decode($data['apiu_file_content']), $data['uri']);
-      } else {
-        $entity = $storage->create($entity_data);
+      if ($is_clone || !$this->entityRepository->loadEntityByUuid($entity_type_name, $data[$entity_type->getKey('uuid')])) {
+        if ($entity_type_name == 'file') {
+          file_prepare_directory(\Drupal::service('file_system')->dirname($data['uri']), FILE_CREATE_DIRECTORY);
+          $entity = file_save_data(base64_decode($data['apiu_file_content']), $data['uri']);
+        } else {
+          $entity = $storage->create($entity_data);
+        }
+        $this->setEntityValues($entity, $data, $is_clone);
       }
-      $this->setEntityValues($entity, $data, !$is_clone);
 
       $resource_response = new ResourceResponse($data);
 
@@ -348,57 +352,71 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     );
   }
 
-  private function setEntityValues($entity, $data, $set_synced = TRUE) {
+  private function setEntityValues(EntityInterface $entity, $data, $is_clone = FALSE) {
+    /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
     $entityFieldManager = \Drupal::service('entity_field.manager');
     $type = $entity->getEntityTypeId();
-    $bundle = method_exists($entity, 'getType') ? $entity->getType() : $type;
+    $bundle = $entity->bundle();
     $field_definitions = $entityFieldManager->getFieldDefinitions($type, $bundle);
 
-    $fields_to_ignore = ['nid', 'id', 'uuid', 'vid', 'field_drupal_content_synced', 'uri', 'apiu_file_content', 'apiu_translation'];
+    $fields_to_ignore = ['nid', 'id', 'uuid', 'vid', 'field_drupal_content_synced', 'uri', 'apiu_file_content', 'apiu_translation', 'revision_id'];
+
     $fields = array_diff(array_keys($field_definitions), $fields_to_ignore);
 
     foreach ($fields as $key) {
-      if (in_array($key, $fields_to_ignore)) {
-        continue;
-      }
-
       switch ($field_definitions[$key]->getType()) {
-        case 'text_with_summary':
-          if (isset($data[$key])) {
-            $entity->set($key, array(
-              'value' => $data[$key],
-              'summary' => $data[$key . '_summary'],
-              'format' => $data[$key . '_format'],
-            ));
-          }
-          break;
-
-        case 'image':
-          break;
-
+        case 'entity_reference_revisions':
         case 'entity_reference':
-          if (empty($data[$key . '_uuid']) || empty($data[$key . '_type'])) {
-            continue;
+          $reference_ids = [];
+          foreach ($data[$key] as $value) {
+            if (!isset($value['uuid'], $value['type'])) {
+              continue;
+            }
+
+            try {
+              $reference = $this->entityRepository->loadEntityByUuid($value['type'], $value['uuid']);
+              if ($reference) {
+                $reference_data = [
+                  'target_id' => $reference->id(),
+                ];
+
+                if ($reference instanceof RevisionableInterface) {
+                  $reference_data['target_revision_id'] = $reference->getRevisionId();
+                }
+
+                $reference_ids[] = $reference_data;
+              }
+            }
+            catch (\Exception $exception) {
+            }
+
+            $entity->set($key, $reference_ids);
+          }
+          break;
+
+        case 'file';
+        case 'image':
+          $file_ids = [];
+          foreach ($data[$key] as $value) {
+            file_prepare_directory(\Drupal::service('file_system')->dirname($value['file_uri']), FILE_CREATE_DIRECTORY);
+            $file = file_save_data(base64_decode($value['file_content']), $value['file_uri']);
+            $file->setPermanent();
+            $file->save();
+
+            $file_ids[] = $file->id();
           }
 
-          try {
-            $reference = $this->entityRepository->loadEntityByUuid($data[$key . '_type'], $data[$key . '_uuid']);
-            if ($reference) {
-              $entity->set($key, $reference->id());
-            }
-          }
-          catch (Exception $exception) {
-          }
+          $entity->set($key, $file_ids);
+
           break;
 
         default:
-          if (isset($data[$key])) {
-            $entity->set($key, $data[$key]);
-          }
+          $entity->set($key, $data[$key]);
+          break;
       }
     }
 
-    if ($set_synced) {
+    if (!$is_clone) {
       $entity->set('field_drupal_content_synced', TRUE);
     }
 

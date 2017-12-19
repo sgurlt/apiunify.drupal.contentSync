@@ -483,9 +483,31 @@ class DrupalContentSyncForm extends EntityForm {
     $entity_types = $this->entity->{'sync_entities'};
     foreach ($entity_types as $type) {
       if ($type['export'] == 1 || $type['preview'] != 'excluded') {
+        /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
         $fields = $this->entityFieldManager->getFieldDefinitions($type['entity_type'], $type['entity_bundle']);
 
-        $fields_to_ignore = ['id', 'nid', 'vid', 'type', 'path', 'revision_log', 'revision_translation_affected', 'menu_link', 'field_drupal_content_synced', 'field_media_id', 'field_media_connection_id', 'field_media', 'field_term_ref_id', 'field_term_ref_connection_id', 'field_term_ref', 'field_drupal_content_synced'];
+        $fields_to_ignore = [
+          'uuid',
+          'id',
+          'nid',
+          'vid',
+          'type',
+          'path',
+          'revision_log',
+          'revision_translation_affected',
+          'menu_link',
+          'field_drupal_content_synced',
+          'field_media_id',
+          'field_media_connection_id',
+          'field_media',
+          'field_term_ref_id',
+          'field_term_ref_connection_id',
+          'field_term_ref',
+          'field_drupal_content_synced',
+          'created',
+          'changed',
+          'title',
+        ];
 
         $entity_type = [
           'id' => 'drupal-' . $type['entity_type'] . '-' . $type['entity_bundle'] . '-' . $type['version_hash'],
@@ -546,6 +568,22 @@ class DrupalContentSyncForm extends EntityForm {
               'default_value' => NULL,
               'multiple' => TRUE,
             ],
+            'title' => [
+              'type' => 'string',
+              'default_value' => NULL,
+            ],
+            'created' => [
+              'type' => 'int',
+              'default_value' => NULL,
+            ],
+            'changed' => [
+              'type' => 'int',
+              'default_value' => NULL,
+            ],
+            'uuid' => [
+              'type' => 'string',
+              'default_value' => NULL,
+            ],
           ],
           'new_property_lists' => [
             'list' => [
@@ -566,6 +604,10 @@ class DrupalContentSyncForm extends EntityForm {
               'apiu_translation' => 'value',
               'metadata' => 'value',
               'embed_entities' => 'value',
+              'title' => 'value',
+              'created' => 'value',
+              'changed' => 'value',
+              'uuid' => 'value',
             ],
             'database' => [
               'id' => 'value',
@@ -576,6 +618,10 @@ class DrupalContentSyncForm extends EntityForm {
               'apiu_translation' => 'value',
               'metadata' => 'value',
               'embed_entities' => 'value',
+              'title' => 'value',
+              'created' => 'value',
+              'changed' => 'value',
+              'uuid' => 'value',
             ],
             'modifiable' => [
               'preview' => 'value',
@@ -584,7 +630,9 @@ class DrupalContentSyncForm extends EntityForm {
               'metadata' => 'value',
               'embed_entities' => 'value',
             ],
-            'required' => [],
+            'required' => [
+              'uuid' => 'value',
+            ],
           ],
           'api_id' => $this->entity->{'api'} . '-0.1',
         ];
@@ -618,152 +666,28 @@ class DrupalContentSyncForm extends EntityForm {
             continue;
           }
 
+          $entity_type['new_properties'][$key] = [
+            'type' => 'object',
+            'default_value' => NULL,
+            'multiple' => TRUE,
+          ];
+
+          $entity_type['new_property_lists']['details'][$key] = 'value';
+          $entity_type['new_property_lists']['database'][$key] = 'value';
+
+          if ($field->isRequired()) {
+            $entity_type['new_property_lists']['required'][$key] = 'value';
+          }
+
+          if (!$field->isReadOnly()) {
+            $entity_type['new_property_lists']['modifiable'][$key] = 'value';
+          }
+
           switch ($field->getType()) {
-            case 'integer':
-            case 'created':
-            case 'changed':
-              $field_type = 'int';
-              break;
-
-            case 'boolean':
-              $field_type = 'bool';
-              break;
-
-            case 'entity_reference':
-              $field_type = 'reference';
-              break;
-
-            case 'text_with_summary':
-              $field_type = 'text_with_summary';
-              break;
-
+            case 'file':
             case 'image':
-              $field_type = 'file';
+              $entity_type['new_property_lists']['filesystem'][$key] = 'value';
               break;
-
-            default:
-              $field_type = 'string';
-          }
-
-          if ($field_type == 'reference') {
-            $entity_type['new_properties'][$key . '_id'] = [
-              'type' => 'id',
-              'default_value' => NULL,
-            ];
-
-            $entity_type['new_properties'][$key . '_connection_id'] = [
-              'type' => 'id',
-              'default_value' => NULL,
-            ];
-
-            $entity_type['new_properties'][$key . '_uuid'] = [
-              'type' => 'string',
-              'default_value' => NULL,
-            ];
-
-            $entity_type['new_properties'][$key . '_type'] = [
-              'type' => 'string',
-              'default_value' => NULL,
-            ];
-
-            $entity_type['new_properties'][$key] = [
-              'type' => $field_type,
-              'default_value' => NULL,
-              'connection_identifiers' => [
-                [
-                  'properties' => [
-                    'id' => $key . '_connection_id',
-                  ],
-                ],
-              ],
-              'model_identifiers' => [
-                [
-                  'properties' => [
-                    'id' => $key . '_id',
-                  ],
-                ],
-              ],
-              'multiple' => FALSE,
-            ];
-
-            $entity_type['new_property_lists']['details'][$key] = 'reference';
-            $entity_type['new_property_lists']['details'][$key . '_uuid'] = 'value';
-            $entity_type['new_property_lists']['details'][$key . '_type'] = 'value';
-            $entity_type['new_property_lists']['database'][$key . '_id'] = 'value';
-            $entity_type['new_property_lists']['database'][$key . '_connection_id'] = 'value';
-            $entity_type['new_property_lists']['database'][$key . '_uuid'] = 'value';
-            $entity_type['new_property_lists']['database'][$key . '_type'] = 'value';
-
-            if ($field->isRequired()) {
-              $entity_type['new_property_lists']['required'][$key . '_id'] = 'value';
-              $entity_type['new_property_lists']['required'][$key . '_connection_id'] = 'value';
-              $entity_type['new_property_lists']['required'][$key . '_uuid'] = 'value';
-              $entity_type['new_property_lists']['required'][$key . '_type'] = 'value';
-            }
-
-            if (!$field->isReadOnly()) {
-              $entity_type['new_property_lists']['modifiable'][$key . '_id'] = 'value';
-              $entity_type['new_property_lists']['modifiable'][$key . '_connection_id'] = 'value';
-              $entity_type['new_property_lists']['modifiable'][$key . '_uuid'] = 'value';
-              $entity_type['new_property_lists']['modifiable'][$key . '_type'] = 'value';
-            }
-          }
-          elseif ($field_type == 'text_with_summary') {
-            $entity_type['new_properties'][$key] = [
-              'type' => 'string',
-              'default_value' => null,
-            ];
-            $entity_type['new_properties'][$key . '_summary'] = [
-              'type' => 'string',
-              'default_value' => null,
-            ];
-            $entity_type['new_properties'][$key . '_format'] = [
-              'type' => 'string',
-              'default_value' => null,
-            ];
-            $entity_type['new_property_lists']['details'][$key] = 'value';
-            $entity_type['new_property_lists']['details'][$key . '_summary'] = 'value';
-            $entity_type['new_property_lists']['details'][$key . '_format'] = 'value';
-            $entity_type['new_property_lists']['database'][$key] = 'value';
-            $entity_type['new_property_lists']['database'][$key . '_summary'] = 'value';
-            $entity_type['new_property_lists']['database'][$key . '_format'] = 'value';
-            if ($field->isRequired()) {
-              $entity_type['new_property_lists']['required'][$key] = 'value';
-            }
-            if (!$field->isReadOnly()) {
-              $entity_type['new_property_lists']['modifiable'][$key] = 'value';
-              $entity_type['new_property_lists']['modifiable'][$key . '_summary'] = 'value';
-              $entity_type['new_property_lists']['modifiable'][$key . '_format'] = 'value';
-            }
-          }
-          elseif ($field_type == 'file') {
-            //TODO
-            $entity_type['new_properties'][$key] = [
-              'type' => 'string',
-              'default_value' => null,
-            ];
-            $entity_type['new_property_lists']['details'][$key] = 'value';
-            $entity_type['new_property_lists']['filesystem'][$key] = 'value';
-            if ($field->isRequired()) {
-              $entity_type['new_property_lists']['required'][$key] = 'value';
-            }
-            if (!$field->isReadOnly()) {
-              $entity_type['new_property_lists']['modifiable'][$key] = 'value';
-            }
-          }
-          else {
-            $entity_type['new_properties'][$key] = [
-              'type' => $field_type,
-              'default_value' => null,
-            ];
-            $entity_type['new_property_lists']['details'][$key] = 'value';
-            $entity_type['new_property_lists']['database'][$key] = 'value';
-            if ($field->isRequired()) {
-              $entity_type['new_property_lists']['required'][$key] = 'value';
-            }
-            if (!$field->isReadOnly()) {
-              $entity_type['new_property_lists']['modifiable'][$key] = 'value';
-            }
           }
         }
 

@@ -6,8 +6,9 @@
  */
 
 use Drupal\Core\Render\RenderContext;
-use Drupal\Core\Field\FieldDefinitionInterface;
-use Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException;
+use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Field\FieldItemInterface;
+use Drupal\file\Entity\File;
 
 /**
  * @param $form
@@ -112,6 +113,7 @@ function drupal_content_sync_theme() {
 }
 
 function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle, $site_id = '', $file_content = false, $translation = false) {
+  /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
   $entityFieldManager = Drupal::service('entity_field.manager');
   $field_definitions = $entityFieldManager->getFieldDefinitions($entity_type, $bundle);
   $entityTypeManager = \Drupal::entityTypeManager();
@@ -121,87 +123,83 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
   ];
 
   $fields_to_ignore = ['type', 'path', 'field_drupal_content_synced', 'nid', 'vid', 'thumbnail'];
+
   foreach($original as $field_name => $field_value) {
-    if (in_array($field_name, $fields_to_ignore)) {
+    if (empty($field_definitions[$field_name]) || in_array($field_name, $fields_to_ignore) || empty($field_value)) {
       continue;
     }
-    $field_value = reset($field_value);
-    if (!is_array($field_value)) {
-      continue;
-    }
-    if (isset($field_value[0])) {
-      $field_value = $field_value[0]->getValue();
+
+    $field_definition = $field_definitions[$field_name];
+    if ($field_value instanceof FieldItemListInterface || $field_value instanceof FieldItemInterface) {
+      $field_value = $field_value->getValue();
     }
 
-    if ($field_value) {
-      $type = $field_name == 'type' ? 'type' : $field_definitions[$field_name]->getType();
-      switch ($type) {
-        case 'integer':
-        case 'created':
-        case 'changed':
-          $entity[$field_name] = $field_value['value'] * 1;
-          break;
+    switch ($field_definition->getType()) {
+      case 'entity_reference_revisions':
+      case 'entity_reference':
+        foreach ($field_value as $key => $value) {
+          $target_id = $value['target_id'];
 
-        case 'boolean':
-          $entity[$field_name] = $field_value['value'] == 1;
-          break;
-
-        case 'entity_reference':
-          $target_id = $field_value['target_id'] * 1;
-          $field_definition = $field_definitions[$field_name];
-
-          if ($field_definition && $entity_type != 'media' && $field_definition instanceof FieldDefinitionInterface) {
-            try {
-              $type = $field_definition->getTargetEntityTypeId();
-
-              $reference = $entityTypeManager->getStorage($type)->load($target_id);
-              if ($reference && $reference->uuid() != $original['uuid'][0]) {
-                $entity[$field_name . '_id'] = $target_id;
-                $entity[$field_name . '_connection_id'] = 'drupal_pool_' . $reference->bundle();
-                $entity[$field_name . '_type'] = $reference->getEntityTypeId();
-                $entity[$field_name . '_uuid'] = $reference->uuid();
-
-                $entity['embed_entities'][$entity[$field_name . '_uuid']] = [
-                  'uuid' => $entity[$field_name . '_uuid'],
-                  'connection_id' => 'drupal_pool_' . $reference->bundle(),
-                  'type' => $entity[$field_name . '_type'],
-                ];
-              }
-            }
-            catch (Exception $exception) {
-            }
+          // Workaround for paragraphs
+          if ($field_definition->getSetting('handler') == 'default:paragraph') {
+            $reference_type = 'paragraph';
           }
           else {
-            //TODO currently user references do not work
-            //$entity[$field_name] = 'field_not_goood Joe guckst du dir das bitte an?';
+            $reference_type = $field_definition->getTargetEntityTypeId();
           }
 
-          break;
+          $reference = $entityTypeManager->getStorage($reference_type)->load($target_id);
+          if ($reference && $reference->uuid() != $entity['uuid']) {
+            $uuid = $reference->uuid();
 
-        case 'text_with_summary':
-          $entity[$field_name] = $field_value['value'];
-          $entity[$field_name . '_summary'] = $field_value['summary'];
-          $entity[$field_name . '_format'] = $field_value['format'];
-          break;
+            $entity[$field_name][$key]['id'] = $target_id;
+            $entity[$field_name][$key]['connection_id'] = 'drupal_pool_' . $reference->bundle();
+            $entity[$field_name][$key]['type'] = $reference->getEntityTypeId();
+            $entity[$field_name][$key]['uuid'] = $uuid;
 
-        case 'type':
-          $entity[$field_name] = $field_value['target_id'];
-          break;
+            $entity['embed_entities'][$uuid] = [
+              'uuid' => $uuid,
+              'connection_id' => $entity[$field_name][$key]['connection_id'],
+              'type' => $entity[$field_name][$key]['type'],
+            ];
+          }
+        }
+        break;
 
-        case 'image':
-          $uri = \Drupal::entityTypeManager()->getStorage('file')->load($field_value['target_id'])->getFileUri();
-          $entity[$field_name] = base64_encode(file_get_contents($uri));
-          break;
+      case 'file':
+      case 'image':
+        foreach ($field_value as $key => $value) {
+          $file = File::load($value['target_id']);
+          if ($file) {
+            $uri = $file->getFileUri();
+            $entity[$field_name][$key] = $value;
+            $entity[$field_name][$key]['file_content'] = base64_encode(file_get_contents($uri));
+            $entity[$field_name][$key]['file_uri'] = $uri;
+            $entity[$field_name][$key]['file_name'] = $file->getFilename();
+          }
+        }
+        break;
 
-        case 'link':
-          $entity[$field_name] = $field_value['uri'];
-          break;
+      default:
+        $entity[$field_name] = $field_value;
 
-        default:
-          $entity[$field_name] = $field_value['value'];
-      }
+        if (is_array($field_value)) {
+          switch ($field_name) {
+            case 'title':
+            case 'uuid':
+              $entity[$field_name] = reset($field_value)['value'];
+              break;
+
+            case 'created':
+            case 'changed':
+              $entity[$field_name] = (int) reset($field_value)['value'];
+              break;
+          }
+        }
+        break;
     }
   }
+
   $entity['id'] = $entity['uuid'];
 
   if (is_array($original)) {
@@ -244,8 +242,12 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     $entity['title'] = $original->getFilename();
   }
 
-  if ($entity_type == 'block_content') {
-    $entity['title'] = $entity['info'];
+  if (empty($entity['title'])) {
+    $entity['title'] = $original->label();
+  }
+
+  if (empty($entity['created']) && !empty($entity['changed'])) {
+    $entity['created'] = $entity['changed'];
   }
 
   if (!$translation && method_exists($original, 'getTranslationLanguages') && method_exists($original, 'getTranslation')) {
@@ -259,5 +261,6 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
   if ($entity['embed_entities']) {
     $entity['embed_entities'] = array_values($entity['embed_entities']);
   }
+
   return $entity;
 }

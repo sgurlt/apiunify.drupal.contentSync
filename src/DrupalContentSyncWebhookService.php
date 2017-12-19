@@ -216,10 +216,5 @@ class DrupalContentSyncWebhookService extends WebhooksService {
       new SendEvent($webhook_config, $webhook)
     );
 
-    // Log the sent webhook.
-    $this->loggerFactory->get('webhooks')->info(
-      'Sent a Webhook: <code><pre>@webhook</pre></code>',
-      ['@webhook' => print_r($webhook, TRUE)]
-    );
   }
 }
