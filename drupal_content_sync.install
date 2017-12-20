@@ -21,3 +21,20 @@ function drupal_content_sync_install() {
   $user->addRole('drupal_content_sync');
   $result = $user->save();
 }
+
+/**
+ * Implements hook_uninstall().
+ */
+function drupal_content_sync_uninstall() {
+  /** @var \Drupal\user\Entity\User $user */
+  $user = user_load_by_name('Drupal Content Sync');
+  if ($user) {
+    $user->delete();
+  }
+
+  $config = \Drupal::configFactory();
+  $config->getEditable('rest.resource.drupal_content_sync_preview_resource')->delete();
+  $config->getEditable('rest.resource.drupal_content_sync_resource')->delete();
+  $config->getEditable('user.role.drupal_content_sync')->delete();
+  $config->getEditable('webhooks.webhook.webhook_drupal_content_sync_export')->delete();
+}
