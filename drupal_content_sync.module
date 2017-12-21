@@ -138,15 +138,12 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
       case 'entity_reference_revisions':
       case 'entity_reference':
         foreach ($field_value as $key => $value) {
-          $target_id = $value['target_id'];
+          if (empty($value['target_id'])) {
+            break;
+          }
 
-          // Workaround for paragraphs
-          if ($field_definition->getSetting('handler') == 'default:paragraph') {
-            $reference_type = 'paragraph';
-          }
-          else {
-            $reference_type = $field_definition->getTargetEntityTypeId();
-          }
+          $target_id = $value['target_id'];
+          $reference_type = $field_definition->getFieldStorageDefinition()->getPropertyDefinition('entity')->getTargetDefinition()->getEntityTypeId();
 
           $reference = $entityTypeManager->getStorage($reference_type)->load($target_id);
           if ($reference && $reference->uuid() != $entity['uuid']) {
