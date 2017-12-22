@@ -645,20 +645,6 @@ class DrupalContentSyncForm extends EntityForm {
           $entity_type['new_property_lists']['details']['apiu_file_content'] = 'value';
           $entity_type['new_property_lists']['filesystem']['apiu_file_content'] = 'value';
           $entity_type['new_property_lists']['required']['apiu_file_content'] = 'value';
-          $entity_type['new_properties']['title'] = [
-            'type' => 'string',
-            'default_value' => NULL,
-          ];
-          $entity_type['new_property_lists']['database']['title'] = 'value';
-        }
-
-        if (!isset($fields['title'])) {
-          $entity_type['new_properties']['title'] = [
-            'type' => 'string',
-            'default_value' => NULL,
-          ];
-
-          $entity_type['new_property_lists']['database']['title'] = 'value';
         }
 
         foreach ($fields as $key => $field) {

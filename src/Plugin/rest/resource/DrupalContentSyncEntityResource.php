@@ -7,6 +7,7 @@ use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Entity\RevisionableInterface;
+use Drupal\field_collection\Entity\FieldCollectionItem;
 use Drupal\rest\Plugin\ResourceBase;
 use Drupal\Core\Render\Renderer;
 use Drupal\rest\ResourceResponse;
@@ -359,7 +360,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     $bundle = $entity->bundle();
     $field_definitions = $entityFieldManager->getFieldDefinitions($type, $bundle);
 
-    $fields_to_ignore = ['nid', 'id', 'uuid', 'vid', 'field_drupal_content_synced', 'uri', 'apiu_file_content', 'apiu_translation', 'revision_id'];
+    $fields_to_ignore = ['tid', 'nid', 'id', 'uuid', 'vid', 'field_drupal_content_synced', 'uri', 'apiu_file_content', 'apiu_translation', 'revision_id'];
 
     $fields = array_diff(array_keys($field_definitions), $fields_to_ignore);
 
@@ -408,6 +409,21 @@ class DrupalContentSyncEntityResource extends ResourceBase {
 
           $entity->set($key, $file_ids);
 
+          break;
+
+        case 'field_collection':
+//          TODO: Uncomment and finish code below
+          // field_collection requires entity id.
+//          if (!$entity->id()) {
+//            $entity->save();
+//          }
+//
+//          $field_collections = [];
+//          foreach ($data[$key] as $value) {
+//            $field_collection_item = FieldCollectionItem::create($value);
+//            $field_collection_item->setHostEntity($entity);
+//            $field_collections[] = $field_collection_item;
+//          }
           break;
 
         default:

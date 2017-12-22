@@ -154,11 +154,13 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
             $entity[$field_name][$key]['type'] = $reference->getEntityTypeId();
             $entity[$field_name][$key]['uuid'] = $uuid;
 
-            $entity['embed_entities'][$uuid] = [
-              'uuid' => $uuid,
-              'connection_id' => $entity[$field_name][$key]['connection_id'],
-              'type' => $entity[$field_name][$key]['type'],
-            ];
+            if ($entity_type != 'field_collection_item') {
+              $entity['embed_entities'][$uuid] = [
+                'uuid' => $uuid,
+                'connection_id' => $entity[$field_name][$key]['connection_id'],
+                'type' => $entity[$field_name][$key]['type'],
+              ];
+            }
           }
         }
         break;
@@ -175,6 +177,33 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
             $entity[$field_name][$key]['file_name'] = $file->getFilename();
           }
         }
+        break;
+
+      case 'field_collection':
+        $entity[$field_name] = [];
+//        TODO: Uncomment and finish code below
+//        foreach ($field_value as $key => $value) {
+//          /** @var \Drupal\field_collection\FieldCollectionItemInterface $field_collection_item */
+//          $field_collection_item = $value['field_collection_item'];
+//          if (!$field_collection_item && !empty($value['value'])) {
+//            $field_collection_item = \Drupal\field_collection\Entity\FieldCollectionItem::load($value['value']);
+//            if (!$field_collection_item) {
+//              continue;
+//            }
+//          }
+//          else {
+//            continue;
+//          }
+//
+//          $field_collection_bundle = $field_collection_item->bundle();
+//          $field_collection_type = $field_collection_item->getEntityTypeId();
+//
+//          $entity[$field_name][$key] = _drupal_content_sync_preprocess_entity($field_collection_item, $field_collection_type, $field_collection_bundle, $site_id, $file_content, $translation);
+//          $entity[$field_name][$key]['type'] = $field_collection_bundle;
+//
+//          $entity['embed_entities'] = array_merge($entity['embed_entities'], $entity[$field_name][$key]['embed_entities']);
+//          unset($entity[$field_name][$key]['embed_entities']);
+//        }
         break;
 
       default:
@@ -239,7 +268,8 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     $entity['title'] = $original->getFilename();
   }
 
-  if (empty($entity['title'])) {
+  // field_collection_item throws some exception when label() function is triggered.
+  if (empty($entity['title']) && $entity_type != 'field_collection_item') {
     $entity['title'] = $original->label();
   }
 
