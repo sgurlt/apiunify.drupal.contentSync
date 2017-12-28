@@ -327,10 +327,19 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         $entity_data[$entity_type->getKey('uuid')] = $data[$entity_type->getKey('uuid')];
       }
 
-      if ($is_clone || !$this->entityRepository->loadEntityByUuid($entity_type_name, $data[$entity_type->getKey('uuid')])) {
+      $uuid = $data[$entity_type->getKey('uuid')];
+
+      if ($is_clone || !$this->entityRepository->loadEntityByUuid($entity_type_name, $uuid)) {
         if ($entity_type_name == 'file') {
-          file_prepare_directory(\Drupal::service('file_system')->dirname($data['uri']), FILE_CREATE_DIRECTORY);
-          $entity = file_save_data(base64_decode($data['apiu_file_content']), $data['uri']);
+          if (!empty($data['uri'][0]['value'])) {
+            $data['uri'] = $data['uri'][0]['value'];
+          }
+
+          $was_prepared = file_prepare_directory(\Drupal::service('file_system')->dirname($data['uri']), FILE_CREATE_DIRECTORY);
+
+          if ($was_prepared && !empty($data['apiu_file_content'])) {
+            $entity = file_save_data(base64_decode($data['apiu_file_content']), $data['uri']);
+          }
         } else {
           $entity = $storage->create($entity_data);
         }

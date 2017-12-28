@@ -262,10 +262,18 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
   if ($entity_type == 'file' && $file_content) {
     if (method_exists($original, 'getFileUri')) {
       $uri = $original->getFileUri();
-      $entity['apiu_file_content'] = base64_encode(file_get_contents($uri));
-      $entity['preview'] = '<img style="max-height: 200px" src="'.file_create_url($uri).'"/>';
+
+      if (file_exists($uri)) {
+        $apiu_file_content = file_get_contents($uri);
+
+        if (FALSE !== $apiu_file_content) {
+          $entity['apiu_file_content'] = base64_encode($apiu_file_content);
+          $entity['preview'] = '<img style="max-height: 200px" src="' . file_create_url($uri) . '"/>';
+
+          $entity['title'] = $original->getFilename();
+        }
+      }
     }
-    $entity['title'] = $original->getFilename();
   }
 
   // field_collection_item throws some exception when label() function is triggered.
