@@ -181,29 +181,29 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
 
       case 'field_collection':
         $entity[$field_name] = [];
-//        TODO: Uncomment and finish code below
-//        foreach ($field_value as $key => $value) {
-//          /** @var \Drupal\field_collection\FieldCollectionItemInterface $field_collection_item */
-//          $field_collection_item = $value['field_collection_item'];
-//          if (!$field_collection_item && !empty($value['value'])) {
-//            $field_collection_item = \Drupal\field_collection\Entity\FieldCollectionItem::load($value['value']);
-//            if (!$field_collection_item) {
-//              continue;
-//            }
-//          }
-//          else {
-//            continue;
-//          }
-//
-//          $field_collection_bundle = $field_collection_item->bundle();
-//          $field_collection_type = $field_collection_item->getEntityTypeId();
-//
-//          $entity[$field_name][$key] = _drupal_content_sync_preprocess_entity($field_collection_item, $field_collection_type, $field_collection_bundle, $site_id, $file_content, $translation);
-//          $entity[$field_name][$key]['type'] = $field_collection_bundle;
-//
-//          $entity['embed_entities'] = array_merge($entity['embed_entities'], $entity[$field_name][$key]['embed_entities']);
-//          unset($entity[$field_name][$key]['embed_entities']);
-//        }
+
+        foreach ($field_value as $key => $value) {
+          /** @var \Drupal\field_collection\FieldCollectionItemInterface $field_collection_item */
+          $field_collection_item = $value['field_collection_item'];
+          if (!$field_collection_item && !empty($value['value'])) {
+            $field_collection_item = \Drupal\field_collection\Entity\FieldCollectionItem::load($value['value']);
+            if (!$field_collection_item) {
+              continue;
+            }
+          }
+          else {
+            continue;
+          }
+
+          $field_collection_bundle = $field_collection_item->bundle();
+          $field_collection_type = $field_collection_item->getEntityTypeId();
+
+          $entity[$field_name][$key] = _drupal_content_sync_preprocess_entity($field_collection_item, $field_collection_type, $field_collection_bundle, $site_id, $file_content, $translation);
+          $entity[$field_name][$key]['type'] = $field_collection_bundle;
+
+          $entity['embed_entities'] = array_merge($entity['embed_entities'], $entity[$field_name][$key]['embed_entities']);
+          unset($entity[$field_name][$key]['embed_entities']);
+        }
         break;
 
       default:
@@ -276,9 +276,15 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     }
   }
 
-  // field_collection_item throws some exception when label() function is triggered.
-  if (empty($entity['title']) && $entity_type != 'field_collection_item') {
-    $entity['title'] = $original->label();
+  if (empty($entity['title'])) {
+    if ('field_collection_item' == $entity_type) {
+      $entity['title'] = t('Field collection: @item_id', [
+        '@item_id' => $original->get('item_id')->getString(),
+      ]);
+    }
+    else {
+      $entity['title'] = $original->label();
+    }
   }
 
   if (empty($entity['created']) && !empty($entity['changed'])) {

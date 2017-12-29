@@ -369,7 +369,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     $bundle = $entity->bundle();
     $field_definitions = $entityFieldManager->getFieldDefinitions($type, $bundle);
 
-    $fields_to_ignore = ['tid', 'nid', 'id', 'uuid', 'vid', 'field_drupal_content_synced', 'uri', 'apiu_file_content', 'apiu_translation', 'revision_id'];
+    $fields_to_ignore = ['item_id', 'tid', 'nid', 'id', 'uuid', 'vid', 'field_drupal_content_synced', 'uri', 'apiu_file_content', 'apiu_translation', 'revision_id'];
 
     $fields = array_diff(array_keys($field_definitions), $fields_to_ignore);
 
@@ -421,18 +421,30 @@ class DrupalContentSyncEntityResource extends ResourceBase {
           break;
 
         case 'field_collection':
-//          TODO: Uncomment and finish code below
-          // field_collection requires entity id.
-//          if (!$entity->id()) {
-//            $entity->save();
-//          }
-//
-//          $field_collections = [];
-//          foreach ($data[$key] as $value) {
-//            $field_collection_item = FieldCollectionItem::create($value);
-//            $field_collection_item->setHostEntity($entity);
-//            $field_collections[] = $field_collection_item;
-//          }
+          if (!$entity->id()) {
+            $entity->save();
+          }
+
+          foreach ($data[$key] as $items) {
+            $fc = FieldCollectionItem::create(['field_name' => 'field_fc_teaser']);
+
+            $original_fields = $fc->getFields();
+
+            foreach ($items as $item_key => $item_value) {
+              if (!in_array($item_key, $fields_to_ignore)) {
+                if (array_key_exists($item_key, $original_fields)) {
+                  $text_value = reset($item_value)['value'];
+
+                  if (!empty($text_value)) {
+                    $fc->$item_key->setValue($text_value);
+                  }
+                }
+              }
+            }
+
+            $fc->setHostEntity($entity);
+            $fc->save();
+          }
           break;
 
         default:
