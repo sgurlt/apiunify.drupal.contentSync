@@ -122,7 +122,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     'embed_entities' => [],
   ];
 
-  $fields_to_ignore = ['type', 'path', 'field_drupal_content_synced', 'nid', 'vid', 'thumbnail'];
+  $fields_to_ignore = ['type', 'path', 'field_name', 'field_drupal_content_synced', 'nid', 'vid', 'thumbnail'];
 
   foreach($original as $field_name => $field_value) {
     if (empty($field_definitions[$field_name]) || in_array($field_name, $fields_to_ignore) || empty($field_value)) {
@@ -154,7 +154,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
             $entity[$field_name][$key]['type'] = $reference->getEntityTypeId();
             $entity[$field_name][$key]['uuid'] = $uuid;
 
-            if ($entity_type != 'field_collection_item') {
+            if ($field_definition->getType() != 'field_collection') {
               $entity['embed_entities'][$uuid] = [
                 'uuid' => $uuid,
                 'connection_id' => $entity[$field_name][$key]['connection_id'],

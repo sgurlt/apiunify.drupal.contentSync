@@ -369,7 +369,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     $bundle = $entity->bundle();
     $field_definitions = $entityFieldManager->getFieldDefinitions($type, $bundle);
 
-    $fields_to_ignore = ['item_id', 'tid', 'nid', 'id', 'uuid', 'vid', 'field_drupal_content_synced', 'uri', 'apiu_file_content', 'apiu_translation', 'revision_id'];
+    $fields_to_ignore = ['item_id', 'field_name', 'tid', 'nid', 'id', 'uuid', 'vid', 'field_drupal_content_synced', 'uri', 'apiu_file_content', 'apiu_translation', 'revision_id'];
 
     $fields = array_diff(array_keys($field_definitions), $fields_to_ignore);
 
@@ -433,17 +433,33 @@ class DrupalContentSyncEntityResource extends ResourceBase {
             foreach ($items as $item_key => $item_value) {
               if (!in_array($item_key, $fields_to_ignore)) {
                 if (array_key_exists($item_key, $original_fields)) {
-                  $text_value = reset($item_value)['value'];
+                  $fc_value = reset($item_value);
 
-                  if (!empty($text_value)) {
-                    $fc->$item_key->setValue($text_value);
+                  if (isset($fc_value['type'], $fc_value['uuid']))
+                  try {
+                    $reference = $this->entityRepository->loadEntityByUuid($fc_value['type'], $fc_value['uuid']);
+
+                    if ($reference) {
+                      $reference_data = [
+                        'target_id' => $reference->id(),
+                      ];
+
+                      if ($reference instanceof RevisionableInterface) {
+                        $reference_data['target_revision_id'] = $reference->getRevisionId();
+                      }
+
+                      $fc_value = [$reference_data];
+                    }
                   }
+                  catch (\Exception $exception) {
+                  }
+
+                  $fc->$item_key->setValue($fc_value);
                 }
               }
             }
 
             $fc->setHostEntity($entity);
-            $fc->save();
           }
           break;
 
