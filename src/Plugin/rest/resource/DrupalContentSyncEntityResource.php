@@ -223,6 +223,10 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   A list of entities of the given type and bundle.
    */
   public function patch($entity_type, $entity_bundle, $entity_uuid, $data) {
+    if (!$this->isSyncAllowed($entity_type, $entity_bundle, $data)) {
+      return $resource_response = new ResourceResponse($data);
+    }
+
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
 
     $entity_types_keys = array_keys($entity_types);
@@ -311,7 +315,11 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   A list of entities of the given type and bundle.
    */
   public function post($entity_type_name, $entity_bundle, $data) {
-     $is_clone = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
+    if (!$this->isSyncAllowed($entity_type_name, $entity_bundle, $data)) {
+      return $resource_response = new ResourceResponse($data);
+    }
+
+    $is_clone = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
 
     $entity_types_keys = array_keys($entity_types);
@@ -486,4 +494,24 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       }
     }
   }
+
+  /**
+   * Responds to entity POST requests.
+   *
+   * @param string $entity_type_name
+   *   The name of an entity type.
+   * @param string $entity_bundle
+   *   The name of an entity bundle.
+   * @param array $data
+   *   The data to be stored in the entity.
+   *
+   * @return bool
+   *   A list of entities of the given type and bundle.
+   */
+  protected function isSyncAllowed($entity_type_name, $entity_bundle, $data) {
+    $hook_args = [$entity_type_name, $entity_bundle, $data];
+    $is_allowed = \Drupal::moduleHandler()->invokeAll('drupal_content_sync_is_sync_allowed', $hook_args);
+    return !in_array(FALSE, $is_allowed, TRUE);
+  }
+
 }
