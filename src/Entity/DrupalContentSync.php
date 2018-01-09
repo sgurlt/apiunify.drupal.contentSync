@@ -98,12 +98,21 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     try {
       $client->get($url . '/status');
 
-      //Create the API entity
+      // Create "drupal" API entity.
+      $client->post($url . '/api_unify-api_unify-api-0_1', [
+        'json' => [
+          'id' => 'drupal-0.1',
+          'name' => 'drupal',
+          'version' => '0.1',
+        ],
+      ]);
+      // Create the child entity.
       $client->post($url . '/api_unify-api_unify-api-0_1', [
         'json' => [
           'id' => $this->entity->{'api'} . '-0.1',
           'name' => $this->entity->{'api'},
           'version' => '0.1',
+          'parent_id' => 'drupal-0.1',
         ],
       ]);
 
