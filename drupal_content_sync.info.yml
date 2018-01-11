@@ -10,3 +10,5 @@ dependencies:
   - basic_auth
   - config_ignore
   - webhooks
+  - encrypt
+  - real_aes
