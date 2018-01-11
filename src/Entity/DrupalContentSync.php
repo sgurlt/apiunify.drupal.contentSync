@@ -419,7 +419,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             throw new \Exception(t("No credentials for sync user found."));
           }
 
-          $encryption_profile = EncryptionProfile::load('test_profile');
+          $encryption_profile = EncryptionProfile::load(DRUPAL_CONTENT_SYNC_PROFILE_NAME);
 
           foreach ($data as $key => $value) {
             $data[$key] = \Drupal::service('encryption')

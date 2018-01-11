@@ -9,17 +9,68 @@ use Drupal\Core\Render\RenderContext;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FieldItemInterface;
 use Drupal\file\Entity\File;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\encrypt\Entity\EncryptionProfile;
 
 define('DRUPAL_CONTENT_SYNC_EMAIL', 'developer@brightsolutions.de');
+define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'test_profile');
 
 /**
  * @param $form
  * @param \Drupal\Core\Form\FormStateInterface $form_state
  * @param $form_id
  */
-function drupal_content_sync_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  switch ($form_id) {
+    case 'user_form':
+      $form['actions']['submit']['#submit'][] = 'drupal_content_sync_user_password_submit';
+      break;
+  }
+
   _drupal_content_sync_form_alter_disabled_fields($form, $form_state, $form_id);
   _drupal_content_sync_form_alter_override_webhook_events($form, $form_state, $form_id);
+}
+
+/**
+ *
+ */
+function drupal_content_sync_user_password_submit(&$form, FormStateInterface $form_state) {
+  $mail = $form_state->getValue('mail');
+
+  if (DRUPAL_CONTENT_SYNC_EMAIL == $mail) {
+    $encryption_profile = EncryptionProfile::load(DRUPAL_CONTENT_SYNC_PROFILE_NAME);
+
+    $new_data = [
+      'userName' => $form_state->getValue('name'),
+      'userPass' => $form_state->getValue('pass'),
+    ];
+
+    // If password wasn't changed then value will be empty and we don't need it.
+    $new_data = array_filter($new_data);
+    $new_data = drupal_content_sync_encrypt_values($new_data);
+
+    $userId   = $form_state->getValue('uid');
+    $userData = \Drupal::service('user.data');
+
+    $old_data = $userData->get('drupal_content_sync', $userId, 'sync_data');
+    $new_data = array_replace($old_data, $new_data);
+
+    $userData->set('drupal_content_sync', $userId, 'sync_data', $new_data);
+  }
+}
+
+/**
+ *
+ */
+function drupal_content_sync_encrypt_values(array $values) {
+  $encryption_profile = EncryptionProfile::load(DRUPAL_CONTENT_SYNC_PROFILE_NAME);
+
+  foreach ($values as $key => $value) {
+    $values[$key] = \Drupal::service('encryption')
+      ->encrypt($value, $encryption_profile);
+  }
+
+  return $values;
 }
 
 /**

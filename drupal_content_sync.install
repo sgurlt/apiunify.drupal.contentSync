@@ -6,7 +6,6 @@
  */
 
 use Drupal\user\Entity\User;
-use Drupal\encrypt\Entity\EncryptionProfile;
 
 /**
  * Implements hook_install()
@@ -25,15 +24,11 @@ function drupal_content_sync_install() {
   $user->enforceIsNew();
   $user->activate();
   $user->addRole('drupal_content_sync');
-  $result = $user->save();
+  $user->save();
 
-  $encryption_profile = EncryptionProfile::load('test_profile');
-
-  foreach ($data as $key => $value) {
-    $data[$key] = \Drupal::service('encryption')->encrypt($value, $encryption_profile);
-  }
-
+  $data     = drupal_content_sync_encrypt_values($data);
   $userData = \Drupal::service('user.data');
+
   $userData->set('drupal_content_sync', $user->id(), 'sync_data', $data);
 }
 
@@ -44,18 +39,15 @@ function drupal_content_sync_update_8001(&$sandbox) {
   $user = user_load_by_mail(DRUPAL_CONTENT_SYNC_EMAIL);
 
   if (!empty($user)) {
-    $encryption_profile = EncryptionProfile::load('test_profile');
-    $userData           = \Drupal::service('user.data');
-    $password           = user_password();
+    $userData = \Drupal::service('user.data');
+    $password = user_password();
 
     $data = [
       'userName' => $user->getUsername(),
       'userPass' => $password,
     ];
 
-    foreach ($data as $key => $value) {
-      $data[$key] = \Drupal::service('encryption')->encrypt($value, $encryption_profile);
-    }
+    $data = drupal_content_sync_encrypt_values($data);
 
     $userData->set('drupal_content_sync', $user->id(), 'sync_data', $data);
     $user->setPassword($password);
