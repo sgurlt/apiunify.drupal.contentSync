@@ -10,6 +10,8 @@ use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FieldItemInterface;
 use Drupal\file\Entity\File;
 
+define('DRUPAL_CONTENT_SYNC_EMAIL', 'developer@brightsolutions.de');
+
 /**
  * @param $form
  * @param \Drupal\Core\Form\FormStateInterface $form_state
