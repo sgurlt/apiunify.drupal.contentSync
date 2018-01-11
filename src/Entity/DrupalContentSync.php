@@ -5,6 +5,8 @@ namespace Drupal\drupal_content_sync\Entity;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityFieldManager;
+use Drupal\encrypt\Entity\EncryptionProfile;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Defines the DrupalContentSync entity.
@@ -401,6 +403,29 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             ],
           ]);
 
+          $user = user_load_by_mail(DRUPAL_CONTENT_SYNC_EMAIL);
+
+          if (!$user) {
+            throw new \Exception(
+              t("No user found with email: @email. Encrypted data can't be saved",
+                ['@email' => DRUPAL_CONTENT_SYNC_EMAIL])
+            );
+          }
+
+          $userData = \Drupal::service('user.data');
+          $data     = $userData->get('drupal_content_sync', $user->id(), 'sync_data');
+
+          if (!$data) {
+            throw new \Exception(t("No credentials for sync user found."));
+          }
+
+          $encryption_profile = EncryptionProfile::load('test_profile');
+
+          foreach ($data as $key => $value) {
+            $data[$key] = \Drupal::service('encryption')
+              ->decrypt($value, $encryption_profile);
+          }
+
           //Create the instance connection entity for this entity type
           $client->post($url . '/api_unify-api_unify-connection-0_1', [
             'json' => [
@@ -415,8 +440,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
                 'pull_interval' => 86400000,
                 'authentication' => [
                   'type' => 'drupal8_services',
-                  'username' => 'Drupal Content Sync',
-                  'password' => 'Drupal Content Sync',
+                  'username' => $data['userName'],
+                  'password' => $data['userPass'],
                   'base_url' => $base_url,
                 ],
                 'crud' => [

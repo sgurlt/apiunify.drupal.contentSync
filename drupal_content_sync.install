@@ -6,20 +6,67 @@
  */
 
 use Drupal\user\Entity\User;
+use Drupal\encrypt\Entity\EncryptionProfile;
 
 /**
  * Implements hook_install()
  * Creates the Drupal Content Sync user and provides him with needed permissions
  */
 function drupal_content_sync_install() {
+  $data = [
+    'userName' => 'Drupal Content Sync-' . user_password(),
+    'userPass' => user_password(),
+  ];
+
   $user = User::create();
-  $user->setUsername('Drupal Content Sync');
-  $user->setPassword('Drupal Content Sync');
-  $user->setEmail('developer@brightsolutions.de');
+  $user->setUsername($data['userName']);
+  $user->setPassword($data['userPass']);
+  $user->setEmail(DRUPAL_CONTENT_SYNC_EMAIL);
   $user->enforceIsNew();
   $user->activate();
   $user->addRole('drupal_content_sync');
   $result = $user->save();
+
+  $encryption_profile = EncryptionProfile::load('test_profile');
+
+  foreach ($data as $key => $value) {
+    $data[$key] = \Drupal::service('encryption')->encrypt($value, $encryption_profile);
+  }
+
+  $userData = \Drupal::service('user.data');
+  $userData->set('drupal_content_sync', $user->id(), 'sync_data', $data);
+}
+
+/**
+ * Generates and encrypts random password for 'Drupal Content Sync' user.
+ */
+function drupal_content_sync_update_8001(&$sandbox) {
+  $user = user_load_by_mail(DRUPAL_CONTENT_SYNC_EMAIL);
+
+  if (!empty($user)) {
+    $encryption_profile = EncryptionProfile::load('test_profile');
+    $userData           = \Drupal::service('user.data');
+    $password           = user_password();
+
+    $data = [
+      'userName' => $user->getUsername(),
+      'userPass' => $password,
+    ];
+
+    foreach ($data as $key => $value) {
+      $data[$key] = \Drupal::service('encryption')->encrypt($value, $encryption_profile);
+    }
+
+    $userData->set('drupal_content_sync', $user->id(), 'sync_data', $data);
+    $user->setPassword($password);
+    $user->save();
+  }
+  else {
+    throw new \Exception(
+      t("No user found with email: @email. Encrypted data can't be saved",
+      ['@email' => DRUPAL_CONTENT_SYNC_EMAIL])
+    );
+  }
 }
 
 /**
@@ -27,7 +74,7 @@ function drupal_content_sync_install() {
  */
 function drupal_content_sync_uninstall() {
   /** @var \Drupal\user\Entity\User $user */
-  $user = user_load_by_name('Drupal Content Sync');
+  $user = user_load_by_mail(DRUPAL_CONTENT_SYNC_EMAIL);
   if ($user) {
     $user->delete();
   }
