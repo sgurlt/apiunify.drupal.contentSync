@@ -13,7 +13,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\encrypt\Entity\EncryptionProfile;
 
 define('DRUPAL_CONTENT_SYNC_EMAIL', 'developer@brightsolutions.de');
-define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'test_profile');
+define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
 
 /**
  * @param $form

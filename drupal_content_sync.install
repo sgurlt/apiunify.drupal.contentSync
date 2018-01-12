@@ -72,6 +72,8 @@ function drupal_content_sync_uninstall() {
   }
 
   $config = \Drupal::configFactory();
+  $config->getEditable('encrypt.profile.drupal_content_sync.yml')->delete();
+  $config->getEditable('key.key.drupal_content_sync.yml')->delete();
   $config->getEditable('rest.resource.drupal_content_sync_preview_resource')->delete();
   $config->getEditable('rest.resource.drupal_content_sync_resource')->delete();
   $config->getEditable('user.role.drupal_content_sync')->delete();
