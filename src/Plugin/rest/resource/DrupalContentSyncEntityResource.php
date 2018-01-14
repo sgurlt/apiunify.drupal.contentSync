@@ -8,6 +8,7 @@ use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\field_collection\Entity\FieldCollectionItem;
+use Drupal\rest\ModifiedResourceResponse;
 use Drupal\rest\Plugin\ResourceBase;
 use Drupal\Core\Render\Renderer;
 use Drupal\rest\ResourceResponse;
@@ -186,16 +187,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         $entities = $entities[0];
       }
 
-      $resource_response = new ResourceResponse($entities);
-
-      $cache_build = [
-        '#cache' => [
-          'max-age' => 0,
-        ],
-      ];
-      $resource_response->addCacheableDependency($cache_build);
-
-      return $resource_response;
+      return new ModifiedResourceResponse($entities);
     }
 
     return new ResourceResponse(
@@ -219,12 +211,12 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @param $data array
    *   The data to be stored in the entity.
    *
-   * @return \Drupal\rest\ResourceResponse
+   * @return Response
    *   A list of entities of the given type and bundle.
    */
   public function patch($entity_type, $entity_bundle, $entity_uuid, $data) {
     if (!$this->isSyncAllowed($entity_type, $entity_bundle, $data)) {
-      return $resource_response = new ResourceResponse($data);
+      return new ModifiedResourceResponse($data);
     }
 
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
@@ -244,15 +236,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         $entity = NULL;
       }
 
-      $resource_response = new ResourceResponse($entity);
-
-      $cache_build = [
-        '#cache' => [
-          'max-age' => 0,
-        ],
-      ];
-      $resource_response->addCacheableDependency($cache_build);
-      return $resource_response;
+      return new ModifiedResourceResponse($data);
     }
 
   }
@@ -311,12 +295,12 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @param $data array
    *   The data to be stored in the entity.
    *
-   * @return \Drupal\rest\ResourceResponse
+   * @return Response
    *   A list of entities of the given type and bundle.
    */
   public function post($entity_type_name, $entity_bundle, $data) {
     if (!$this->isSyncAllowed($entity_type_name, $entity_bundle, $data)) {
-      return $resource_response = new ResourceResponse($data);
+      return new ModifiedResourceResponse($data);
     }
 
     $is_clone = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
@@ -354,15 +338,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         }
       }
 
-      $resource_response = new ResourceResponse($data);
-
-      $cache_build = [
-        '#cache' => [
-          'max-age' => 0,
-        ],
-      ];
-      $resource_response->addCacheableDependency($cache_build);
-      return $resource_response;
+      return new ModifiedResourceResponse($data);
     }
 
     return new ResourceResponse(
@@ -385,6 +361,10 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       switch ($field_definitions[$key]->getType()) {
         case 'entity_reference_revisions':
         case 'entity_reference':
+          if (empty($data[$key]) || !is_array($data[$key])) {
+            break;
+          }
+
           $reference_ids = [];
           foreach ($data[$key] as $value) {
             if (!isset($value['uuid'], $value['type'])) {
@@ -477,7 +457,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       }
     }
 
-    if (!$is_clone) {
+    if (!$is_clone && $entity->hasField('field_drupal_content_synced')) {
       $entity->set('field_drupal_content_synced', TRUE);
     }
 
