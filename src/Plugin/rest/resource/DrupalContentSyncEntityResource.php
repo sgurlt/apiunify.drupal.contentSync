@@ -156,6 +156,11 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       if (!empty($entity_uuid)) {
         $query->condition('uuid', $entity_uuid);
       }
+
+      if ($entity_type == 'file') {
+        $query->condition('status', FILE_STATUS_PERMANENT);
+      }
+
       $entity_ids = array_values($query->execute());
 
       $entities = array_values(\Drupal::entityTypeManager()->getStorage($entity_type)->loadMultiple($entity_ids));
@@ -177,9 +182,6 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       }
 
       foreach($entities as &$entity) {
-        if ($entity_type == 'file' && $entity->isTemporary()) {
-          continue;
-        }
         $entity = _drupal_content_sync_preprocess_entity($entity, $entity_type, $entity_bundle, $site_id, true);
       }
 
