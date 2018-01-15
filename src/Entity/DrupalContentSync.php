@@ -57,6 +57,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    */
   public $sync_entities;
 
+  protected $client;
   protected $entity;
   protected $entityFieldManager;
 
@@ -93,15 +94,15 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @return bool
    */
   protected function initialize() {
-    $url = $this->entity->{'url'};
-    $client = \Drupal::httpClient();
+    $url          = $this->entity->{'url'};
+    $this->client = \Drupal::httpClient();
 
     //Check if a connection to Drupal Content Sync can be established
     try {
-      $client->get($url . '/status');
+      $this->client->get($url . '/status');
 
       // Create "drupal" API entity.
-      $client->post($url . '/api_unify-api_unify-api-0_1', [
+      $this->sendEntityRequest($url . '/api_unify-api_unify-api-0_1', [
         'json' => [
           'id' => 'drupal-0.1',
           'name' => 'drupal',
@@ -109,7 +110,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         ],
       ]);
       // Create the child entity.
-      $client->post($url . '/api_unify-api_unify-api-0_1', [
+      $this->sendEntityRequest($url . '/api_unify-api_unify-api-0_1', [
         'json' => [
           'id' => $this->entity->{'api'} . '-0.1',
           'name' => $this->entity->{'api'},
@@ -119,7 +120,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       ]);
 
       //Create the instance entity
-      $client->post($url . '/api_unify-api_unify-instance-0_1', [
+      $this->sendEntityRequest($url . '/api_unify-api_unify-instance-0_1', [
         'json' => [
           'id' => $this->entity->{'site_id'},
           'api_id' => $this->entity->{'api'} . '-0.1',
@@ -127,7 +128,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       ]);
 
       //Create the preview connection entity
-      $client->post($url . '/api_unify-api_unify-connection-0_1', [
+      $this->sendEntityRequest($url . '/api_unify-api_unify-connection-0_1', [
         'json' => [
           'id' => 'drupal_drupal-content-sync_preview',
           'name' => 'Drupal preview connection',
@@ -145,7 +146,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       ]);
 
       $this->createEntityTypes();
-    } catch (RequestException $e) {
+    }
+    catch (RequestException $e) {
       drupal_set_message($e->getMessage(), 'error');
       return FALSE;
     }
@@ -155,7 +157,6 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   protected function createEntityTypes() {
     global $base_url;
     $url = $this->entity->{'url'};
-    $client = \Drupal::httpClient();
     $localConnections = [];
 
     $sync_entities = $this->entity->sync_entities;
@@ -361,12 +362,12 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
         try {
           //Create the entity type
-          $client->post($url . '/api_unify-api_unify-entity_type-0_1', [
+          $this->sendEntityRequest($url . '/api_unify-api_unify-entity_type-0_1', [
             'json' => $entity_type,
           ]);
 
           //Create the pool connection entity for this entity type
-          $client->post($url . '/api_unify-api_unify-connection-0_1', [
+          $this->sendEntityRequest($url . '/api_unify-api_unify-connection-0_1', [
             'json' => [
               'id' => 'drupal_pool_' . $entity_type['name'],
               'name' => 'Drupal pool connection for ' . $entity_type['name'],
@@ -384,7 +385,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           ]);
 
           //Create a synchronization from the pool to the preview connection
-          $client->post($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
+          $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
             'json' => [
               'id' => 'drupal_pool_' . $entity_type['id'] . '_synchronization_to_preview',
               'name' => 'Synchronization Pool ' . $entity_type['name'] . ' -> Preview',
@@ -427,7 +428,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           }
 
           //Create the instance connection entity for this entity type
-          $client->post($url . '/api_unify-api_unify-connection-0_1', [
+          $this->sendEntityRequest($url . '/api_unify-api_unify-connection-0_1', [
             'json' => [
               'id' => 'drupal_' . $this->entity->{'site_id'} . '_' . $entity_type['name'],
               'name' => 'Drupal connection on ' . $this->entity->{'site_id'} . ' for ' . $entity_type['name'],
@@ -465,7 +466,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           $localConnections[] = 'drupal_' . $this->entity->{'site_id'} . '_' . $entity_type['name'];
 
           //Create a synchronization from the pool to the local connection
-          $client->post($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
+          $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
             'json' => [
               'id' => 'drupal_' . $this->entity->{'site_id'} . '_' . $entity_type['id'] . '_synchronization_to_drupal',
               'name' => 'Synchronization for ' . $entity_type['name'] . ' from Pool -> ' . $this->entity->{'site_id'},
@@ -485,7 +486,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           ]);
 
           if ($type['export'] == 1) {
-            $client->post($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
+            $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
               'json' => [
                 'id' => 'drupal_' . $this->entity->{'site_id'} . '_' . $entity_type['id'] . '_synchronization_to_pool',
                 'name' => 'Synchronization for ' . $entity_type['name'] . ' from ' . $this->entity->{'site_id'} . ' -> Pool',
@@ -514,4 +515,58 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $config = $this->entity;
     $config->{'local_connections'} = json_encode($localConnections);
   }
+
+  /**
+   * @param $url
+   * @param $arguments
+   *
+   * @return bool
+   */
+  protected function sendEntityRequest($url, $arguments) {
+    $result = FALSE;
+
+    if (!empty($arguments['json']['id'])) {
+      $entityId = $arguments['json']['id'];
+      $method   = $this->checkEntityExists($entityId) ? 'patch' : 'post';
+
+      try {
+        $this->client->{$method}($url, $arguments);
+        $result = TRUE;
+      }
+      catch (RequestException $e) {
+        drupal_set_message($e->getMessage(), 'error');
+      }
+    }
+    else {
+      drupal_set_message("Entity doesn't have id. Please check.");
+    }
+
+    return $result;
+  }
+
+  /**
+   * @param $entityId
+   *
+   * @return bool
+   *
+   */
+  protected function checkEntityExists($entityId) {
+    static $unifyData = array();
+
+    if (empty($unifyData)) {
+      $url       = $this->entity->{'url'};
+      $responce  = $this->client->get($url . '/api_unify-api_unify-connection-0_1');
+      $body      = $responce->getBody()->getContents();
+      $body      = json_decode($body);
+
+      foreach ($body->items as $key => $value) {
+        if (!empty($value->id)) {
+          $unifyData[] = $value->id;
+        }
+      }
+    }
+
+    return in_array($entityId, $unifyData);
+  }
+
 }
