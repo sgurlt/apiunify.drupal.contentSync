@@ -437,7 +437,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             $read_list['url'] = $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/0?_format=json';
           }
           else {
-            $read_list = new \stdClass();
+            $read_list['url'] = $base_url . '/drupal-content-sync/publish-changes/entities?_format=json';
           }
 
           //Create the instance connection entity for this entity type
