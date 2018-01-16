@@ -11,6 +11,10 @@ use Drupal\Core\Field\FieldItemInterface;
 use Drupal\file\Entity\File;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\encrypt\Entity\EncryptionProfile;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\Core\Url;
+use Drupal\Core\Render\Element;
 
 define('DRUPAL_CONTENT_SYNC_EMAIL', 'developer@brightsolutions.de');
 define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
@@ -357,4 +361,67 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
   }
 
   return $entity;
+}
+
+/**
+ * Implements hook_entity_operation_alter().
+ */
+function drupal_content_sync_entity_operation_alter(array &$operations, EntityInterface $entity) {
+  $operations += drupal_content_sync_get_publish_changes_operations($entity);
+}
+
+/**
+ * Returns operations for "publish changes" action.
+ */
+function drupal_content_sync_get_publish_changes_operations(EntityInterface $entity) {
+  /** @var \Drupal\Core\Routing\RedirectDestinationInterface $redirect_destination */
+  $redirect_destination = Drupal::service('redirect.destination');
+
+  $drupal_content_syncs = Drupal::entityTypeManager()->getStorage('drupal_content_sync')->loadMultiple();
+  foreach ($drupal_content_syncs as $sync) {
+    $sync_entities = json_decode($sync->{'sync_entities'}, TRUE);
+    if ($sync_entities[$entity->getEntityTypeId() . '-' . $entity->bundle()]['export'] == DrupalContentSync::EXPORT_MANUALLY) {
+      $route_parameters = [
+        'sync_id' => $sync->id(),
+        'entity_type' => $entity->getEntityTypeId(),
+        'entity' => $entity->id(),
+      ];
+
+      $operations['publish_changes'] = [
+        'title' => t('Publish changes'),
+        'weight' => 150,
+        'url' => Url::fromRoute('drupal_content_sync.publish_changes', $route_parameters),
+        'query' => $redirect_destination->getAsArray(),
+      ];
+
+      return $operations;
+    }
+  }
+
+  return [];
+}
+
+/**
+ * Implements hook_form_menu_edit_form_alter().
+ */
+function drupal_content_sync_form_menu_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $links = [];
+  if (!empty($form['links']['links'])) {
+    $links = Element::children($form['links']['links']);
+  }
+  foreach ($links as $link_key) {
+    $link = $form['links']['links'][$link_key];
+
+    /** @var \Drupal\menu_link_content\Plugin\Menu\MenuLinkContent $menu_link */
+    $menu_link = $link['#item']->link;
+
+    // We need to get an Entity at this point,
+    // but 'getEntity' is protected for some reason.
+    // So we don't have other choice here but use a reflection.
+    $menu_link_reflection = new ReflectionMethod('\Drupal\menu_link_content\Plugin\Menu\MenuLinkContent', 'getEntity');
+    $menu_link_reflection->setAccessible(TRUE);
+    $menu_link_entity = $menu_link_reflection->invoke($menu_link, 'getEntity');
+
+    $form['links']['links'][$link_key]['operations']['#links'] += drupal_content_sync_get_publish_changes_operations($menu_link_entity);
+  }
 }

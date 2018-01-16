@@ -37,6 +37,10 @@ use Drupal\Core\Url;
  */
 class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInterface {
 
+  const EXPORT_DISABLED = 0;
+  const EXPORT_AUTOMATICALLY = 1;
+  const EXPORT_MANUALLY = 2;
+
   /**
    * The DrupalContentSync ID.
    *
@@ -166,7 +170,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     foreach ($entity_types as $type) {
       $type = (array) $type;
 
-      if ($type['export'] == 1 || $type['preview'] != 'excluded') {
+      if ($type['export'] != self::EXPORT_DISABLED || $type['preview'] != 'excluded') {
         /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
         $fields = $this->entityFieldManager->getFieldDefinitions($type['entity_type'], $type['entity_bundle']);
 
@@ -428,6 +432,14 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
               ->decrypt($value, $encryption_profile);
           }
 
+          $read_list = [];
+          if ($type['export'] == self::EXPORT_AUTOMATICALLY) {
+            $read_list['url'] = $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/0?_format=json';
+          }
+          else {
+            $read_list = new \stdClass();
+          }
+
           //Create the instance connection entity for this entity type
           $this->sendEntityRequest($url . '/api_unify-api_unify-connection-0_1', [
             'json' => [
@@ -447,9 +459,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
                   'base_url' => $base_url,
                 ],
                 'crud' => [
-                  'read_list' => [
-                    'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/0?_format=json',
-                  ],
+                  'read_list' => $read_list,
                   'create_item' => [
                     'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '?is_clone=[is_clone]&_format=json',
                   ],
@@ -486,7 +496,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             ],
           ]);
 
-          if ($type['export'] == 1) {
+          if ($type['export'] != self::EXPORT_DISABLED) {
             $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
               'json' => [
                 'id' => 'drupal_' . $this->entity->{'site_id'} . '_' . $entity_type['id'] . '_synchronization_to_pool',

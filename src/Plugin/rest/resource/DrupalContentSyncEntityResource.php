@@ -221,12 +221,14 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       return new ModifiedResourceResponse($data);
     }
 
+    $entity_type_entity = \Drupal::entityTypeManager()->getStorage($entity_type)->getEntityType();
+
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
 
     $entity_types_keys = array_keys($entity_types);
     if (in_array($entity_type, $entity_types_keys)) {
       $query = \Drupal::entityQuery($entity_type);
-      $query->condition('type', $entity_bundle);
+      $query->condition($entity_type_entity->getKey('bundle'), $entity_bundle);
       $query->condition('uuid', $entity_uuid);
       $entity_ids = array_values($query->execute());
 
@@ -333,6 +335,9 @@ class DrupalContentSyncEntityResource extends ResourceBase {
 
           if ($was_prepared && !empty($data['apiu_file_content'])) {
             $entity = file_save_data(base64_decode($data['apiu_file_content']), $data['uri']);
+            $entity->setPermanent();
+            $entity->set('uuid', $data['uuid']);
+            $entity->save();
           }
         } else {
           $entity = $storage->create($entity_data);

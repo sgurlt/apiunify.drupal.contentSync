@@ -8,6 +8,7 @@ use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
@@ -223,11 +224,21 @@ class DrupalContentSyncForm extends EntityForm {
           '#title_display' => 'invisible',
         ];
 
+        $export_options = [
+          DrupalContentSync::EXPORT_DISABLED => 'Disabled',
+          DrupalContentSync::EXPORT_AUTOMATICALLY => 'Automatically',
+        ];
+
+        if (in_array($type_key, ['node', 'block_content', 'menu_link_content', 'file', 'paragraph'])) {
+          $export_options[DrupalContentSync::EXPORT_MANUALLY] = 'Manually';
+        }
+
         $entity_bundle_row['export'] = [
-          '#type' => 'checkbox',
+          '#type' => 'select',
           '#title' => $this->t('Export'),
           '#title_display' => 'invisible',
-          '#default_value' => $row_default_values['export'] == 1,
+          '#options' => $export_options,
+          '#default_value' => $row_default_values['export'],
         ];
 
         $entity_bundle_row['sync_import'] = [

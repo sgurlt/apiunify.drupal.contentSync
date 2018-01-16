@@ -2,6 +2,7 @@
 
 namespace Drupal\drupal_content_sync;
 
+use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\webhooks\Entity\WebhookConfig;
 use Drupal\webhooks\Event\SendEvent;
 use Drupal\webhooks\Event\WebhookEvents;
@@ -71,10 +72,12 @@ class DrupalContentSyncWebhookService extends WebhooksService {
       $entity_bundle = reset($entity_payload['entity']['type'])['target_id'];
     }
     elseif ('file' === $entity_type) {
-      if ($entity_payload['entity']['status'][0]['value']) {
-
+      if (isset($entity_payload['entity']['type'][0]['target_id'])) {
+        $entity_bundle = $entity_payload['entity']['type'][0]['target_id'];
       }
-      $entity_bundle = $entity_type;
+      else {
+        $entity_bundle = $entity_type;
+      }
     }
     elseif (isset($entity_payload['entity']['bundle'])) {
       $bundle = reset($entity_payload['entity']['bundle']);
@@ -105,7 +108,8 @@ class DrupalContentSyncWebhookService extends WebhooksService {
         $sync_entity_type_key = $matches[1];
         $sync_entity_bundle_key = $matches[2];
 
-        $is_exported = (bool) $sync_entity['export'];
+        $is_manual_export = $sync_entity['export'] == DrupalContentSync::EXPORT_MANUALLY && !empty($entity_payload['publish_changes']);
+        $is_exported = $is_manual_export || $sync_entity['export'] == DrupalContentSync::EXPORT_AUTOMATICALLY;
 
         if ($is_exported && $sync_entity_type_key === $entity_type && $sync_entity_bundle_key === $entity_bundle) {
           if ('delete' != $event_type) {
@@ -123,8 +127,18 @@ class DrupalContentSyncWebhookService extends WebhooksService {
 
                 try {
                   if ($embed_entity = $entity_repository->loadEntityByUuid($data['type'], $data['uuid'])) {
-                    $event = implode(':', ['entity', $embed_entity->getEntityTypeId(), 'create']);
-                    $embed_entity_webhook = new Webhook(['entity' => $embed_entity->toArray()], [], $event);
+                    $client = \Drupal::httpClient();
+                    $url = sprintf('%s/drupal/%s/%s/%s/%s', $sync->{'url'}, $sync->{'site_id'}, $embed_entity->getEntityTypeId(), $embed_entity->bundle(), $embed_entity->uuid());
+
+                    try {
+                      $is_new = $client->get($url)->getStatusCode() != 200;
+                    }
+                    catch (\Exception $exception) {
+                      $is_new = TRUE;
+                    }
+
+                    $event = implode(':', ['entity', $embed_entity->getEntityTypeId(), $is_new ? 'create' : 'update']);
+                    $embed_entity_webhook = new Webhook(['entity' => $embed_entity->toArray(), 'publish_changes' => TRUE], [], $event);
 
                     $webhook_config->set('payload_url', self::DRUPAL_CONTENT_SYNC_PAYLOAD_URL);
                     $this->send($webhook_config, $embed_entity_webhook);

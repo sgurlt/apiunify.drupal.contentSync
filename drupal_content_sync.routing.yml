@@ -37,3 +37,21 @@ entity.drupal_content_sync.content:
     _title: 'Drupal Content Synchronization'
   requirements:
     _permission: 'administer content'
+
+drupal_content_sync.publish_changes:
+  path: '/drupal-content-sync/publish-changes/{sync_id}/{entity_type}/{entity}'
+  defaults:
+    _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSyncPublishChanges::publishChanges'
+  requirements:
+    _permission: 'publish drupal content sync changes'
+  options:
+    parameters:
+      entity:
+        type: entity:{entity_type}
+
+drupal_content_sync.publish_changes_entities:
+  path: '/drupal-content-sync/publish-changes/entities'
+  defaults:
+    _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSyncPublishChanges::publishChangesEntitiesList'
+  requirements:
+    _permission: 'access content'
