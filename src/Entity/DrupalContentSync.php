@@ -8,6 +8,7 @@ use Drupal\Core\Entity\EntityFieldManager;
 use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Url;
+use GuzzleHttp\Exception\RequestException;
 
 /**
  * Defines the DrupalContentSync entity.
@@ -565,12 +566,24 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     static $unifyData = array();
 
     if (empty($unifyData[$url])) {
-      $nextUrl = $url;
+      $unifyData[$url] = [];
+      $nextUrl         = $url;
 
       while (!empty($nextUrl)) {
-        $responce  = $this->client->get($nextUrl);
-        $body      = $responce->getBody()->getContents();
-        $body      = json_decode($body);
+        try {
+          $responce = $this->client->get($nextUrl);
+        }
+        catch (RequestException $e) {
+          // We need to prevent next GET requests to this URL.
+          $unifyData[$url] = ['error'];
+          drupal_set_message($e->getMessage(), 'error');
+
+          // We are in the iteration. in_array() at the end will return FALSE.
+          break;
+        }
+
+        $body = $responce->getBody()->getContents();
+        $body = json_decode($body);
 
         foreach ($body->items as $key => $value) {
           if (!empty($value->id)) {
