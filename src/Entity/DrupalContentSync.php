@@ -7,6 +7,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityFieldManager;
 use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\Url;
 
 /**
  * Defines the DrupalContentSync entity.
@@ -527,7 +528,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
     if (!empty($arguments['json']['id'])) {
       $entityId = $arguments['json']['id'];
-      $method   = $this->checkEntityExists($entityId) ? 'patch' : 'post';
+      $method   = $this->checkEntityExists($url, $entityId) ? 'patch' : 'post';
 
       try {
         $this->client->{$method}($url, $arguments);
@@ -550,23 +551,36 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @return bool
    *
    */
-  protected function checkEntityExists($entityId) {
+  protected function checkEntityExists($url, $entityId) {
     static $unifyData = array();
 
-    if (empty($unifyData)) {
-      $url       = $this->entity->{'url'};
-      $responce  = $this->client->get($url . '/api_unify-api_unify-connection-0_1');
-      $body      = $responce->getBody()->getContents();
-      $body      = json_decode($body);
+    if (empty($unifyData[$url])) {
+      $nextUrl = $url;
 
-      foreach ($body->items as $key => $value) {
-        if (!empty($value->id)) {
-          $unifyData[] = $value->id;
+      while (!empty($nextUrl)) {
+        $responce  = $this->client->get($nextUrl);
+        $body      = $responce->getBody()->getContents();
+        $body      = json_decode($body);
+
+        foreach ($body->items as $key => $value) {
+          if (!empty($value->id)) {
+            $unifyData[$url][] = $value->id;
+          }
         }
+
+        if (!empty($body->next_page_url)) {
+          $query = parse_url($body->next_page_url, PHP_URL_QUERY);
+          parse_str($query, $parameters);
+
+          $nextUrl             = Url::fromUri($url, ['query' => $parameters]);
+          $body->next_page_url = $nextUrl->toUriString();
+        }
+
+        $nextUrl = $body->next_page_url;
       }
     }
 
-    return in_array($entityId, $unifyData);
+    return in_array($entityId, $unifyData[$url]);
   }
 
 }
