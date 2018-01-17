@@ -66,6 +66,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   protected $client;
   protected $entityFieldManager;
 
+  protected $unifyData   = [];
+
   /**
    * Acts on a saved entity before the insert or update hook is invoked.
    *
@@ -560,19 +562,18 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *
    */
   protected function checkEntityExists($url, $entityId) {
-    static $unifyData = array();
+    $finalStep = FALSE;
 
-    if (empty($unifyData[$url])) {
-      $unifyData[$url] = [];
-      $nextUrl         = $url;
+    if (empty($this->unifyData[$url])) {
+      while (!$finalStep) {
+        $finalStep = TRUE;
 
-      while (!empty($nextUrl)) {
         try {
-          $responce = $this->client->get($nextUrl);
+          $responce = $this->client->get($url);
         }
         catch (RequestException $e) {
           // We need to prevent next GET requests to this URL.
-          $unifyData[$url] = ['error'];
+          $this->unifyData[$url] = ['error'];
           drupal_set_message($e->getMessage(), 'error');
 
           // We are in the iteration. in_array() at the end will return FALSE.
@@ -582,25 +583,34 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         $body = $responce->getBody()->getContents();
         $body = json_decode($body);
 
-        foreach ($body->items as $key => $value) {
-          if (!empty($value->id)) {
-            $unifyData[$url][] = $value->id;
-          }
+        if ($body->number_of_pages > 1) {
+          $nextUrl = Url::fromUri($url, [
+            'query' => ['items_per_page' => $body->total_number_of_items],
+          ]);
+
+          $url       = $nextUrl->toUriString();
+          $finalStep = FALSE;
+
+          continue;
         }
+      }
 
-        if (!empty($body->next_page_url)) {
-          $query = parse_url($body->next_page_url, PHP_URL_QUERY);
-          parse_str($query, $parameters);
-
-          $nextUrl             = Url::fromUri($url, ['query' => $parameters]);
-          $body->next_page_url = $nextUrl->toUriString();
+      foreach ($body->items as $key => $value) {
+        if (!empty($value->id)) {
+          $this->unifyData[$url][] = $value->id;
         }
-
-        $nextUrl = $body->next_page_url;
       }
     }
 
-    return in_array($entityId, $unifyData[$url]);
+    $entityIndex  = array_search($entityId, $this->unifyData[$url]);
+    $entityExists = FALSE !== $entityIndex;
+
+    if ($entityExists) {
+      unset($this->toBeDeleted[$url][$entityIndex]);
+    }
+
+    return $entityExists;
+  }
   }
 
 }
