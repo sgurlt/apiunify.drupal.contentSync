@@ -69,6 +69,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   protected $toBeDeleted = [];
   protected $unifyData   = [];
 
+  protected $dataCleanPrepared = FALSE;
+
   /**
    * Acts on a saved entity before the insert or update hook is invoked.
    *
@@ -631,7 +633,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   protected function prepareDataCleaning($url) {
-    if (empty($this->toBeDeleted)) {
+    if (!$this->dataCleanPrepared) {
       $result = [];
       $parentLevel = TRUE;
       $requestUrls = [
@@ -664,7 +666,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         }
       }
 
-      $this->toBeDeleted = $result;
+      $this->toBeDeleted       = $result;
+      $this->dataCleanPrepared = TRUE;
     }
 
     return $this->toBeDeleted;
@@ -672,7 +675,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
   protected function cleanUnifyData() {
     foreach ($this->toBeDeleted as $id => $url) {
-      // @todo: just add delete requests here.
+      $responce = $this->client->delete($url . '/' . $id);
     }
   }
 
