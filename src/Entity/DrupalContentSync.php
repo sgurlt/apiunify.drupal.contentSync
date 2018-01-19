@@ -66,6 +66,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   protected $client;
   protected $entityFieldManager;
 
+  protected $toBeDeleted = [];
   protected $unifyData   = [];
 
   /**
@@ -367,6 +368,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         }
 
         try {
+          $this->prepareDataCleaning($url);
+
           //Create the entity type
           $this->sendEntityRequest($url . '/api_unify-api_unify-entity_type-0_1', [
             'json' => $entity_type,
@@ -524,6 +527,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         }
       }
     }
+    $this->cleanUnifyData();
     $this->{'local_connections'} = json_encode($localConnections);
   }
 
@@ -555,6 +559,48 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     return $result;
   }
 
+  protected function generateUrl($url, $parameters = []) {
+    $resultUrl = Url::fromUri($url, [
+      'query' => $parameters,
+    ]);
+
+    return $resultUrl->toUriString();
+  }
+
+  protected function getEntitiesByUrl($url, $parameters = []) {
+    $result    = [];
+    $finalStep = FALSE;
+    $url       = $this->generateUrl($url, $parameters);
+
+    while (!$finalStep) {
+      $finalStep = TRUE;
+
+      $responce  = $this->client->get($url);
+      $body      = $responce->getBody()->getContents();
+      $body      = json_decode($body);
+
+      if ($body->number_of_pages > 1) {
+        $finalStep  = FALSE;
+
+        $parameters = array_merge($parameters, [
+          'items_per_page' => $body->total_number_of_items,
+        ]);
+
+        $url = $this->generateUrl($url, $parameters);
+
+        continue;
+      }
+    }
+
+    foreach ($body->items as $key => $value) {
+      if (!empty($value->id)) {
+        $result[] = $value->id;
+      }
+    }
+
+    return $result;
+  }
+
   /**
    * @param $entityId
    *
@@ -562,55 +608,72 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *
    */
   protected function checkEntityExists($url, $entityId) {
-    $finalStep = FALSE;
-
     if (empty($this->unifyData[$url])) {
-      while (!$finalStep) {
-        $finalStep = TRUE;
-
-        try {
-          $responce = $this->client->get($url);
-        }
-        catch (RequestException $e) {
-          // We need to prevent next GET requests to this URL.
-          $this->unifyData[$url] = ['error'];
-          drupal_set_message($e->getMessage(), 'error');
-
-          // We are in the iteration. in_array() at the end will return FALSE.
-          break;
-        }
-
-        $body = $responce->getBody()->getContents();
-        $body = json_decode($body);
-
-        if ($body->number_of_pages > 1) {
-          $nextUrl = Url::fromUri($url, [
-            'query' => ['items_per_page' => $body->total_number_of_items],
-          ]);
-
-          $url       = $nextUrl->toUriString();
-          $finalStep = FALSE;
-
-          continue;
-        }
-      }
-
-      foreach ($body->items as $key => $value) {
-        if (!empty($value->id)) {
-          $this->unifyData[$url][] = $value->id;
-        }
-      }
+      $this->unifyData[$url]   = $this->getEntitiesByUrl($url);
     }
 
     $entityIndex  = array_search($entityId, $this->unifyData[$url]);
-    $entityExists = FALSE !== $entityIndex;
+    $entityExists = (FALSE !== $entityIndex);
 
     if ($entityExists) {
-      unset($this->toBeDeleted[$url][$entityIndex]);
+      if (array_key_exists($entityId, $this->toBeDeleted)) {
+        unset($this->toBeDeleted[$entityId]);
+      }
     }
 
     return $entityExists;
   }
+
+  protected function getRelatedEntities($url, $fieldName, $value) {
+    $query = '{"operator":"==","values":[{"source":"data","field":"'. $fieldName . '"},{"source":"value","value":"' . $value . '"}]}';
+
+    return $this->getEntitiesByUrl($url, ['condition' => $query]);
+  }
+
+  protected function prepareDataCleaning($url) {
+    if (empty($this->toBeDeleted)) {
+      $result = [];
+      $parentLevel = TRUE;
+      $requestUrls = [
+        'api_unify-api_unify-connection-0_1' => [
+          'field' => 'instance_id',
+          'value' => $this->{'site_id'},
+        ],
+        'api_unify-api_unify-connection_synchronisation-0_1' => [
+          'field' => 'source_connection_id',
+          'value' => NULL,
+        ],
+      ];
+
+      foreach ($requestUrls as $requestUrl => $data) {
+        $requestUrl = "$url/$requestUrl";
+
+        if ($parentLevel) {
+          $parentItems = $this->getRelatedEntities($requestUrl, $data['field'], $data['value']);
+          $result = array_fill_keys($parentItems, $requestUrl);
+          $parentLevel = !$parentLevel;
+
+          continue;
+        }
+        else {
+          foreach ($parentItems as $id) {
+            $childs = $this->getRelatedEntities($requestUrl, $data['field'], $id);
+            $childs = array_fill_keys($childs, $requestUrl);
+            $result = array_merge($result, $childs);
+          }
+        }
+      }
+
+      $this->toBeDeleted = $result;
+    }
+
+    return $this->toBeDeleted;
+  }
+
+  protected function cleanUnifyData() {
+    foreach ($this->toBeDeleted as $id => $url) {
+      // @todo: just add delete requests here.
+    }
   }
 
 }
