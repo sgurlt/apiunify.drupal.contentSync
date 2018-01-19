@@ -98,6 +98,20 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public static function preDelete(EntityStorageInterface $storage, array $entities) {
+    parent::preDelete($storage, $entities);
+
+    foreach ($entities as $name => $entity) {
+      $entity->client = \Drupal::httpClient();
+
+      $entity->prepareDataCleaning($entity->url);
+      $entity->cleanUnifyData();
+    }
+  }
+
+  /**
    * Method do create all Drupal Content Sync entities which are needed for a snychronization
    *
    * @return bool
