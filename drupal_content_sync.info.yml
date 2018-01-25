@@ -7,7 +7,6 @@ dependencies:
   - user
   - rest
   - serialization
-  - basic_auth
   - config_ignore
   - webhooks
   - encrypt
