@@ -2,8 +2,7 @@ langcode: en
 status: true
 dependencies:
   module:
-    - drupal_content_sync
-    - basic_auth
+    - drupal_content_sync    
     - serialization
 id: drupal_content_sync_entity_resource
 plugin_id: drupal_content_sync_entity_resource
