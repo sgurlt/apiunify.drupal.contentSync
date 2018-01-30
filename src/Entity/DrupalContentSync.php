@@ -9,6 +9,7 @@ use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Url;
 use GuzzleHttp\Exception\RequestException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Defines the DrupalContentSync entity.
@@ -66,6 +67,11 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   protected $client;
   protected $entityFieldManager;
 
+  protected $toBeDeleted = [];
+  protected $unifyData   = [];
+
+  protected $dataCleanPrepared = FALSE;
+
   /**
    * Acts on a saved entity before the insert or update hook is invoked.
    *
@@ -89,6 +95,26 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         ' Therefore the synchronization entity could not be saved. For more' .
         ' information see the error output above.', 'error');
       return;
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function preDelete(EntityStorageInterface $storage, array $entities) {
+    parent::preDelete($storage, $entities);
+
+    try {
+      foreach ($entities as $name => $entity) {
+        $entity->client = \Drupal::httpClient();
+
+        $entity->prepareDataCleaning($entity->url);
+        $entity->cleanUnifyData();
+      }
+    }
+    catch (RequestException $e) {
+      drupal_set_message('The API Unify server is offline or has some problems. Please, check the server', 'error');
+      throw new AccessDeniedHttpException();
     }
   }
 
@@ -365,6 +391,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         }
 
         try {
+          $this->prepareDataCleaning($url);
+
           //Create the entity type
           $this->sendEntityRequest($url . '/api_unify-api_unify-entity_type-0_1', [
             'json' => $entity_type,
@@ -522,6 +550,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         }
       }
     }
+    $this->cleanUnifyData();
     $this->{'local_connections'} = json_encode($localConnections);
   }
 
@@ -538,6 +567,10 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       $entityId = $arguments['json']['id'];
       $method   = $this->checkEntityExists($url, $entityId) ? 'patch' : 'post';
 
+      if ('patch' == $method) {
+        $url .= '/' . $arguments['json']['id'];
+      }
+
       try {
         $this->client->{$method}($url, $arguments);
         $result = TRUE;
@@ -553,6 +586,48 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     return $result;
   }
 
+  protected function generateUrl($url, $parameters = []) {
+    $resultUrl = Url::fromUri($url, [
+      'query' => $parameters,
+    ]);
+
+    return $resultUrl->toUriString();
+  }
+
+  protected function getEntitiesByUrl($url, $parameters = []) {
+    $result    = [];
+    $finalStep = FALSE;
+    $url       = $this->generateUrl($url, $parameters);
+
+    while (!$finalStep) {
+      $finalStep = TRUE;
+
+      $responce  = $this->client->get($url);
+      $body      = $responce->getBody()->getContents();
+      $body      = json_decode($body);
+
+      if ($body->number_of_pages > 1) {
+        $finalStep  = FALSE;
+
+        $parameters = array_merge($parameters, [
+          'items_per_page' => $body->total_number_of_items,
+        ]);
+
+        $url = $this->generateUrl($url, $parameters);
+
+        continue;
+      }
+    }
+
+    foreach ($body->items as $key => $value) {
+      if (!empty($value->id)) {
+        $result[] = $value->id;
+      }
+    }
+
+    return $result;
+  }
+
   /**
    * @param $entityId
    *
@@ -560,47 +635,83 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *
    */
   protected function checkEntityExists($url, $entityId) {
-    static $unifyData = array();
+    if (empty($this->unifyData[$url])) {
+      $this->unifyData[$url]   = $this->getEntitiesByUrl($url);
+    }
 
-    if (empty($unifyData[$url])) {
-      $unifyData[$url] = [];
-      $nextUrl         = $url;
+    $entityIndex  = array_search($entityId, $this->unifyData[$url]);
+    $entityExists = (FALSE !== $entityIndex);
 
-      while (!empty($nextUrl)) {
-        try {
-          $responce = $this->client->get($nextUrl);
-        }
-        catch (RequestException $e) {
-          // We need to prevent next GET requests to this URL.
-          $unifyData[$url] = ['error'];
-          drupal_set_message($e->getMessage(), 'error');
-
-          // We are in the iteration. in_array() at the end will return FALSE.
-          break;
-        }
-
-        $body = $responce->getBody()->getContents();
-        $body = json_decode($body);
-
-        foreach ($body->items as $key => $value) {
-          if (!empty($value->id)) {
-            $unifyData[$url][] = $value->id;
-          }
-        }
-
-        if (!empty($body->next_page_url)) {
-          $query = parse_url($body->next_page_url, PHP_URL_QUERY);
-          parse_str($query, $parameters);
-
-          $nextUrl             = Url::fromUri($url, ['query' => $parameters]);
-          $body->next_page_url = $nextUrl->toUriString();
-        }
-
-        $nextUrl = $body->next_page_url;
+    if ($entityExists) {
+      if (array_key_exists($entityId, $this->toBeDeleted)) {
+        unset($this->toBeDeleted[$entityId]);
       }
     }
 
-    return in_array($entityId, $unifyData[$url]);
+    return $entityExists;
+  }
+
+  protected function getRelatedEntities($url, $fieldName, $value) {
+    $query = '{"operator":"==","values":[{"source":"data","field":"'. $fieldName . '"},{"source":"value","value":"' . $value . '"}]}';
+
+    return $this->getEntitiesByUrl($url, ['condition' => $query]);
+  }
+
+  protected function prepareDataCleaning($url) {
+    if (!$this->dataCleanPrepared) {
+      $result = [];
+      $parentLevel = TRUE;
+      $requestUrls = [
+        [
+          'url'   => 'api_unify-api_unify-connection-0_1',
+          'field' => 'instance_id',
+          'value' => $this->{'site_id'},
+        ],
+        [
+          'url'   => 'api_unify-api_unify-connection_synchronisation-0_1',
+          'field' => 'source_connection_id',
+          'value' => NULL,
+        ],
+        [
+          'url'   => 'api_unify-api_unify-connection_synchronisation-0_1',
+          'field' => 'destination_connection_id',
+          'value' => NULL,
+        ],
+      ];
+
+      foreach ($requestUrls as $requestUrl => $data) {
+        $requestUrl = $url . '/' . $data['url'];
+
+        if ($parentLevel) {
+          $parentItems = $this->getRelatedEntities($requestUrl, $data['field'], $data['value']);
+          $result = array_fill_keys($parentItems, $requestUrl);
+          $parentLevel = !$parentLevel;
+
+          continue;
+        }
+        else {
+          foreach ($parentItems as $id) {
+            $childs = $this->getRelatedEntities($requestUrl, $data['field'], $id);
+            $childs = array_fill_keys($childs, $requestUrl);
+            $result = array_merge($result, $childs);
+          }
+        }
+      }
+
+      $this->toBeDeleted       = $result;
+      $this->dataCleanPrepared = TRUE;
+    }
+
+    return $this->toBeDeleted;
+  }
+
+  protected function cleanUnifyData() {
+    foreach ($this->toBeDeleted as $id => $url) {
+      $responce = $this->client->delete($url . '/' . $id);
+      return FALSE;
+    }
+
+    return TRUE;
   }
 
 }

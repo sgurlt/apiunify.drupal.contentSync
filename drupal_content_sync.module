@@ -60,6 +60,14 @@ function drupal_content_sync_user_password_submit(&$form, FormStateInterface $fo
     $new_data = array_replace($old_data, $new_data);
 
     $userData->set('drupal_content_sync', $userId, 'sync_data', $new_data);
+
+    $synchronisations = \Drupal::entityTypeManager()
+      ->getStorage('drupal_content_sync')
+      ->loadMultiple();
+
+    foreach ($synchronisations as $synchronisation) {
+      $synchronisation->save();
+    }
   }
 }
 
@@ -380,21 +388,25 @@ function drupal_content_sync_get_publish_changes_operations(EntityInterface $ent
   $drupal_content_syncs = Drupal::entityTypeManager()->getStorage('drupal_content_sync')->loadMultiple();
   foreach ($drupal_content_syncs as $sync) {
     $sync_entities = json_decode($sync->{'sync_entities'}, TRUE);
-    if ($sync_entities[$entity->getEntityTypeId() . '-' . $entity->bundle()]['export'] == DrupalContentSync::EXPORT_MANUALLY) {
-      $route_parameters = [
-        'sync_id' => $sync->id(),
-        'entity_type' => $entity->getEntityTypeId(),
-        'entity' => $entity->id(),
-      ];
+    $index         = $entity->getEntityTypeId() . '-' . $entity->bundle();
 
-      $operations['publish_changes'] = [
-        'title' => t('Publish changes'),
-        'weight' => 150,
-        'url' => Url::fromRoute('drupal_content_sync.publish_changes', $route_parameters),
-        'query' => $redirect_destination->getAsArray(),
-      ];
+    if (!empty($sync_entities[$index]['export'])) {
+      if ($sync_entities[$index]['export'] == DrupalContentSync::EXPORT_MANUALLY) {
+        $route_parameters = [
+          'sync_id' => $sync->id(),
+          'entity_type' => $entity->getEntityTypeId(),
+          'entity' => $entity->id(),
+        ];
 
-      return $operations;
+        $operations['publish_changes'] = [
+          'title' => t('Publish changes'),
+          'weight' => 150,
+          'url' => Url::fromRoute('drupal_content_sync.publish_changes', $route_parameters),
+          'query' => $redirect_destination->getAsArray(),
+        ];
+
+        return $operations;
+      }
     }
   }
 
