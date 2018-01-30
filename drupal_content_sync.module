@@ -60,6 +60,14 @@ function drupal_content_sync_user_password_submit(&$form, FormStateInterface $fo
     $new_data = array_replace($old_data, $new_data);
 
     $userData->set('drupal_content_sync', $userId, 'sync_data', $new_data);
+
+    $synchronisations = \Drupal::entityTypeManager()
+      ->getStorage('drupal_content_sync')
+      ->loadMultiple();
+
+    foreach ($synchronisations as $synchronisation) {
+      $synchronisation->save();
+    }
   }
 }
 

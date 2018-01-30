@@ -560,6 +560,10 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       $entityId = $arguments['json']['id'];
       $method   = $this->checkEntityExists($url, $entityId) ? 'patch' : 'post';
 
+      if ('patch' == $method) {
+        $url .= '/' . $arguments['json']['id'];
+      }
+
       try {
         $this->client->{$method}($url, $arguments);
         $result = TRUE;
