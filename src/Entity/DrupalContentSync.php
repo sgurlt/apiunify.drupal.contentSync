@@ -9,6 +9,7 @@ use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Url;
 use GuzzleHttp\Exception\RequestException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Defines the DrupalContentSync entity.
@@ -103,11 +104,17 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   public static function preDelete(EntityStorageInterface $storage, array $entities) {
     parent::preDelete($storage, $entities);
 
-    foreach ($entities as $name => $entity) {
-      $entity->client = \Drupal::httpClient();
+    try {
+      foreach ($entities as $name => $entity) {
+        $entity->client = \Drupal::httpClient();
 
-      $entity->prepareDataCleaning($entity->url);
-      $entity->cleanUnifyData();
+        $entity->prepareDataCleaning($entity->url);
+        $entity->cleanUnifyData();
+      }
+    }
+    catch (RequestException $e) {
+      drupal_set_message('The API Unify server is offline or has some problems. Please, check the server', 'error');
+      throw new AccessDeniedHttpException();
     }
   }
 
@@ -699,13 +706,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   protected function cleanUnifyData() {
-    try {
-      foreach ($this->toBeDeleted as $id => $url) {
-        $responce = $this->client->delete($url . '/' . $id);
-      }
-    }
-    catch (RequestException $e) {
-      drupal_set_message($e->getMessage(), 'error');
+    foreach ($this->toBeDeleted as $id => $url) {
+      $responce = $this->client->delete($url . '/' . $id);
       return FALSE;
     }
 
