@@ -651,18 +651,25 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       $result = [];
       $parentLevel = TRUE;
       $requestUrls = [
-        'api_unify-api_unify-connection-0_1' => [
+        [
+          'url'   => 'api_unify-api_unify-connection-0_1',
           'field' => 'instance_id',
           'value' => $this->{'site_id'},
         ],
-        'api_unify-api_unify-connection_synchronisation-0_1' => [
+        [
+          'url'   => 'api_unify-api_unify-connection_synchronisation-0_1',
           'field' => 'source_connection_id',
+          'value' => NULL,
+        ],
+        [
+          'url'   => 'api_unify-api_unify-connection_synchronisation-0_1',
+          'field' => 'destination_connection_id',
           'value' => NULL,
         ],
       ];
 
       foreach ($requestUrls as $requestUrl => $data) {
-        $requestUrl = "$url/$requestUrl";
+        $requestUrl = $url . '/' . $data['url'];
 
         if ($parentLevel) {
           $parentItems = $this->getRelatedEntities($requestUrl, $data['field'], $data['value']);
@@ -688,9 +695,17 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   protected function cleanUnifyData() {
-    foreach ($this->toBeDeleted as $id => $url) {
-      $responce = $this->client->delete($url . '/' . $id);
+    try {
+      foreach ($this->toBeDeleted as $id => $url) {
+        $responce = $this->client->delete($url . '/' . $id);
+      }
     }
+    catch (RequestException $e) {
+      drupal_set_message($e->getMessage(), 'error');
+      return FALSE;
+    }
+
+    return TRUE;
   }
 
 }
