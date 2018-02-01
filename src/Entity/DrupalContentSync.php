@@ -337,6 +337,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
               'uuid' => 'value',
             ],
             'modifiable' => [
+              'title' => 'value',
               'preview' => 'value',
               'url' => 'value',
               'apiu_translation' => 'value',
