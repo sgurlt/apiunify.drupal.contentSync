@@ -187,7 +187,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     'embed_entities' => [],
   ];
 
-  $fields_to_ignore = ['type', 'path', 'field_name', 'field_drupal_content_synced', 'nid', 'vid', 'thumbnail'];
+  $fields_to_ignore = ['uid', 'type', 'path', 'field_name', 'field_drupal_content_synced', 'nid', 'vid', 'thumbnail'];
 
   foreach($original as $field_name => $field_value) {
     if (empty($field_definitions[$field_name]) || in_array($field_name, $fields_to_ignore) || empty($field_value)) {
