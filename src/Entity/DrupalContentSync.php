@@ -597,30 +597,13 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
   protected function getEntitiesByUrl($baseUrl, $parameters = []) {
     $result    = [];
-    $finalStep = FALSE;
-    $url       = $this->generateUrl($baseUrl, $parameters);
+    $url       = $this->generateUrl($baseUrl, $parameters + ['items_per_page' => 999999]);
 
-    while (!$finalStep) {
-      $finalStep = TRUE;
+    $responce  = $this->client->get($url);
+    $body      = $responce->getBody()->getContents();
+    $body      = json_decode($body);
 
-      $responce  = $this->client->get($url);
-      $body      = $responce->getBody()->getContents();
-      $body      = json_decode($body);
-
-      if ($body->number_of_pages > 1) {
-        $finalStep  = FALSE;
-
-        $parameters = array_merge($parameters, [
-          'items_per_page' => $body->total_number_of_items,
-        ]);
-
-        $url = $this->generateUrl($baseUrl, $parameters);
-
-        continue;
-      }
-    }
-
-    foreach ($body->items as $key => $value) {
+    foreach ($body->items as $value) {
       if (!empty($value->id)) {
         $result[] = $value->id;
       }
