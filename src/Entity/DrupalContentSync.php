@@ -595,10 +595,10 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     return $resultUrl->toUriString();
   }
 
-  protected function getEntitiesByUrl($url, $parameters = []) {
+  protected function getEntitiesByUrl($baseUrl, $parameters = []) {
     $result    = [];
     $finalStep = FALSE;
-    $url       = $this->generateUrl($url, $parameters);
+    $url       = $this->generateUrl($baseUrl, $parameters);
 
     while (!$finalStep) {
       $finalStep = TRUE;
@@ -614,7 +614,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           'items_per_page' => $body->total_number_of_items,
         ]);
 
-        $url = $this->generateUrl($url, $parameters);
+        $url = $this->generateUrl($baseUrl, $parameters);
 
         continue;
       }
