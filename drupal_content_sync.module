@@ -29,15 +29,20 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
   $form_object = $form_state->getFormObject();
 
   if ($form_object instanceof ContentEntityDeleteForm) {
-    $entity = $form_object->getEntity();
+    $entity   = $form_object->getEntity();
+    $sync_key = $entity->getEntityTypeId() . '-' . $entity->bundle();
 
-    if ($entity->hasField('bmw_group')) {
-      $bmw_group = $entity->get('bmw_group')->getString();
+    $synchronisations = \Drupal::entityTypeManager()
+      ->getStorage('drupal_content_sync')
+      ->loadMultiple();
 
-      if (!empty($bmw_group)) {
+    foreach ($synchronisations as $synchronisation) {
+      $values = json_decode($synchronisation->sync_entities);
+
+      if (DrupalContentSync::EXPORT_DISABLED != $values->$sync_key->export) {
         drupal_set_message(t('This will delete the %type from all sites using it.', [
           '%type' => $entity->getEntityTypeId(),
-        ]), 'warning');
+        ]), 'error');
       }
     }
   }
