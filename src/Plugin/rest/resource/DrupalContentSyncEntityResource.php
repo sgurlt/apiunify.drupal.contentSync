@@ -403,7 +403,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         case 'image':
           $file_ids = [];
           foreach ($data[$key] as $value) {
-            file_prepare_directory(\Drupal::service('file_system')->dirname($value['file_uri']), FILE_CREATE_DIRECTORY);
+            $dirname = \Drupal::service('file_system')->dirname($value['file_uri']);
+            file_prepare_directory($dirname, FILE_CREATE_DIRECTORY);
             $file = file_save_data(base64_decode($value['file_content']), $value['file_uri']);
             $file->setPermanent();
             $file->save();
@@ -459,7 +460,9 @@ class DrupalContentSyncEntityResource extends ResourceBase {
           break;
 
         default:
-          $entity->set($key, $data[$key]);
+          if (isset($data[$key])) {
+            $entity->set($key, $data[$key]);
+          }
           break;
       }
     }
