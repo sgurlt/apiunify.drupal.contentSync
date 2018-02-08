@@ -79,12 +79,6 @@ function drupal_content_sync_update_8001(&$sandbox) {
  * Implements hook_uninstall().
  */
 function drupal_content_sync_uninstall() {
-  /** @var \Drupal\user\Entity\User $user */
-  $user = user_load_by_mail(DRUPAL_CONTENT_SYNC_EMAIL);
-  if ($user) {
-    $user->delete();
-  }
-
   $config = \Drupal::configFactory();
   $config->getEditable('encrypt.profile.drupal_content_sync')->delete();
   $config->getEditable('key.key.drupal_content_sync')->delete();
@@ -92,4 +86,10 @@ function drupal_content_sync_uninstall() {
   $config->getEditable('rest.resource.drupal_content_sync_resource')->delete();
   $config->getEditable('user.role.drupal_content_sync')->delete();
   $config->getEditable('webhooks.webhook.webhook_drupal_content_sync_export')->delete();
+
+  /** @var \Drupal\user\Entity\User $user */
+  $user = user_load_by_mail(DRUPAL_CONTENT_SYNC_EMAIL);
+  if ($user) {
+    $user->delete();
+  }
 }
