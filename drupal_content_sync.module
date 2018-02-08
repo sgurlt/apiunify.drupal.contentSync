@@ -29,6 +29,9 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
   $form_object = $form_state->getFormObject();
 
   if ($form_object instanceof ContentEntityDeleteForm) {
+    if ($form_state->getUserInput()['confirm']) {
+      return;
+    }
     $entity   = $form_object->getEntity();
     $sync_key = $entity->getEntityTypeId() . '-' . $entity->bundle();
 
