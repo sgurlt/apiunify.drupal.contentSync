@@ -38,16 +38,22 @@ class DrupalContentSyncPublishChanges extends ControllerBase {
     // Load all webhooks for the occurring event.
     $webhook_configs = $webhooks_service->loadMultipleByEvent($event);
 
-    /** @var \Drupal\webhooks\Entity\WebhookConfig $webhook_config */
-    foreach ($webhook_configs as $webhook_config) {
-      // Create the Webhook object.
-      $webhook = new Webhook(
-        ['entity' => $entity->toArray(), 'publish_changes' => TRUE],
-        [],
-        $event
-      );
-      // Send the Webhook object.
-      $webhooks_service->send($webhook_config, $webhook);
+    try {
+      /** @var \Drupal\webhooks\Entity\WebhookConfig $webhook_config */
+      foreach ($webhook_configs as $webhook_config) {
+        // Create the Webhook object.
+        $webhook = new Webhook(
+          ['entity' => $entity->toArray(), 'publish_changes' => TRUE],
+          [],
+          $event
+        );
+        // Send the Webhook object.
+        $webhooks_service->send($webhook_config, $webhook);
+      }
+    } catch (\Exception $exception) {
+      drupal_set_message('An error occured while pushing the changes to the ' .
+        'Drupal Content Sync backend. Please try again later', 'error');
+      return;
     }
 
     // Make sure that existing entities on all sites
