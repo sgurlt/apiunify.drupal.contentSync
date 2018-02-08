@@ -20,6 +20,7 @@ function drupal_content_sync_install() {
   $configsNames = [
     'key.key.drupal_content_sync',
     'encrypt.profile.drupal_content_sync',
+    'user.role.drupal_content_sync',
   ];
 
   foreach ($configsNames as $name) {

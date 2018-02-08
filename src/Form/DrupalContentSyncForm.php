@@ -8,6 +8,7 @@ use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Element;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -319,8 +320,54 @@ class DrupalContentSyncForm extends EntityForm {
 
     $form['sync_entities'] = $entity_table;
 
+    $this->disableOverridenConfigs($form);
     return $form;
   }
+
+  /**
+   * Disable form elements which are overridden
+   *
+   * @param array $form
+   */
+  private function disableOverridenConfigs(array &$form) {
+    // Is this site a master site? It is a subsite by default.
+    $environment = 'subsite';
+    if (\Drupal::config('config_split.config_split.drupal_content_sync_master')
+      ->get('status')
+    ) {
+      $environment = 'master';
+    }
+    $config_name = 'drupal_content_sync.sync.' . $environment;
+    $fields = Element::children($form);
+    foreach ($fields as $field_key) {
+      if ($this->configIsOverridden($field_key, $config_name)) {
+        $form[$field_key]['#disabled'] = 'disabled';
+        $form[$field_key]['#value'] = \Drupal::config($config_name)
+          ->get($field_key);
+        unset($form[$field_key]['#default_value']);
+      }
+    }
+  }
+
+
+  /**
+   * Check if a config is overridden
+   *
+   * Right now it only checks if the config is in the $config-array (overridden
+   * by the settings.php)
+   *
+   * @todo take care of overriding by modules and languages
+   *
+   * @param $config_key
+   * @param $environment Either subsite or master
+   *
+   * @return bool
+   */
+  private function configIsOverridden($config_key, $config_name) {
+    global $config;
+    return isset($config[$config_name][$config_key]);
+  }
+
 
   /**
    * {@inheritdoc}

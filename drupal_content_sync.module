@@ -15,6 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\Core\Url;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Entity\ContentEntityDeleteForm;
 
 define('DRUPAL_CONTENT_SYNC_EMAIL', 'developer@brightsolutions.de');
 define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
@@ -25,6 +26,27 @@ define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
  * @param $form_id
  */
 function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $form_object = $form_state->getFormObject();
+
+  if ($form_object instanceof ContentEntityDeleteForm) {
+    $entity   = $form_object->getEntity();
+    $sync_key = $entity->getEntityTypeId() . '-' . $entity->bundle();
+
+    $synchronisations = \Drupal::entityTypeManager()
+      ->getStorage('drupal_content_sync')
+      ->loadMultiple();
+
+    foreach ($synchronisations as $synchronisation) {
+      $values = json_decode($synchronisation->sync_entities);
+
+      if (DrupalContentSync::EXPORT_DISABLED != $values->$sync_key->export) {
+        drupal_set_message(t('This will delete the %type from all sites using it.', [
+          '%type' => $entity->getEntityTypeId(),
+        ]), 'error');
+      }
+    }
+  }
+
   switch ($form_id) {
     case 'user_form':
       $form['actions']['submit']['#submit'][] = 'drupal_content_sync_user_password_submit';
