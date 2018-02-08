@@ -108,7 +108,7 @@ class DrupalContentSyncWebhookService extends WebhooksService {
         $sync_entity_type_key = $matches[1];
         $sync_entity_bundle_key = $matches[2];
 
-        $is_manual_export = $sync_entity['export'] == DrupalContentSync::EXPORT_MANUALLY && !empty($entity_payload['publish_changes']);
+        $is_manual_export = $sync_entity['export'] == DrupalContentSync::EXPORT_MANUALLY && (!empty($entity_payload['publish_changes']) || 'delete' == $event_type);
         $is_exported = $is_manual_export || $sync_entity['export'] == DrupalContentSync::EXPORT_AUTOMATICALLY;
 
         if ($is_exported && $sync_entity_type_key === $entity_type && $sync_entity_bundle_key === $entity_bundle) {
