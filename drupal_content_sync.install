@@ -27,10 +27,16 @@ function drupal_content_sync_install() {
     $config_storage->write($name, $source->read($name));
   }
 
+
+  $username = 'Drupal Content Sync';
+
+  \Drupal::moduleHandler()->alter('drupal_content_sync_username', $username);
+
   $data = [
-    'userName' => 'Drupal Content Sync-' . user_password(),
+    'userName' => $username,
     'userPass' => user_password(),
   ];
+
 
   $user = User::create();
   $user->setUsername($data['userName']);
@@ -48,17 +54,22 @@ function drupal_content_sync_install() {
 }
 
 /**
- * Generates and encrypts random password for 'Drupal Content Sync' user.
+ * Update 8001 and 8002
+ * Generates and encrypts a random password for the 'Drupal Content Sync' user
+ * and update it's username with the new username_alter hook.
  */
-function drupal_content_sync_update_8001(&$sandbox) {
+function drupal_content_sync_update_8002(&$sandbox) {
   $user = user_load_by_mail(DRUPAL_CONTENT_SYNC_EMAIL);
 
   if (!empty($user)) {
     $userData = \Drupal::service('user.data');
     $password = user_password();
 
+    $username = $user->getUsername();
+    \Drupal::moduleHandler()->alter('drupal_content_sync_username', $username);
+
     $data = [
-      'userName' => $user->getUsername(),
+      'userName' => $username,
       'userPass' => $password,
     ];
 
