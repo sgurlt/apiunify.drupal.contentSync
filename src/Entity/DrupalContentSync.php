@@ -427,6 +427,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
                 'update_entities' => true,
                 'delete_entities' => true,
                 'clone_entities' => false,
+                'update_none_when_loading' => true,
                 'exclude_reference_properties' => [
                   'pSource'
                 ]
@@ -514,6 +515,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
                 'update_entities' => true,
                 'delete_entities' => boolval($type['delete_entity']),
                 'clone_entities' => $type['cloned_import'] == 'automatically',
+                'update_none_when_loading' => true,
                 'exclude_reference_properties' => [
                   'pSource'
                 ]
@@ -534,6 +536,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
                   'update_entities' => true,
                   'delete_entities' => true,
                   'clone_entities' => false,
+                  'update_none_when_loading' => true,
                   'exclude_reference_properties' => [
                     'pSource'
                   ]
