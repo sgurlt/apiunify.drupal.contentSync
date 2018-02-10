@@ -16,6 +16,7 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\Core\Url;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Entity\ContentEntityDeleteForm;
+use Drupal\menu_link_content\Entity\MenuLinkContent;
 
 define('DRUPAL_CONTENT_SYNC_EMAIL', 'developer@brightsolutions.de');
 define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
@@ -314,6 +315,17 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
         }
         break;
     }
+  }
+
+  $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
+  $menu_items = $menu_link_manager->loadLinksByRoute('entity.'.$entity_type.'.canonical', array($entity_type => $original->id()));
+  foreach ($menu_items as $menu_item) {
+    $menu_uuid = $menu_item->getDerivativeId();
+    $entity['embed_entities'][$menu_uuid] = [
+      'uuid' => $menu_uuid,
+      'connection_id' => 'drupal_pool_' . $menu_item->getBaseId(),
+      'type' => $menu_item->getBaseId(),
+    ];
   }
 
   $entity['id'] = $entity['uuid'];

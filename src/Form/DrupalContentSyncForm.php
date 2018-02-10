@@ -151,6 +151,7 @@ class DrupalContentSyncForm extends EntityForm {
         $this->t('Cloned Import'),
         $this->t('Preview'),
         $this->t('Delete entities'),
+        $this->t('Sync menu items'),
         '',
         '',
         '',
@@ -167,7 +168,7 @@ class DrupalContentSyncForm extends EntityForm {
 
       $entity_table[][] = [
         '#markup' => '<h2>' . str_replace('_', ' ', ucfirst($type_key)) . '</h2>',
-        '#wrapper_attributes' => ['colspan' => 8],
+        '#wrapper_attributes' => ['colspan' => sizeof($entity_table['#header'])],
       ];
 
       foreach ($entity_type as $entity_bundle_name => $entity_bundle) {
@@ -208,10 +209,11 @@ class DrupalContentSyncForm extends EntityForm {
             'preview' => NULL,
             'display_name' => $this->t('@bundle', [
               '@bundle' => $entity_bundle['label'],
-              ]),
+            ]),
             'entity_type' => $type_key,
             'entity_bundle' => $entity_bundle_name,
             'delete_entity' => NULL,
+            'sync_menu_items' => NULL,
           ];
         }
         else {
@@ -283,6 +285,14 @@ class DrupalContentSyncForm extends EntityForm {
           '#title' => $this->t('Delete entity'),
           '#title_display' => 'invisible',
           '#default_value' => $row_default_values['delete_entity'] == 1,
+        ];
+
+        $entity_types_with_menu_items = ['node'];
+        $entity_bundle_row['sync_menu_items'] = [
+          '#type' => in_array($type_key, $entity_types_with_menu_items) ? 'checkbox' : 'hidden',
+          '#title' => $this->t('Sync menu items'),
+          '#title_display' => 'invisible',
+          '#default_value' => isset($row_default_values['sync_menu_items']) ? $row_default_values['sync_menu_items'] == 1 : 0,
         ];
 
         $entity_bundle_row['version_hash'] = [
