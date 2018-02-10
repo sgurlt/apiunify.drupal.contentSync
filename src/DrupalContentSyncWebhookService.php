@@ -113,7 +113,7 @@ class DrupalContentSyncWebhookService extends WebhooksService {
 
         if ($is_exported && $sync_entity_type_key === $entity_type && $sync_entity_bundle_key === $entity_bundle) {
           if ('delete' != $event_type) {
-            $this->preFormatEntity($webhook, $sync->{'site_id'}, $entity_type, $entity_bundle);
+            $this->preFormatEntity($webhook, $sync, $entity_type, $entity_bundle);
 
             $preprocessed_entity = $webhook->getPayload();
             if (!empty($preprocessed_entity['embed_entities'])) {
@@ -164,9 +164,9 @@ class DrupalContentSyncWebhookService extends WebhooksService {
     }
   }
 
-  protected function preFormatEntity(Webhook &$webhook, $site_id, $entity_type, $bundle) {
+  protected function preFormatEntity(Webhook &$webhook, $synchronization, $entity_type, $bundle) {
     $entity_data = $webhook->getPayload();
-    $webhook->setPayload(_drupal_content_sync_preprocess_entity($entity_data['entity'], $entity_type, $bundle, $site_id, true));
+    $webhook->setPayload(_drupal_content_sync_preprocess_entity($entity_data['entity'], $entity_type, $bundle, $synchronization, true));
   }
 
   /**

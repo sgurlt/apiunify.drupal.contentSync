@@ -203,7 +203,11 @@ function drupal_content_sync_theme() {
   return $theme;
 }
 
-function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle, $site_id = '', $file_content = false, $translation = false) {
+function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle, $synchronization, $file_content = false, $translation = false) {
+  $site_id = '';
+  if ($synchronization) {
+    $site_id = $synchronization->site_id;
+  }
   /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
   $entityFieldManager = Drupal::service('entity_field.manager');
   $field_definitions = $entityFieldManager->getFieldDefinitions($entity_type, $bundle);
@@ -289,7 +293,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
           $field_collection_bundle = $field_collection_item->bundle();
           $field_collection_type = $field_collection_item->getEntityTypeId();
 
-          $entity[$field_name][$key] = _drupal_content_sync_preprocess_entity($field_collection_item, $field_collection_type, $field_collection_bundle, $site_id, $file_content, $translation);
+          $entity[$field_name][$key] = _drupal_content_sync_preprocess_entity($field_collection_item, $field_collection_type, $field_collection_bundle, $synchronization, $file_content, $translation);
           $entity[$field_name][$key]['type'] = $field_collection_bundle;
 
           $entity['embed_entities'] = array_merge($entity['embed_entities'], $entity[$field_name][$key]['embed_entities']);
@@ -298,6 +302,11 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
         break;
 
       case 'link':
+        if (!$synchronization) {
+          break;
+        }
+        $conf = json_decode($synchronization->sync_entities);
+
         foreach ($field_value as $key => $value) {
           $uri = &$field_value[$key]['uri'];
           // Find the linked entity and replace it's id with the UUID
@@ -307,8 +316,19 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
             $link_entity_type = $found[1];
             $link_entity_id = $found[2];
             $entity_manager = \Drupal::entityTypeManager();
-            $link_entity = $entity_manager->getStorage($link_entity_type)->load($link_entity_id);
-            if ($link_entity) {
+            $link_entity = $entity_manager->getStorage($link_entity_type)
+              ->load($link_entity_id);
+
+            $link_property_name = $link_entity_type . '-' . $link_entity->bundle();
+            if (!property_exists($conf, $link_property_name)) {
+              break;
+            }
+            $field_conf = $conf->{$link_property_name};
+            if (!property_exists($field_conf, 'sync_menu_items')) {
+              break;
+            }
+
+            if ($link_entity && $field_conf->sync_menu_items) {
               $uri = 'entity:' . $link_entity_type . '/' . $link_entity->uuid();
             }
           }
@@ -415,7 +435,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
   if (!$translation && method_exists($original, 'getTranslationLanguages') && method_exists($original, 'getTranslation')) {
     $translations = array_keys($original->getTranslationLanguages(false));
     foreach ($translations as $t) {
-      $entity['apiu_translation'][$t] = _drupal_content_sync_preprocess_entity($original->getTranslation($t), $entity_type, $bundle, $site_id, $file_content, TRUE);
+      $entity['apiu_translation'][$t] = _drupal_content_sync_preprocess_entity($original->getTranslation($t), $entity_type, $bundle, $synchronization, $file_content, TRUE);
     }
   }
 

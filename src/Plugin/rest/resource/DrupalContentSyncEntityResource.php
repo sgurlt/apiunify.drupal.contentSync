@@ -172,17 +172,17 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         ->getStorage('drupal_content_sync')
         ->loadMultiple();
 
+      $sync = false;
       foreach ($drupal_content_syncs as $sync) {
         $sync_entities = json_decode($sync->sync_entities, TRUE);
         $entity_key = "$entity_type-$entity_bundle";
         if (!empty($sync_entities[$entity_key]['export'])) {
-          $site_id = $sync->site_id;
           break;
         }
       }
 
       foreach($entities as &$entity) {
-        $entity = _drupal_content_sync_preprocess_entity($entity, $entity_type, $entity_bundle, $site_id, true);
+        $entity = _drupal_content_sync_preprocess_entity($entity, $entity_type, $entity_bundle, $sync, true);
       }
 
       if (!empty($entity_uuid)) {
