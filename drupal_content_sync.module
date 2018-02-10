@@ -297,6 +297,25 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
         }
         break;
 
+      case 'link':
+        foreach ($field_value as $key => $value) {
+          $uri = &$field_value[$key]['uri'];
+          // Find the linked entity and replace it's id with the UUID
+          // References have following pattern: entity:entity_type/entity_id
+          preg_match('/^entity:(.*)\/(\d*)$/', $uri, $found);
+          if (!empty($found)) {
+            $link_entity_type = $found[1];
+            $link_entity_id = $found[2];
+            $entity_manager = \Drupal::entityTypeManager();
+            $link_entity = $entity_manager->getStorage($link_entity_type)->load($link_entity_id);
+            if ($link_entity) {
+              $uri = 'entity:' . $link_entity_type . '/' . $link_entity->uuid();
+            }
+          }
+          $entity[$field_name] = $field_value;
+        }
+        break;
+
       default:
         $entity[$field_name] = $field_value;
 

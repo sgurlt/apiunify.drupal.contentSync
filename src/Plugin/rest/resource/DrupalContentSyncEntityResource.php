@@ -459,6 +459,28 @@ class DrupalContentSyncEntityResource extends ResourceBase {
           }
           break;
 
+        case 'link':
+          if (!isset($data[$key])) {
+            continue;
+          }
+          foreach ($data[$key] as &$link_element) {
+            $uri = &$link_element['uri'];
+            // Find the linked entity and replace it's id with the UUID
+            // References have following pattern: entity:entity_type/entity_id
+            preg_match('/^entity:(.*)\/(.*)$/', $uri, $found);
+            if (!empty($found)) {
+              $link_entity_type = $found[1];
+              $link_entity_uuid = $found[2];
+              $link_entity = $this->entityRepository->loadEntityByUuid($link_entity_type, $link_entity_uuid);
+              if ($link_entity) {
+                $uri = 'entity:' . $link_entity_type . '/' . $link_entity->id();
+              }
+            }
+          }
+          $entity->set($key, $data[$key]);
+
+          break;
+
         default:
           if (isset($data[$key])) {
             $entity->set($key, $data[$key]);
