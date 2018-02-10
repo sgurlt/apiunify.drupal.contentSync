@@ -343,6 +343,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
           $entity = $storage->create($entity_data);
           $this->setEntityValues($entity, $data, $is_clone);
         }
+      } else {
+        return $this->patch($entity_type_name, $entity_bundle, $uuid, $data);
       }
 
       return new ModifiedResourceResponse($data);
