@@ -463,6 +463,9 @@ function drupal_content_sync_form_menu_edit_form_alter(&$form, FormStateInterfac
 
     /** @var \Drupal\menu_link_content\Plugin\Menu\MenuLinkContent $menu_link */
     $menu_link = $link['#item']->link;
+    if (!method_exists($menu_link, 'getEntity')) {
+      continue;
+    }
 
     // We need to get an Entity at this point,
     // but 'getEntity' is protected for some reason.
