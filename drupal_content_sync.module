@@ -356,17 +356,6 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     }
   }
 
-  $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
-  $menu_items = $menu_link_manager->loadLinksByRoute('entity.'.$entity_type.'.canonical', array($entity_type => $original->id()));
-  foreach ($menu_items as $menu_item) {
-    $menu_uuid = $menu_item->getDerivativeId();
-    $entity['embed_entities'][$menu_uuid] = [
-      'uuid' => $menu_uuid,
-      'connection_id' => 'drupal_pool_' . $entity_type . '_' . $menu_item->getBaseId(),
-      'type' => $menu_item->getBaseId(),
-    ];
-  }
-
   $entity['id'] = $entity['uuid'];
 
   if (is_array($original)) {
@@ -381,6 +370,17 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     $entity_ids = array_values($query->execute());
     $entities = array_values(\Drupal::entityTypeManager()->getStorage($entity_type)->loadMultiple($entity_ids));
     $original = array_shift($entities);
+  }
+
+  $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
+  $menu_items = $menu_link_manager->loadLinksByRoute('entity.'.$entity_type.'.canonical', array($entity_type => $original->id()));
+  foreach ($menu_items as $menu_item) {
+    $menu_uuid = $menu_item->getDerivativeId();
+    $entity['embed_entities'][$menu_uuid] = [
+      'uuid' => $menu_uuid,
+      'connection_id' => 'drupal_pool_' . $entity_type . '_' . $menu_item->getBaseId(),
+      'type' => $menu_item->getBaseId(),
+    ];
   }
 
   $view_builder = $entityTypeManager->getViewBuilder($entity_type);
