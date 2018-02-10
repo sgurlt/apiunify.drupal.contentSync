@@ -461,12 +461,31 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
               ->decrypt($value, $encryption_profile);
           }
 
-          $read_list = [];
+          $crud_operations = [
+            'create_item' => [
+              'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '?is_clone=[is_clone]&_format=json',
+            ],
+            'update_item' => [
+              'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/[id]?_format=json',
+            ],
+            'delete_item' => [
+              'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/[id]?_format=json',
+            ],
+          ];
+          $connection_options = [
+            'authentication' => [
+              'type' => 'drupal8_services',
+              'username' => $data['userName'],
+              'password' => $data['userPass'],
+              'base_url' => $base_url,
+            ],
+            'crud' => &$crud_operations,
+            'static_values' => [],
+          ];
+
           if ($type['export'] == self::EXPORT_AUTOMATICALLY) {
-            $read_list['url'] = $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/0?_format=json';
-          }
-          else {
-            $read_list['url'] = $base_url . '/drupal-content-sync/publish-changes/entities?_format=json';
+            $crud_operations['read_list']['url'] = $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/0?_format=json';
+            $connection_options['pull_interval'] = 86400000;
           }
 
           //Create the instance connection entity for this entity type
@@ -479,28 +498,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
               'status' => 'READY',
               'entity_type_id' => $entity_type['id'],
               'instance_id' => $this->{'site_id'},
-              'options' => [
-                'pull_interval' => 86400000,
-                'authentication' => [
-                  'type' => 'drupal8_services',
-                  'username' => $data['userName'],
-                  'password' => $data['userPass'],
-                  'base_url' => $base_url,
-                ],
-                'crud' => [
-                  'read_list' => $read_list,
-                  'create_item' => [
-                    'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '?is_clone=[is_clone]&_format=json',
-                  ],
-                  'update_item' => [
-                    'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/[id]?_format=json',
-                  ],
-                  'delete_item' => [
-                    'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/[id]?_format=json',
-                  ],
-                ],
-                'static_values' => [],
-              ],
+              'options' => $connection_options,
             ],
           ]);
           $localConnections[] = 'drupal_' . $this->{'site_id'} . '_' . $entity_type['name'];
