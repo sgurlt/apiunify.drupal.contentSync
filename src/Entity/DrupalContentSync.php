@@ -691,8 +691,13 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   protected function cleanUnifyData() {
-    foreach ($this->toBeDeleted as $id => $url) {
-      $responce = $this->client->delete($url . '/' . $id);
+    try {
+      foreach ($this->toBeDeleted as $id => $url) {
+        $responce = $this->client->delete($url . '/' . $id);
+      }
+    }
+    catch (RequestException $e) {
+      drupal_set_message($e->getMessage(), 'error');
       return FALSE;
     }
 
