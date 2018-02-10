@@ -76,6 +76,7 @@ function drupal_content_sync_update_8002(&$sandbox) {
     $data = drupal_content_sync_encrypt_values($data);
 
     $userData->set('drupal_content_sync', $user->id(), 'sync_data', $data);
+    $user->setUsername($username);
     $user->setPassword($password);
     $user->save();
   }
