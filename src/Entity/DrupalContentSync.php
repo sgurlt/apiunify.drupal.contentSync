@@ -399,12 +399,13 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             'json' => $entity_type,
           ]);
 
+          $pool_connection_id = 'drupal_pool_' . $entity_type['name_space'] . '_' . $entity_type['name'];
           //Create the pool connection entity for this entity type
           $this->sendEntityRequest($url . '/api_unify-api_unify-connection-0_1', [
             'json' => [
-              'id' => 'drupal_pool_' . $entity_type['name'],
-              'name' => 'Drupal pool connection for ' . $entity_type['name'],
-              'hash' => 'drupal/drupal-content-sync-pool/' . $entity_type['name'],
+              'id' => $pool_connection_id,
+              'name' => 'Drupal pool connection for ' . $entity_type['name_space'] . '-' . $entity_type['name'],
+              'hash' => 'drupal/drupal-content-sync-pool/' . $entity_type['name_space'] . '/' . $entity_type['name'],
               'usage' => 'EXTERNAL',
               'status' => 'READY',
               'entity_type_id' => $entity_type['id'],
@@ -420,8 +421,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           //Create a synchronization from the pool to the preview connection
           $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
             'json' => [
-              'id' => 'drupal_pool_' . $entity_type['id'] . '_synchronization_to_preview',
-              'name' => 'Synchronization Pool ' . $entity_type['name'] . ' -> Preview',
+              'id' => 'drupal_pool_' . $entity_type['name_space'] . '_' . $entity_type['id'] . '_synchronization_to_preview',
+              'name' => 'Synchronization Pool ' . $entity_type['name_space'] . '-' . $entity_type['name'] . ' -> Preview',
               'options' => [
                 'create_entities' => true,
                 'update_entities' => true,
@@ -433,7 +434,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
                 ]
               ],
               'status' => 'READY',
-              'source_connection_id' => 'drupal_pool_' . $entity_type['name'],
+              'source_connection_id' => $pool_connection_id,
               'destination_connection_id' => 'drupal_drupal-content-sync_preview',
             ],
           ]);
@@ -488,11 +489,12 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             $connection_options['pull_interval'] = 86400000;
           }
 
+          $local_connection_id = 'drupal_' . $this->{'site_id'} . '_' . $entity_type['name_space'] . '_' . $entity_type['name'];
           //Create the instance connection entity for this entity type
           $this->sendEntityRequest($url . '/api_unify-api_unify-connection-0_1', [
             'json' => [
-              'id' => 'drupal_' . $this->{'site_id'} . '_' . $entity_type['name'],
-              'name' => 'Drupal connection on ' . $this->{'site_id'} . ' for ' . $entity_type['name'],
+              'id' => $local_connection_id,
+              'name' => 'Drupal connection on ' . $this->{'site_id'} . ' for ' . $entity_type['name_space'] . '-' . $entity_type['name'],
               'hash' => 'drupal/' . $this->{'site_id'} . '/' . $entity_type['name_space'] . '/' . $entity_type['name'],
               'usage' => 'EXTERNAL',
               'status' => 'READY',
@@ -501,13 +503,13 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
               'options' => $connection_options,
             ],
           ]);
-          $localConnections[] = 'drupal_' . $this->{'site_id'} . '_' . $entity_type['name'];
+          $localConnections[] = $local_connection_id;
 
           //Create a synchronization from the pool to the local connection
           $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
             'json' => [
               'id' => 'drupal_' . $this->{'site_id'} . '_' . $entity_type['id'] . '_synchronization_to_drupal',
-              'name' => 'Synchronization for ' . $entity_type['name'] . ' from Pool -> ' . $this->{'site_id'},
+              'name' => 'Synchronization for ' . $entity_type['name_space'] . '/' . $entity_type['name'] . ' from Pool -> ' . $this->{'site_id'},
               'options' => [
                 'create_entities' => $type['sync_import'] == 'automatically' || $type['cloned_import'] == 'automatically',
                 'update_entities' => true,
@@ -519,8 +521,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
                 ]
               ],
               'status' => 'READY',
-              'source_connection_id' => 'drupal_pool_' . $entity_type['name'],
-              'destination_connection_id' => 'drupal_' . $this->{'site_id'} . '_' . $entity_type['name'],
+              'source_connection_id' => $pool_connection_id,
+              'destination_connection_id' => $local_connection_id,
             ],
           ]);
 
@@ -528,7 +530,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
               'json' => [
                 'id' => 'drupal_' . $this->{'site_id'} . '_' . $entity_type['id'] . '_synchronization_to_pool',
-                'name' => 'Synchronization for ' . $entity_type['name'] . ' from ' . $this->{'site_id'} . ' -> Pool',
+                'name' => 'Synchronization for ' . $entity_type['name_space'] . '/' . $entity_type['name'] . ' from ' . $this->{'site_id'} . ' -> Pool',
                 'options' => [
                   'create_entities' => true,
                   'update_entities' => true,
@@ -540,8 +542,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
                   ]
                 ],
                 'status' => 'READY',
-                'source_connection_id' => 'drupal_' . $this->{'site_id'} . '_' . $entity_type['name'],
-                'destination_connection_id' => 'drupal_pool_' . $entity_type['name'],
+                'source_connection_id' => $local_connection_id,
+                'destination_connection_id' => $pool_connection_id,
               ],
             ]);
           }

@@ -241,7 +241,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
             $uuid = $reference->uuid();
 
             $entity[$field_name][$key]['id'] = $target_id;
-            $entity[$field_name][$key]['connection_id'] = 'drupal_pool_' . $reference->bundle();
+            $entity[$field_name][$key]['connection_id'] = 'drupal_pool_' . $reference->getEntityTypeId() . '_' . $reference->bundle();
             $entity[$field_name][$key]['type'] = $reference->getEntityTypeId();
             $entity[$field_name][$key]['uuid'] = $uuid;
 
@@ -342,7 +342,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     $menu_uuid = $menu_item->getDerivativeId();
     $entity['embed_entities'][$menu_uuid] = [
       'uuid' => $menu_uuid,
-      'connection_id' => 'drupal_pool_' . $menu_item->getBaseId(),
+      'connection_id' => 'drupal_pool_' . $entity_type . '_' . $menu_item->getBaseId(),
       'type' => $menu_item->getBaseId(),
     ];
   }
