@@ -378,7 +378,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     $menu_uuid = $menu_item->getDerivativeId();
     $entity['embed_entities'][$menu_uuid] = [
       'uuid' => $menu_uuid,
-      'connection_id' => 'drupal_pool_' . $entity_type . '_' . $menu_item->getBaseId(),
+      'connection_id' => 'drupal_pool_' . $menu_item->getBaseId() . '_' . $menu_item->getBaseId(),
       'type' => $menu_item->getBaseId(),
     ];
   }
