@@ -81,10 +81,7 @@ function drupal_content_sync_update_8002(&$sandbox) {
     $user->save();
   }
   else {
-    throw new \Exception(
-      t("No user found with email: @email. Encrypted data can't be saved",
-      ['@email' => DRUPAL_CONTENT_SYNC_EMAIL])
-    );
+    drupal_content_sync_install();
   }
 }
 
