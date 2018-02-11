@@ -174,21 +174,14 @@ class DrupalContentSyncForm extends EntityForm {
       foreach ($entity_type as $entity_bundle_name => $entity_bundle) {
         $entity_bundle_row = [];
 
-        $entity_type_object = $this->entityTypeManager
-          ->getStorage($type_key)
-          ->getEntityType();
-
         $field_definitions = $this->entityFieldManager->getFieldDefinitions($type_key, $entity_bundle_name);
 
-        $entity_type_array = (array) $entity_type_object;
         $field_definitions_array = (array) $field_definitions;
-
         unset($field_definitions_array['field_drupal_content_synced']);
-
-        ksort($entity_type_array);
         ksort($field_definitions_array);
+        $field_definitions_array = array_keys($field_definitions_array);
 
-        $version = md5(json_encode($entity_type_array) . json_encode($field_definitions_array));
+        $version = md5(json_encode($field_definitions_array));
 
         $entity_bundle_row['bundle'] = [
           '#markup' => $this->t('@bundle (@machine_name)', [
