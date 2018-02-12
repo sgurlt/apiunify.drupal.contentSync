@@ -18,6 +18,10 @@ class DrupalContentSyncPublishChanges extends ControllerBase {
    * Published entity to API Unify.
    */
   public function publishChanges($sync_id, EntityInterface $entity, $repeat = FALSE) {
+    if (method_exists($entity, 'getUntranslated')) {
+      $entity = $entity->getUntranslated();
+    }
+
     $sync = DrupalContentSync::load($sync_id);
 
     $client = \Drupal::httpClient();
