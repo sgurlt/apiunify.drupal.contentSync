@@ -436,6 +436,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     $translations = array_keys($original->getTranslationLanguages(false));
     foreach ($translations as $t) {
       $entity['apiu_translation'][$t] = _drupal_content_sync_preprocess_entity($original->getTranslation($t), $entity_type, $bundle, $synchronization, $file_content, TRUE);
+      $entity['embed_entities'] = array_merge($entity['embed_entities'], $entity['apiu_translation'][$t]['embed_entities']);
     }
   }
 
