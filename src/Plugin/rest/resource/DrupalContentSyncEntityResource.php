@@ -40,6 +40,16 @@ class DrupalContentSyncEntityResource extends ResourceBase {
   const CODE_NOT_FOUND = 404;
 
   /**
+   * @const ENTITY_HAS_NOT_BEEN_FOUND
+   */
+  const FILE_INPUT_DATA_IS_INVALID = 'The entity data of the file object is invalid.';
+
+  /**
+   * @const CODE_NOT_FOUND
+   */
+  const CODE_INVALID_DATA = 401;
+
+  /**
    * @var \Drupal\Core\Entity\EntityTypeBundleInfo $entityTypeBundleInfo
    */
   protected $entityTypeBundleInfo;
@@ -328,13 +338,20 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       if ($is_clone || !$this->entityRepository->loadEntityByUuid($entity_type_name, $uuid)) {
         if ($entity_type_name == 'file') {
           if (!empty($data['uri'][0]['value'])) {
-            $data['uri'] = $data['uri'][0]['value'];
+            $uri = $data['uri'][0]['value'];
+          } elseif (!empty($data['uri'])) {
+            $uri = $data['uri'];
+          } else {
+            return new ResourceResponse(
+              ['message' => t(self::FILE_INPUT_DATA_IS_INVALID)], self::CODE_INVALID_DATA
+            );
           }
 
-          $was_prepared = file_prepare_directory(\Drupal::service('file_system')->dirname($data['uri']), FILE_CREATE_DIRECTORY);
+          $directory = \Drupal::service('file_system')->dirname($uri);
+          $was_prepared = file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
 
           if ($was_prepared && !empty($data['apiu_file_content'])) {
-            $entity = file_save_data(base64_decode($data['apiu_file_content']), $data['uri']);
+            $entity = file_save_data(base64_decode($data['apiu_file_content']), $uri);
             $entity->setPermanent();
             $entity->set('uuid', $data['uuid']);
             $entity->save();
