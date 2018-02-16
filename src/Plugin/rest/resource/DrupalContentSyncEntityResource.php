@@ -226,33 +226,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @return Response
    *   A list of entities of the given type and bundle.
    */
-  public function patch($entity_type, $entity_bundle, $entity_uuid, $data) {
-    if (!$this->isSyncAllowed($entity_type, $entity_bundle, $data)) {
-      return new ModifiedResourceResponse($data);
-    }
-
-    $entity_type_entity = \Drupal::entityTypeManager()->getStorage($entity_type)->getEntityType();
-
-    $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
-
-    $entity_types_keys = array_keys($entity_types);
-    if (in_array($entity_type, $entity_types_keys)) {
-      $query = \Drupal::entityQuery($entity_type);
-      $query->condition($entity_type_entity->getKey('bundle'), $entity_bundle);
-      $query->condition('uuid', $entity_uuid);
-      $entity_ids = array_values($query->execute());
-
-      if ($entity_ids) {
-        $entity = \Drupal::entityTypeManager()->getStorage($entity_type)->load(reset($entity_ids));
-        $this->setEntityValues($entity, $data);
-      }
-      else {
-        $entity = NULL;
-      }
-
-      return new ModifiedResourceResponse($data);
-    }
-
+  public function patch($entity_type_name, $entity_bundle, $entity_uuid, $data) {
+    return $this->handleIncomingEntity($entity_type_name, $entity_bundle, $data, $entity_uuid);
   }
 
   /**
@@ -313,6 +288,10 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   A list of entities of the given type and bundle.
    */
   public function post($entity_type_name, $entity_bundle, $data) {
+    return $this->handleIncomingEntity($entity_type_name, $entity_bundle, $data);
+  }
+
+  private function handleIncomingEntity($entity_type_name, $entity_bundle, $data, $uuid = false) {
     if (!$this->isSyncAllowed($entity_type_name, $entity_bundle, $data)) {
       return new ModifiedResourceResponse($data);
     }
@@ -333,9 +312,12 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         $entity_data[$entity_type->getKey('uuid')] = $data[$entity_type->getKey('uuid')];
       }
 
-      $uuid = $data[$entity_type->getKey('uuid')];
+      if (!$uuid) {
+        $uuid = $data[$entity_type->getKey('uuid')];
+      }
 
-      if ($is_clone || !$this->entityRepository->loadEntityByUuid($entity_type_name, $uuid)) {
+      $entity = $this->entityRepository->loadEntityByUuid($entity_type_name, $uuid);
+      if ($is_clone || !$entity) {
         if ($entity_type_name == 'file') {
           if (!empty($data['uri'][0]['value'])) {
             $uri = $data['uri'][0]['value'];
@@ -361,7 +343,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
           $this->setEntityValues($entity, $data, $is_clone);
         }
       } else {
-        return $this->patch($entity_type_name, $entity_bundle, $uuid, $data);
+        $this->setEntityValues($entity, $data);
       }
 
       return new ModifiedResourceResponse($data);
