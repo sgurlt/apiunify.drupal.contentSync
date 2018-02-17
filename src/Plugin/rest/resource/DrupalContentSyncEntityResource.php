@@ -343,7 +343,16 @@ class DrupalContentSyncEntityResource extends ResourceBase {
           $this->setEntityValues($entity, $data, $is_clone);
         }
       } else {
-        $this->setEntityValues($entity, $data);
+        if ($entity_type_name == 'file') {
+          if (!isset($data['apiu_file_content']) || empty($data['apiu_file_content'])) {
+            $content = file_get_contents($entity->getFileUri());
+            if (!empty($content)) {
+              $data['apiu_file_content'] = base64_encode($content);
+            }
+          }
+        } else {
+          $this->setEntityValues($entity, $data);
+        }
       }
 
       return new ModifiedResourceResponse($data);
