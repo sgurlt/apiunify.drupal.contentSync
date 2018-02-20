@@ -423,13 +423,14 @@ class DrupalContentSyncForm extends EntityForm {
         '%label' => $config->label(),
       )));
       $uri = 'internal:/admin/content/drupal_content_synchronization/' . $this->entity->id();
+      $link_data = [
+        'link' => ['uri' => $uri],
+        'title' => $this->entity->label(),
+        'menu_name' => 'admin',
+        'parent' => 'system.admin_content',
+      ];
       if($is_new) {
-        $item = MenuLinkContent::create([
-          'link' => ['uri' => $uri],
-          'title' => $this->entity->label(),
-          'menu_name' => 'admin',
-          'parent' => 'system.admin_content',
-        ]);
+        $item = MenuLinkContent::create($link_data);
         $item->save();
         menu_cache_clear_all();
       } else {
@@ -438,9 +439,11 @@ class DrupalContentSyncForm extends EntityForm {
 
         if ($link = reset($links)) {
           $link->set('title', $this->entity->label());
-          $link->save();
-          menu_cache_clear_all();
+        } else {
+          $link = MenuLinkContent::create($link_data);
         }
+        $link->save();
+        menu_cache_clear_all();
       }
     }
     else {
