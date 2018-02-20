@@ -93,7 +93,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     if (!$this->initialize()) {
       drupal_set_message('The communication with the Drupal Content Sync Server failed.' .
         ' Therefore the synchronization entity could not be saved. For more' .
-        ' information see the error output above.', 'error');
+        ' information see the error output above.', 'warning');
       return;
     }
   }
@@ -178,7 +178,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       $this->createEntityTypes();
     }
     catch (RequestException $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      drupal_set_message($e->getMessage(), 'warning');
       return FALSE;
     }
     return TRUE;
