@@ -333,14 +333,20 @@ class DrupalContentSyncForm extends EntityForm {
    * @param array $form
    */
   private function disableOverridenConfigs(array &$form) {
-    // Is this site a master site? It is a subsite by default.
-    $environment = 'subsite';
-    if (\Drupal::config('config_split.config_split.drupal_content_sync_master')
-      ->get('status')
-    ) {
-      $environment = 'master';
+    global $config;
+    $config_name = 'drupal_content_sync.drupal_content_sync.' . $form['id']['#default_value'];
+
+    // If the default overrides aren't used check if a master / subsite setting is used
+    if (!isset($config[$config_name]) || empty($config[$config_name])) {
+      // Is this site a master site? It is a subsite by default.
+      $environment = 'subsite';
+      if (\Drupal::config('config_split.config_split.drupal_content_sync_master')
+        ->get('status')
+      ) {
+        $environment = 'master';
+      }
+      $config_name = 'drupal_content_sync.sync.' . $environment;
     }
-    $config_name = 'drupal_content_sync.sync.' . $environment;
     $fields = Element::children($form);
     foreach ($fields as $field_key) {
       if ($this->configIsOverridden($field_key, $config_name)) {

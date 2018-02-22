@@ -178,9 +178,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       $site_id = '';
 
       // Trying to find site ID.
-      $drupal_content_syncs = $this->entityTypeManager
-        ->getStorage('drupal_content_sync')
-        ->loadMultiple();
+      $drupal_content_syncs = _drupal_content_sync_get_synchronization_configurations();;
 
       $sync = false;
       foreach ($drupal_content_syncs as $sync) {

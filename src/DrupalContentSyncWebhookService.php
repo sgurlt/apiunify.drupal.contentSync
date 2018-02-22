@@ -41,9 +41,7 @@ class DrupalContentSyncWebhookService extends WebhooksService {
       return;
     }
 
-    $drupal_content_syncs = $this->entityTypeManager
-      ->getStorage('drupal_content_sync')
-      ->loadMultiple();
+    $drupal_content_syncs = _drupal_content_sync_get_synchronization_configurations();
 
     $entity_event = $webhook->getEvent();
     preg_match('/^.+:(.+):(.+)$/', $entity_event, $matches);
