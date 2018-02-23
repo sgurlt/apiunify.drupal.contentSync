@@ -274,6 +274,9 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
         $entity[$field_name] = [];
 
         foreach ($field_value as $key => $value) {
+          if (!isset($value['field_collection_item'])) {
+            continue;
+          }
           /** @var \Drupal\field_collection\FieldCollectionItemInterface $field_collection_item */
           $field_collection_item = $value['field_collection_item'];
           if (!$field_collection_item && !empty($value['value'])) {
@@ -315,6 +318,9 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
             $link_entity = $entity_manager->getStorage($link_entity_type)
               ->load($link_entity_id);
 
+            if(empty($link_entity)) {
+              continue;
+            }
             $link_property_name = $link_entity_type . '-' . $link_entity->bundle();
             if (!property_exists($conf, $link_property_name)) {
               break;
