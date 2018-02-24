@@ -531,6 +531,9 @@ function _drupal_content_sync_get_synchronization_configurations() {
   foreach($configurations as $id => &$configuration) {
     global $config;
     $config_name = 'drupal_content_sync.drupal_content_sync.' . $id;
+    if(!isset($config[$config_name]) || empty($config[$config_name])) {
+      continue;
+    }
     foreach($config[$config_name] as $key => $new_value) {
       $configuration->set($key, $new_value);
     }
