@@ -368,6 +368,9 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
     if ($bundle_field = $entity_type_entity->getKey('bundle')) {
       $query->condition($bundle_field, $bundle);
     }
+    if (!isset($entity['uuid']) || empty($entity['uuid'])) {
+      return false;
+    }
     $query->condition('uuid', $entity['uuid']);
     $entity_ids = array_values($query->execute());
     $entities = array_values(\Drupal::entityTypeManager()->getStorage($entity_type)->loadMultiple($entity_ids));
