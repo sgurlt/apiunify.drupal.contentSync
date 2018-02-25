@@ -164,7 +164,13 @@ class DrupalContentSyncWebhookService extends WebhooksService {
 
   protected function preFormatEntity(Webhook &$webhook, $synchronization, $entity_type, $bundle) {
     $entity_data = $webhook->getPayload();
-    $webhook->setPayload(_drupal_content_sync_preprocess_entity($entity_data['entity'], $entity_type, $bundle, $synchronization, true));
+    if(!isset($entity_data['entity']) || empty($entity_data['entity'])) {
+      $entity = $entity_data;
+    } else {
+      $entity = $entity_data['entity'];
+    }
+    $webhook->setPayload(_drupal_content_sync_preprocess_entity($entity, $entity_type, $bundle, $synchronization, true));
+
   }
 
   /**
