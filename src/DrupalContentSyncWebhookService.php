@@ -107,7 +107,7 @@ class DrupalContentSyncWebhookService extends WebhooksService {
         $sync_entity_bundle_key = $matches[2];
 
         $is_manual_export = $sync_entity['export'] == DrupalContentSync::EXPORT_MANUALLY && (!empty($entity_payload['publish_changes']) || 'delete' == $event_type);
-        $is_exported = $is_manual_export || $sync_entity['export'] == DrupalContentSync::EXPORT_AUTOMATICALLY;
+        $is_exported = $is_manual_export || $sync_entity['export'] == DrupalContentSync::EXPORT_AUTOMATICALLY || !empty($entity_payload['force_publish']);
 
         if ($is_exported && $sync_entity_type_key === $entity_type && $sync_entity_bundle_key === $entity_bundle) {
           if ('delete' != $event_type) {
@@ -125,14 +125,19 @@ class DrupalContentSyncWebhookService extends WebhooksService {
 
                 try {
                   if ($embed_entity = $entity_repository->loadEntityByUuid($data['type'], $data['uuid'])) {
-                    $client = \Drupal::httpClient();
-                    $url = sprintf('%s/drupal/%s/%s/%s/%s', $sync->{'url'}, $sync->{'site_id'}, $embed_entity->getEntityTypeId(), $embed_entity->bundle(), $embed_entity->uuid());
-
-                    try {
-                      $is_new = $client->get($url)->getStatusCode() != 200;
-                    }
-                    catch (\Exception $exception) {
+                    if( !empty($entity_payload['force_publish']) ) {
                       $is_new = TRUE;
+                    }
+                    else {
+                      $client = \Drupal::httpClient();
+                      $url = sprintf('%s/drupal/%s/%s/%s/%s', $sync->{'url'}, $sync->{'site_id'}, $embed_entity->getEntityTypeId(), $embed_entity->bundle(), $embed_entity->uuid());
+
+                      try {
+                        $is_new = $client->get($url)->getStatusCode() != 200;
+                      }
+                      catch (\Exception $exception) {
+                        $is_new = TRUE;
+                      }
                     }
 
                     $event = implode(':', ['entity', $embed_entity->getEntityTypeId(), $is_new ? 'create' : 'update']);
