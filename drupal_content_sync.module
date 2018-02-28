@@ -326,9 +326,9 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
               break;
             }
             $field_conf = $conf->{$link_property_name};
-            if (!property_exists($field_conf, 'sync_menu_items')) {
-              break;
-            }
+            //if (!property_exists($field_conf, 'sync_menu_items')) {
+            //  break;
+            //}
 
             if ($link_entity && $field_conf->sync_menu_items) {
               $uri = 'entity:' . $link_entity_type . '/' . $link_entity->uuid();
