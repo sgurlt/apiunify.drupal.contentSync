@@ -358,6 +358,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           ];
           $entity_type['new_property_lists']['details']['apiu_file_content'] = 'value';
           $entity_type['new_property_lists']['filesystem']['apiu_file_content'] = 'value';
+          $entity_type['new_property_lists']['modifiable']['apiu_file_content'] = 'value';
           $entity_type['new_property_lists']['required']['apiu_file_content'] = 'value';
         }
 
