@@ -263,7 +263,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
           if ($file) {
             $uri = $file->getFileUri();
             $entity[$field_name][$key] = $value;
-            $entity[$field_name][$key]['file_content'] = base64_encode(file_get_contents($uri));
+            //$entity[$field_name][$key]['file_content'] = base64_encode(file_get_contents($uri));
             $entity[$field_name][$key]['file_uri'] = $uri;
             $entity[$field_name][$key]['file_name'] = $file->getFilename();
           }
