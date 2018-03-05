@@ -55,7 +55,7 @@ class DrupalContentSyncWebhookService extends WebhooksService {
     //Skip entities without the field_drupal_content_synced or if it's true
     if (isset($entity_payload['entity']['field_drupal_content_synced']) &&
       !empty($synced = $entity_payload['entity']['field_drupal_content_synced']) &&
-      $synced) {
+      $synced && empty($entity_payload['force_publish'])) {
       return;
     }
 
@@ -207,21 +207,21 @@ class DrupalContentSyncWebhookService extends WebhooksService {
     try {
       switch ($type) {
         case 'create':
-          $result = $this->client->post(
+          $response = $this->client->post(
             $url,
             ['headers' => $headers, 'body' => $body]
           );
           break;
 
         case 'update':
-          $result = $this->client->put(
+          $response = $this->client->put(
             $url,
             ['headers' => $headers, 'body' => $body]
           );
           break;
 
         case 'delete':
-          $result = $this->client->delete(
+          $response = $this->client->delete(
             $url,
             ['headers' => $headers]
           );
