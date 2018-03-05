@@ -141,7 +141,7 @@ class DrupalContentSyncWebhookService extends WebhooksService {
                     }
 
                     $event = implode(':', ['entity', $embed_entity->getEntityTypeId(), $is_new ? 'create' : 'update']);
-                    $embed_entity_webhook = new Webhook(['entity' => $embed_entity->toArray(), 'publish_changes' => TRUE], [], $event);
+                    $embed_entity_webhook = new Webhook(['entity' => $embed_entity->toArray(), 'publish_changes' => TRUE, 'force_publish'=>!empty($entity_payload['force_publish'])], [], $event);
 
                     $webhook_config->set('payload_url', self::DRUPAL_CONTENT_SYNC_PAYLOAD_URL);
                     $this->send($webhook_config, $embed_entity_webhook);
@@ -201,26 +201,28 @@ class DrupalContentSyncWebhookService extends WebhooksService {
       $webhook->getPayload(),
       $webhook_config->getContentType()
     );
+    
+    $url = $webhook_config->getPayloadUrl();
 
     try {
       switch ($type) {
         case 'create':
-          $this->client->post(
-            $webhook_config->getPayloadUrl(),
+          $result = $this->client->post(
+            $url,
             ['headers' => $headers, 'body' => $body]
           );
           break;
 
         case 'update':
-          $this->client->put(
-            $webhook_config->getPayloadUrl(),
+          $result = $this->client->put(
+            $url,
             ['headers' => $headers, 'body' => $body]
           );
           break;
 
         case 'delete':
-          $this->client->delete(
-            $webhook_config->getPayloadUrl(),
+          $result = $this->client->delete(
+            $url,
             ['headers' => $headers]
           );
           break;
