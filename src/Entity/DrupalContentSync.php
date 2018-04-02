@@ -39,9 +39,13 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInterface {
 
-  const EXPORT_DISABLED = 0;
-  const EXPORT_AUTOMATICALLY = 1;
-  const EXPORT_MANUALLY = 2;
+  const EXPORT_DISABLED       = 'disabled';
+  const EXPORT_AUTOMATICALLY  = 'automatically';
+  const EXPORT_MANUALLY       = 'manually';
+
+  const IMPORT_DISABLED       = 'disabled';
+  const IMPORT_AUTOMATICALLY  = 'automatically';
+  const IMPORT_MANUALLY       = 'manually';
 
   /**
    * The DrupalContentSync ID.
@@ -205,21 +209,20 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           'nid',
           'vid',
           'type',
-          'path',
+#          'path',
           'revision_log',
           'revision_translation_affected',
-          'menu_link',
+#          'menu_link',
           'field_drupal_content_synced',
-          'field_media_id',
-          'field_media_connection_id',
-          'field_media',
-          'field_term_ref_id',
-          'field_term_ref_connection_id',
-          'field_term_ref',
-          'field_drupal_content_synced',
-          'created',
-          'changed',
-          'title',
+#          'field_media_id',
+#          'field_media_connection_id',
+#          'field_media',
+#          'field_term_ref_id',
+#          'field_term_ref_connection_id',
+#          'field_term_ref',
+#          'created',
+#          'changed',
+#          'title',
         ];
 
         $entity_type = [

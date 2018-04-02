@@ -73,10 +73,184 @@ class DrupalContentSyncForm extends EntityForm {
     );
   }
 
+  protected $entityPluginManager;
+  /**
+   * Returns the entity handler plugin manager.
+   *
+   * @return \Drupal\Component\Plugin\PluginManagerInterface
+   */
+  protected function getEntityHandlerPluginManager() {
+    if (!isset($this->entityPluginManager)) {
+      $this->entityPluginManager = \Drupal::service('plugin.manager.dcs_entity_handler');
+    }
+    return $this->entityPluginManager;
+  }
+
+  protected $entityHandlerDefinitions;
+  protected function getEntityHandlerDefinitions() {
+    if( $this->entityHandlerDefinitions ) {
+      return $this->entityHandlerDefinitions;
+    }
+
+    $manager = $this->getEntityHandlerPluginManager();
+    $this->entityHandlerDefinitions = $manager->getDefinitions();
+    uasort($this->entityHandlerDefinitions, function ($a, $b) {
+      return $a['weight'] <=> $b['weight'];
+    });
+
+    return $this->entityHandlerDefinitions;
+  }
+
+  protected $entityHandlers;
+  protected function getEntityHandlers() {
+    if( $this->entityHandlers ) {
+      return $this->entityHandlers;
+    }
+
+    $this->getEntityHandlerDefinitions();
+
+    $this->entityHandlers = [];
+    foreach( $this->entityHandlerDefinitions as $id=>$definition ) {
+      $this->entityHandlers[$id] = $this
+        ->getEntityHandlerPluginManager()
+        ->createInstance($id);
+    }
+
+    return $this->entityHandlers;
+  }
+
+  /**
+   *
+   * @return array
+   */
+  protected function getEntityHandlerOptions($entity_type,$bundle) {
+    $this->getEntityHandlers();
+
+    $options = [];
+
+    foreach($this->entityHandlers as $id=> $handler) {
+      if( !$handler->supports($entity_type,$bundle) ) {
+        continue;
+      }
+      $options[$id] = $this->entityHandlerDefinitions[$id]['label']->render();
+    }
+
+    return $options;
+  }
+
+  protected $fieldPluginManager;
+  /**
+   * Returns the field handler plugin manager.
+   *
+   * @return \Drupal\Component\Plugin\PluginManagerInterface
+   */
+  protected function getFieldHandlerPluginManager() {
+    if (!isset($this->fieldPluginManager)) {
+      $this->fieldPluginManager = \Drupal::service('plugin.manager.dcs_field_handler');
+    }
+    return $this->fieldPluginManager;
+  }
+
+  protected $fieldHandlerDefinitions;
+  protected function getFieldHandlerDefinitions() {
+    if( $this->fieldHandlerDefinitions ) {
+      return $this->fieldHandlerDefinitions;
+    }
+
+    $manager = $this->getFieldHandlerPluginManager();
+    $this->fieldHandlerDefinitions = $manager->getDefinitions();
+    uasort($this->fieldHandlerDefinitions, function ($a, $b) {
+      return $a['weight'] <=> $b['weight'];
+    });
+
+    return $this->fieldHandlerDefinitions;
+  }
+
+  protected $fieldHandlers;
+  protected function getFieldHandlers() {
+    if( $this->fieldHandlers ) {
+      return $this->fieldHandlers;
+    }
+
+    $this->getFieldHandlerDefinitions();
+
+    $this->fieldHandlers = [];
+    foreach( $this->fieldHandlerDefinitions as $id=>$definition ) {
+      $this->fieldHandlers[$id] = $this
+        ->getFieldHandlerPluginManager()
+        ->createInstance($id);
+    }
+
+    return $this->fieldHandlers;
+  }
+
+  /**
+   *
+   * @return array
+   */
+  protected function getFieldHandlerOptions($entity_type,$bundle,$field_name,$field) {
+    $this->getFieldHandlers();
+
+    $options = [];
+
+    foreach($this->fieldHandlers as $id=> $handler) {
+      if( !$handler->supports($entity_type,$bundle,$field_name,$field) ) {
+        continue;
+      }
+      $options[$id] = $this->fieldHandlerDefinitions[$id]['label']->render();
+    }
+
+    return $options;
+  }
+
+  /**
+   * Gets migration configurations.
+   *
+   * @return array
+   *   An array of migration names.
+   */
+  function updateSyncHandler($form, FormStateInterface $form_state) {
+    /*$trigger  = $form_state->getTriggeringElement();
+    $trigger  = explode('[',str_replace(']','',$trigger['#name']));
+    $id       = $trigger[1];
+    $value    = $form_state->getValue(['sync_entities',$id,'handler']);
+    list($entity_type,$bundle,$field) = explode('-',$id);
+    if(empty($field)) {
+    }*/
+    return $form['sync_entities'];
+  }
+
   /**
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
+    $forbidden_fields = [
+      'uuid','id','revision_id',
+
+      'block_content' => ['type'],
+      'freeform' => ['cid','vid','type','entity_id','entity_type'],
+      'file' => ['fid'],
+      'media'=>['mid','vid','bundle'],
+      'node'=>['nid','vid'],
+      'search_api_task'=>['type','server_id','index_id'],
+      'access_token'=>['bundle'],
+      'taxonomy_term'=>['tid','vid'],
+      'user'=>['uid','pass'],
+    ];
+
+    $export_option_labels = [
+      DrupalContentSync::EXPORT_DISABLED => $this->t('Disabled')->render(),
+      DrupalContentSync::EXPORT_AUTOMATICALLY => $this->t('Automatically')->render(),
+      DrupalContentSync::EXPORT_MANUALLY => $this->t('Manually')->render(),
+    ];
+
+    $import_option_labels = [
+      DrupalContentSync::IMPORT_DISABLED => $this->t('Disabled')->render(),
+      DrupalContentSync::IMPORT_AUTOMATICALLY => $this->t('Automatically')->render(),
+      DrupalContentSync::IMPORT_MANUALLY => $this->t('Manually')->render(),
+    ];
+
+
     $form = parent::form($form, $form_state);
 
     $form['#attached']['library'][] = 'drupal_content_sync/drupal-content-sync-form';
@@ -141,24 +315,48 @@ class DrupalContentSyncForm extends EntityForm {
 
     $field_map = $this->entityFieldManager->getFieldMap();
 
+    $advanced_entity_settings_headers  = [];
+    $advanced_field_settings_headers  = [];
+
+    $this->getEntityHandlers();
+    foreach($this->entityHandlers as $id=>$handler) {
+      foreach( $handler->getAdvancedSettings() as $title ) {
+        $advanced_entity_settings_headers[] = $this->t($title);
+      }
+    }
+
+    $this->getFieldHandlers();
+    foreach($this->fieldHandlers as $id=>$handler) {
+      foreach( $handler->getAdvancedSettings() as $title ) {
+        $advanced_field_settings_headers[] = $this->t($title);
+      }
+    }
+
+    $advanced_settings_headers = array_merge( $advanced_entity_settings_headers, $advanced_field_settings_headers );
+
     $entity_table = [
       '#type' => 'table',
-      '#header' => [
+      '#prefix' => '<div id="sync-entities-table">',
+      '#suffix' => '</div>',
+      '#header' => array_merge([
         $this->t('Bundle'),
         $this->t('Identifier'),
+        $this->t('Handler'),
         $this->t('Export'),
         $this->t('Synchronized Import'),
         $this->t('Cloned Import'),
         $this->t('Preview'),
         $this->t('Delete entities'),
-        $this->t('Sync menu items'),
+        ],$advanced_settings_headers,[
         '',
         '',
         '',
         '',
         '',
-      ],
+      ]),
     ];
+
+    $input = $form_state->getValue('sync_entities');
 
     foreach ($entity_types as $type_key => $entity_type) {
       // This entity type hasn't contained any fields.
@@ -166,7 +364,7 @@ class DrupalContentSyncForm extends EntityForm {
         continue;
       }
 
-      $entity_table[][] = [
+      $entity_table[$type_key]['title'] = [
         '#markup' => '<h2>' . str_replace('_', ' ', ucfirst($type_key)) . '</h2>',
         '#wrapper_attributes' => ['colspan' => sizeof($entity_table['#header'])],
       ];
@@ -183,13 +381,6 @@ class DrupalContentSyncForm extends EntityForm {
 
         $version = md5(json_encode($field_definitions_array));
 
-        $entity_bundle_row['bundle'] = [
-          '#markup' => $this->t('@bundle (@machine_name)', [
-            '@bundle' => $entity_bundle['label'],
-            '@machine_name' => $entity_bundle_name,
-          ]) . '<br><small>version: ' . $version . '</small>',
-        ];
-
         $current_display_mode = $type_key . '.' . $entity_bundle_name . '.' . self::DRUPAL_CONTENT_SYNC_PREVIEW_FIELD;
         $has_preview_mode = in_array($current_display_mode, $display_modes_ids) || $type_key == 'file';
 
@@ -202,31 +393,75 @@ class DrupalContentSyncForm extends EntityForm {
             'preview' => NULL,
             'display_name' => $this->t('@bundle', [
               '@bundle' => $entity_bundle['label'],
-            ]),
+            ])->render(),
             'entity_type' => $type_key,
             'entity_bundle' => $entity_bundle_name,
             'delete_entity' => NULL,
-            'sync_menu_items' => NULL,
           ];
         }
         else {
           $row_default_values = $def_sync_entities[$type_key . '-' . $entity_bundle_name];
         }
+        if( !empty($input[$type_key . '-' . $entity_bundle_name]) ) {
+          $row_default_values = array_merge( $row_default_values, $input[$type_key . '-' . $entity_bundle_name] );
+        }
+
+        $entity_bundle_row['bundle'] = [
+          '#markup' => $this->t('@bundle (@machine_name)', [
+              '@bundle' => $entity_bundle['label'],
+              '@machine_name' => $entity_bundle_name,
+            ]) . '<br><small>version: ' . $version . '</small>',
+        ];
 
         $entity_bundle_row['id'] = [
           '#type' => 'textfield',
           '#default_value' => $row_default_values['id'],
           '#title' => $this->t('Identifier'),
+          '#disabled' => TRUE,
+          '#size' => 24,
           '#title_display' => 'invisible',
         ];
 
-        $export_options = [
-          DrupalContentSync::EXPORT_DISABLED => 'Disabled',
-          DrupalContentSync::EXPORT_AUTOMATICALLY => 'Automatically',
+        $entity_handlers = $this->getEntityHandlerOptions($type_key,$entity_bundle_name);
+        if( empty($entity_handlers) ) {
+          $handler_id='ignore';
+          $entity_handlers = ['ignore'=>$this->t('Ignore (not supported)')->render()];
+        }
+        else {
+          $entity_handlers = array_merge( ['ignore'=>$this->t('Ignore')->render()], $entity_handlers );
+          $handler_id = empty($row_default_values['handler']) ? 'ignore' : $row_default_values['handler'];
+        }
+
+        $entity_bundle_row['handler'] = [
+          '#type' => 'select',
+          '#title' => $this->t('Handler'),
+          '#title_display' => 'invisible',
+          '#options' => $entity_handlers,
+          '#default_value' => $handler_id,
+          '#ajax' => array(
+            'callback' => '::updateSyncHandler',
+            'wrapper' => 'sync-entities-table',
+            'progress' => array(
+              'type' => 'throbber',
+              'message' => "loading...",
+            ),
+          ),
         ];
 
-        if (in_array($type_key, ['node', 'block_content', 'menu_link_content', 'file', 'paragraph'])) {
-          $export_options[DrupalContentSync::EXPORT_MANUALLY] = 'Manually';
+
+        if( $handler_id=='ignore' ) {
+          $export_options = [
+            DrupalContentSync::EXPORT_DISABLED => $this->t('Disabled')->render(),
+          ];
+        }
+        else {
+          $handler = $this->entityHandlers[$handler_id];
+
+          $allowed_export_options = $handler->getAllowedExportOptions($type_key, $entity_bundle_name);
+          $export_options = [];
+          foreach ($allowed_export_options as $option) {
+            $export_options[$option] = $export_option_labels[$option];
+          }
         }
 
         $entity_bundle_row['export'] = [
@@ -237,27 +472,43 @@ class DrupalContentSyncForm extends EntityForm {
           '#default_value' => $row_default_values['export'],
         ];
 
+        if( $handler_id=='ignore' ) {
+          $import_options = [
+            DrupalContentSync::IMPORT_DISABLED => $this->t('Disabled')->render(),
+          ];
+        }
+        else {
+          $allowed_import_options = $handler->getAllowedSyncImportOptions($type_key, $entity_bundle_name);
+          $import_options = [];
+          foreach ($allowed_import_options as $option) {
+            $import_options[$option] = $import_option_labels[$option];
+          }
+        }
         $entity_bundle_row['sync_import'] = [
           '#type' => 'select',
           '#title' => $this->t('Synchronized Import'),
           '#title_display' => 'invisible',
-          '#options' => [
-            'disabled' => $this->t('Disabled'),
-            'manually' => $this->t('Manually'),
-            'automatically' => $this->t('Automatically'),
-          ],
+          '#options' => $import_options,
           '#default_value' => $row_default_values['sync_import'],
         ];
 
+        if( $handler_id=='ignore' ) {
+          $import_options = [
+            DrupalContentSync::IMPORT_DISABLED => $this->t('Disabled')->render(),
+          ];
+        }
+        else {
+          $allowed_import_options = $handler->getAllowedClonedImportOptions($type_key, $entity_bundle_name);
+          $import_options = [];
+          foreach ($allowed_import_options as $option) {
+            $import_options[$option] = $import_option_labels[$option];
+          }
+        }
         $entity_bundle_row['cloned_import'] = [
           '#type' => 'select',
           '#title' => $this->t('Cloned Import'),
           '#title_display' => 'invisible',
-          '#options' => [
-            'disabled' => $this->t('Disabled'),
-            'manually' => $this->t('Manually'),
-            'automatically' => $this->t('Automatically'),
-          ],
+          '#options' => $import_options,
           '#default_value' => $row_default_values['cloned_import'],
         ];
 
@@ -265,11 +516,9 @@ class DrupalContentSyncForm extends EntityForm {
           '#type' => 'select',
           '#title' => $this->t('Preview'),
           '#title_display' => 'invisible',
-          '#options' => [
-            'excluded' => $this->t('Excluded'),
-            'table' => $this->t('Table'),
-            'preview_mode' => $this->t('Preview mode'),
-          ],
+          '#options' => array_merge([
+            'excluded' => $this->t('Excluded')->render(),
+          ], $handler_id=='ignore' ? [] : $handler->getAllowedPreviewOptions($type_key,$entity_bundle_name)),
           '#default_value' => $row_default_values['preview'],
         ];
 
@@ -280,13 +529,28 @@ class DrupalContentSyncForm extends EntityForm {
           '#default_value' => $row_default_values['delete_entity'] == 1,
         ];
 
-        $entity_types_with_menu_items = ['node'];
-        $entity_bundle_row['sync_menu_items'] = [
-          '#type' => in_array($type_key, $entity_types_with_menu_items) ? 'checkbox' : 'hidden',
-          '#title' => $this->t('Sync menu items'),
-          '#title_display' => 'invisible',
-          '#default_value' => isset($row_default_values['sync_menu_items']) ? $row_default_values['sync_menu_items'] == 1 : 0,
-        ];
+        foreach($this->entityHandlers as $id=>$handler) {
+          if( $id==$handler_id ) {
+            $advanced_settings = $handler->getAdvancedSettingsForEntityType($type_key,$entity_bundle_name,$row_default_values);
+            foreach($advanced_settings as $name=>$options) {
+              $advanced_settings[$name]['#attributes']['class'] = array('entity-handler-'.$id);
+              $entity_bundle_row[$name] = $advanced_settings[$name];
+            }
+          }
+          else {
+            foreach($handler->getAdvancedSettings() as $name=>$label) {
+              $entity_bundle_row[$name] = [
+                '#markup' => '',
+              ];
+            }
+          }
+        }
+
+        foreach( $advanced_field_settings_headers as $name=>$header ) {
+          $entity_bundle_row[$name] = [
+            '#markup' => '',
+          ];
+        }
 
         $entity_bundle_row['version_hash'] = [
           '#type' => 'hidden',
@@ -318,6 +582,183 @@ class DrupalContentSyncForm extends EntityForm {
         ];
 
         $entity_table[$type_key . '-' . $entity_bundle_name] = $entity_bundle_row;
+
+
+        if( $handler_id!='ignore' ) {
+          $entityFieldManager = \Drupal::service('entity_field.manager');
+          $fields = $entityFieldManager->getFieldDefinitions($type_key, $entity_bundle_name);
+          foreach ($fields as $key => $field) {
+            $field_id = $type_key . '-' . $entity_bundle_name . '-' . $key;
+
+            $field_row = [];
+
+            $field_row['bundle'] = [
+              '#markup' => $key,
+            ];
+
+            if (!isset($def_sync_entities[$field_id])) {
+              $field_default_values = [
+                'id' => $field_id,
+                'export' => NULL,
+                'sync_import' => NULL,
+                'cloned_import' => NULL,
+                'preview' => NULL,
+                'entity_type' => $type_key,
+                'entity_bundle' => $entity_bundle_name,
+                'delete_entity' => NULL,
+              ];
+            }
+            else {
+              $field_default_values = $def_sync_entities[$field_id];
+            }
+            if( !empty($input[$field_id]) ) {
+              $field_default_values = array_merge( $field_default_values, $input[$field_id] );
+            }
+
+            $field_row['id'] = [
+              '#type' => 'textfield',
+              '#default_value' => $field_default_values['id'],
+              '#title' => $this->t('Identifier'),
+              '#disabled' => TRUE,
+              '#size' => 24,
+              '#title_display' => 'invisible',
+            ];
+
+            if (in_array($key, $forbidden_fields) !== FALSE ||
+              (isset($forbidden_fields[$type_key]) && in_array($key, $forbidden_fields[$type_key]) !== FALSE) ||
+              (isset($forbidden_fields[$entity_bundle_name]) && in_array($key, $forbidden_fields[$entity_bundle_name]) !== FALSE)) {
+              $handler_id = 'ignore';
+              $field_handlers = [
+                'ignore' => $this->t('Ignore (not allowed)')->render()
+              ];
+            }
+            else {
+              $field_handlers = $this->getFieldHandlerOptions($type_key, $entity_bundle_name, $key, $field);
+              if (empty($field_handlers)) {
+                $handler_id = 'ignore';
+                $field_handlers = [
+                  'ignore' => $this->t('Ignore (no handler supports this @type)', ['@type' => $field->getType()])->render()
+                ];
+              }
+              else {
+                reset($field_handlers);
+                $handler_id = empty($field_default_values['handler']) ? key($field_handlers) : $field_default_values['handler'];
+              }
+            }
+
+            $field_row['handler'] = [
+              '#type' => 'select',
+              '#title' => $this->t('Handler'),
+              '#title_display' => 'invisible',
+              '#options' => array_merge(['ignore' => $this->t('Ignore')->render()], $field_handlers),
+              '#default_value' => $handler_id,
+              '#ajax' => array(
+                'callback' => '::updateSyncHandler',
+                'wrapper' => 'sync-entities-table',
+                'progress' => array(
+                  'type' => 'throbber',
+                  'message' => "loading...",
+                ),
+              ),
+            ];
+
+            if( $handler_id=='ignore' ) {
+              $export_options = [
+                DrupalContentSync::EXPORT_DISABLED => $this->t('Disabled')->render(),
+              ];
+            }
+            else {
+              $handler = $this->fieldHandlers[$handler_id];
+
+              $allowed_export_options = $handler->getAllowedExportOptions($type_key, $entity_bundle_name, $key, $field);
+              $export_options = [];
+              foreach ($allowed_export_options as $option) {
+                $export_options[$option] = $export_option_labels[$option];
+              }
+            }
+
+            $field_row['export'] = [
+              '#type' => 'select',
+              '#title' => $this->t('Export'),
+              '#title_display' => 'invisible',
+              '#options' => $export_options,
+              '#default_value' => $field_default_values['export'] ? $field_default_values['export'] : (isset($export_options[DrupalContentSync::EXPORT_AUTOMATICALLY]) ? DrupalContentSync::EXPORT_AUTOMATICALLY : DrupalContentSync::EXPORT_DISABLED),
+            ];
+
+            if( $handler_id=='ignore' ) {
+              $import_options = [
+                DrupalContentSync::IMPORT_DISABLED => $this->t('Disabled')->render(),
+              ];
+            }
+            else {
+              $allowed_import_options = $handler->getAllowedSyncImportOptions($type_key, $entity_bundle_name, $key, $field);
+              $import_options = [];
+              foreach ($allowed_import_options as $option) {
+                $import_options[$option] = $import_option_labels[$option];
+              }
+            }
+            $field_row['sync_import'] = [
+              '#type' => 'select',
+              '#title' => $this->t('Synchronized Import'),
+              '#title_display' => 'invisible',
+              '#options' => $import_options,
+              '#default_value' => $field_default_values['sync_import'] ? $field_default_values['sync_import'] : (isset($import_options[DrupalContentSync::EXPORT_AUTOMATICALLY]) ? DrupalContentSync::EXPORT_AUTOMATICALLY : DrupalContentSync::EXPORT_DISABLED),
+            ];
+
+            if( $handler_id=='ignore' ) {
+              $import_options = [
+                DrupalContentSync::IMPORT_DISABLED => $this->t('Disabled')->render(),
+              ];
+            }
+            else {
+              $allowed_import_options = $handler->getAllowedClonedImportOptions($type_key, $entity_bundle_name, $key, $field);
+              $import_options = [];
+              foreach ($allowed_import_options as $option) {
+                $import_options[$option] = $import_option_labels[$option];
+              }
+            }
+            $field_row['cloned_import'] = [
+              '#type' => 'select',
+              '#title' => $this->t('Cloned Import'),
+              '#title_display' => 'invisible',
+              '#options' => $import_options,
+              '#default_value' => $field_default_values['cloned_import'] ? $field_default_values['cloned_import'] : (isset($import_options[DrupalContentSync::EXPORT_AUTOMATICALLY]) ? DrupalContentSync::EXPORT_AUTOMATICALLY : DrupalContentSync::EXPORT_DISABLED),
+            ];
+
+            $field_row['preview'] = [
+              '#markup' => '',
+            ];
+
+            $field_row['delete_entity'] = [
+              '#markup' => '',
+            ];
+
+            foreach( $advanced_entity_settings_headers as $name=>$header ) {
+              $field_row[$name] = [
+                '#markup' => '',
+              ];
+            }
+
+            foreach($this->fieldHandlers as $id=>$handler) {
+              if( $id==$handler_id ) {
+                $advanced_settings = $handler->getAdvancedSettingsForFieldAtEntityType($type_key,$entity_bundle_name,$key,$field,$field_default_values);
+                foreach($advanced_settings as $name=>$options) {
+                  $advanced_settings[$name]['#attributes']['class'] = array('field-handler-'.$id);
+                  $field_row[$name] = $advanced_settings[$name];
+                }
+              }
+              else {
+                foreach($handler->getAdvancedSettings() as $name=>$label) {
+                  $field_row[$name] = [
+                    '#markup' => '',
+                  ];
+                }
+              }
+            }
+
+            $entity_table[$field_id] = $field_row;
+          }
+        }
       }
     }
 
@@ -390,6 +831,11 @@ class DrupalContentSyncForm extends EntityForm {
     $status = $config->save();
 
     foreach ($sync_entities as $key => $bundle_fields) {
+      // Ignore field settings
+      if( substr_count($key,'-')!=1 ) {
+        continue;
+      }
+
       preg_match('/^(.+)-(.+)$/', $key, $matches);
 
       $type_key = $matches[1];
