@@ -21,7 +21,7 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
  */
 class DefaultFieldHandler extends FieldHandlerBase {
   public function supports($entity_type,$bundle,$field_name,$field) {
-    $allowed = ["string","integer","uuid","language","created","string_long","boolean","changed","datetime","map","text_with_summary","uri","email","path","link","timestamp","text_long","metatag"];
+    $allowed = ["string","integer","uuid","language","created","string_long","boolean","changed","datetime","map","text_with_summary","uri","email","path","timestamp","text_long","metatag"];
     return in_array($field->getType(),$allowed)!==FALSE;
   }
 

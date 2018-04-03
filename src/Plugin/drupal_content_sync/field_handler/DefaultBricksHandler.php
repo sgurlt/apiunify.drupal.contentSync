@@ -22,7 +22,15 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 class DefaultBricksHandler extends FieldHandlerBase {
   public function supports($entity_type,$bundle,$field_name,$field) {
     $allowed = ["bricks","bricks_revisioned"];
-    return in_array($field->getType(),$allowed)!==FALSE;
+    if( in_array($field->getType(),$allowed)!==FALSE ) {
+      return TRUE;
+    }
+
+    /*if( $field->getType()=="entity_reference" && $field->getSetting('target_type')=='brick_type' ) {
+      return TRUE;
+    }*/
+
+    return FALSE;
   }
 
   public function getAllowedExportOptions($entity_type,$bundle) {

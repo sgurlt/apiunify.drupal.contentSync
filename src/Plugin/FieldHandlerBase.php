@@ -2,6 +2,7 @@
 
 namespace Drupal\drupal_content_sync\Plugin;
 
+use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\PluginBase;
@@ -52,5 +53,31 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
       $plugin_definition,
       $container->get('logger.factory')->get('drupal_content_sync')
     );
+  }
+
+  public function updateEntityTypeDefinition(&$definition,$config,$field_name,$field) {
+    if( in_array($field->getType(),['file','image']) ) {
+      $definition['new_property_lists']['filesystem'][$field_name] = 'value';
+    }
+    else {
+      $definition['new_property_lists']['details'][$field_name] = 'value';
+      $definition['new_property_lists']['database'][$field_name] = 'value';
+    }
+
+    if ($field->isRequired()) {
+      $definition['new_property_lists']['required'][$field_name] = 'value';
+    }
+
+    if (!$field->isReadOnly()) {
+      $definition['new_property_lists']['modifiable'][$field_name] = 'value';
+    }
+  }
+
+  public function setField($field_config,$entity,$field_name,&$data,$is_clone) {
+    if (isset($data[$field_name])) {
+      if( $field_config[($is_clone?'cloned':'sync').'_import']==DrupalContentSync::IMPORT_AUTOMATICALLY ) {
+        $entity->set($field_name, $data[$field_name]);
+      }
+    }
   }
 }

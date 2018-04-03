@@ -47,6 +47,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   const IMPORT_AUTOMATICALLY  = 'automatically';
   const IMPORT_MANUALLY       = 'manually';
 
+  const HANDLER_IGNORE        = 'ignore';
+
   /**
    * The DrupalContentSync ID.
    *
@@ -190,40 +192,38 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
   protected function createEntityTypes() {
     global $base_url;
+
     $url = $this->{'url'};
     $localConnections = [];
 
+    $entityPluginManager = \Drupal::service('plugin.manager.dcs_entity_handler');
+    $entityHandlerDefinitions = $entityPluginManager->getDefinitions();
+    $entityHandlers = [];
+    foreach( $entityHandlerDefinitions as $id=>$definition ) {
+      $entityHandlers[$id] = $entityPluginManager->createInstance($id);
+    }
+
+    $fieldPluginManager = \Drupal::service('plugin.manager.dcs_field_handler');
+    $fieldHandlerDefinitions = $fieldPluginManager->getDefinitions();
+    $fieldHandlers = [];
+    foreach( $fieldHandlerDefinitions as $id=>$definition ) {
+      $fieldHandlers[$id] = $fieldPluginManager->createInstance($id);
+    }
+
     $sync_entities = $this->sync_entities;
-    $entity_types  = json_decode($sync_entities);
+    $entity_types  = json_decode($sync_entities,TRUE);
 
-    foreach ($entity_types as $type) {
-      $type = (array) $type;
+    foreach ($entity_types as $id=>$type) {
+      // Ignore field definitions
+      if( substr_count($id,'-')!=1 ) {
+        continue;
+      }
 
-      if ($type['export'] != self::EXPORT_DISABLED || $type['preview'] != 'excluded') {
+      if ($type['handler'] != self::HANDLER_IGNORE) {
+        $handler = $entityHandlers[ $type['handler'] ];
+
         /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
         $fields = $this->entityFieldManager->getFieldDefinitions($type['entity_type'], $type['entity_bundle']);
-
-        $fields_to_ignore = [
-          'uuid',
-          'id',
-          'nid',
-          'vid',
-          'type',
-#          'path',
-          'revision_log',
-          'revision_translation_affected',
-#          'menu_link',
-          'field_drupal_content_synced',
-#          'field_media_id',
-#          'field_media_connection_id',
-#          'field_media',
-#          'field_term_ref_id',
-#          'field_term_ref_connection_id',
-#          'field_term_ref',
-#          'created',
-#          'changed',
-#          'title',
-        ];
 
         $entity_type = [
           'id' => 'drupal-' . $type['entity_type'] . '-' . $type['entity_bundle'] . '-' . $type['version_hash'],
@@ -354,21 +354,14 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           'api_id' => $this->{'api'} . '-0.1',
         ];
 
-        if ($type['entity_type'] == 'file') {
-          $entity_type['new_properties']['apiu_file_content'] = [
-            'type' => 'string',
-            'default_value' => NULL,
-          ];
-          $entity_type['new_property_lists']['details']['apiu_file_content'] = 'value';
-          $entity_type['new_property_lists']['filesystem']['apiu_file_content'] = 'value';
-          $entity_type['new_property_lists']['modifiable']['apiu_file_content'] = 'value';
-          $entity_type['new_property_lists']['required']['apiu_file_content'] = 'value';
-        }
+        $handler->updateEntityTypeDefinition($entity_type,$type);
 
         foreach ($fields as $key => $field) {
-          if (in_array($key, $fields_to_ignore)) {
+          if (!isset($entity_types[$id.'-'.$key]) || $entity_types[$id.'-'.$key]['handler']==self::HANDLER_IGNORE) {
             continue;
           }
+
+          $field_handler = $fieldHandlers[ $entity_types[$id.'-'.$key]['handler'] ];
 
           $entity_type['new_properties'][$key] = [
             'type' => 'object',
@@ -376,23 +369,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             'multiple' => TRUE,
           ];
 
-          $entity_type['new_property_lists']['details'][$key] = 'value';
-          $entity_type['new_property_lists']['database'][$key] = 'value';
-
-          if ($field->isRequired()) {
-            $entity_type['new_property_lists']['required'][$key] = 'value';
-          }
-
-          if (!$field->isReadOnly()) {
-            $entity_type['new_property_lists']['modifiable'][$key] = 'value';
-          }
-
-          switch ($field->getType()) {
-            case 'file':
-            case 'image':
-              $entity_type['new_property_lists']['filesystem'][$key] = 'value';
-              break;
-          }
+          $field_handler->updateEntityTypeDefinition($entity_type,$entity_types[$id.'-'.$key],$key,$field);
         }
 
         try {
@@ -552,6 +529,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             ]);
           }
 
+          break;
+
         } catch (RequestException $e) {
           drupal_set_message($e->getMessage(), 'error');
           return;
@@ -578,6 +557,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       if ('patch' == $method) {
         $url .= '/' . $arguments['json']['id'];
       }
+
+      $url .= (strpos($url,'?')===FALSE?'?':'&') . 'async=yes';
 
       try {
         $this->client->{$method}($url, $arguments);

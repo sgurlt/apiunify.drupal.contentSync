@@ -61,6 +61,7 @@ class DefaultNodeHandler extends EntityHandlerBase {
       'sync_import_published_only' => 'Sync import published only',
       'cloned_import_published_only' => 'Clone import published only',
       'sync_menu_items' => 'Sync menu items',
+      'restrict_editing' => 'Restrict editing of synchronized content',
     ];
   }
 
@@ -89,6 +90,12 @@ class DefaultNodeHandler extends EntityHandlerBase {
         '#title' => 'Sync menu items',
         '#title_display' => 'invisible',
         '#default_value' => isset($default_values['sync_menu_items']) ? $default_values['sync_menu_items'] == 1 : 0,
+      ],
+      'restrict_editing' => [
+        '#type' => 'checkbox',
+        '#title' => 'Restrict editing of synchronized content',
+        '#title_display' => 'invisible',
+        '#default_value' => isset($default_values['restrict_editing']) ? $default_values['restrict_editing'] == 1 : 0,
       ],
     ];
   }

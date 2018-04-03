@@ -7,6 +7,7 @@ use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Entity\RevisionableInterface;
+use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\field_collection\Entity\FieldCollectionItem;
 use Drupal\rest\ModifiedResourceResponse;
 use Drupal\rest\Plugin\ResourceBase;
@@ -136,6 +137,31 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     );
   }
 
+  protected function getHandlerForEntityType($config) {
+    $entityPluginManager = \Drupal::service('plugin.manager.dcs_entity_handler');
+
+    return $entityPluginManager->createInstance($config['handler']);
+  }
+
+  protected function getConfigForEntityType($entity_type_name, $entity_bundle) {
+    $entities = _drupal_content_sync_get_synchronization_configurations();
+
+    foreach( $entities as $entity ) {
+      $config = json_decode($entity->{'sync_entities'}, TRUE);
+      if(empty($config[$entity_type_name.'-'.$entity_bundle])) {
+        continue;
+      }
+
+      if($config[$entity_type_name.'-'.$entity_bundle]['handler']==DrupalContentSync::HANDLER_IGNORE) {
+        continue;
+      }
+
+      return $config;
+    }
+
+    return NULL;
+  }
+
   /**
    * Responds to entity GET requests.
    *
@@ -175,10 +201,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
 
       $entities = array_values(\Drupal::entityTypeManager()->getStorage($entity_type)->loadMultiple($entity_ids));
 
-      $site_id = '';
-
       // Trying to find site ID.
-      $drupal_content_syncs = _drupal_content_sync_get_synchronization_configurations();;
+      $drupal_content_syncs = _drupal_content_sync_get_synchronization_configurations();
 
       $sync = false;
       foreach ($drupal_content_syncs as $sync) {
@@ -297,222 +321,50 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     $is_clone = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
 
-    $entity_types_keys = array_keys($entity_types);
-    if (in_array($entity_type_name, $entity_types_keys)) {
-      $storage = \Drupal::entityTypeManager()
-        ->getStorage($entity_type_name);
-      $entity_type = $storage->getEntityType();
-      $entity_data = [
-        $entity_type->getKey('bundle') => $entity_bundle,
-      ];
-
-      if (!$is_clone) {
-        $entity_data[$entity_type->getKey('uuid')] = $data[$entity_type->getKey('uuid')];
-      }
-
-      if (!$uuid) {
-        $uuid = $data[$entity_type->getKey('uuid')];
-      }
-
-      $entity = $this->entityRepository->loadEntityByUuid($entity_type_name, $uuid);
-      if ($is_clone || !$entity) {
-        if ($entity_type_name == 'file') {
-          if (!empty($data['uri'][0]['value'])) {
-            $uri = $data['uri'][0]['value'];
-          } elseif (!empty($data['uri'])) {
-            $uri = $data['uri'];
-          } else {
-            return new ResourceResponse(
-              ['message' => t(self::FILE_INPUT_DATA_IS_INVALID)], self::CODE_INVALID_DATA
-            );
-          }
-
-          $directory = \Drupal::service('file_system')->dirname($uri);
-          $was_prepared = file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
-
-          if ($was_prepared && !empty($data['apiu_file_content'])) {
-            $entity = file_save_data(base64_decode($data['apiu_file_content']), $uri);
-            $entity->setPermanent();
-            $entity->set('uuid', $data['uuid']);
-            $entity->save();
-          }
-        } else {
-          $entity = $storage->create($entity_data);
-          $this->setEntityValues($entity, $data, $is_clone);
-        }
-      } else {
-        if ($entity_type_name == 'file') {
-          if (!isset($data['apiu_file_content']) || empty($data['apiu_file_content'])) {
-            $content = file_get_contents($entity->getFileUri());
-            if (!empty($content)) {
-              $data['apiu_file_content'] = base64_encode($content);
-            }
-          }
-        } else {
-          $this->setEntityValues($entity, $data);
-        }
-      }
-
-      return new ModifiedResourceResponse($data);
+    if(empty($entity_types[$entity_type_name])) {
+      return new ResourceResponse(
+        ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)], self::CODE_NOT_FOUND
+      );
     }
 
-    return new ResourceResponse(
-      ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)], self::CODE_NOT_FOUND
-    );
-  }
+    $config = $this->getConfigForEntityType($entity_type_name,$entity_bundle);
+    if(empty($config)) {
+      return new ResourceResponse(
+        ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)], self::CODE_NOT_FOUND
+      );
+    }
 
-  private function setEntityValues(EntityInterface $entity, $data, $is_clone = FALSE) {
-    /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
-    $entityFieldManager = \Drupal::service('entity_field.manager');
-    $type = $entity->getEntityTypeId();
-    $bundle = $entity->bundle();
-    $field_definitions = $entityFieldManager->getFieldDefinitions($type, $bundle);
+    $handler = $this->getHandlerForEntityType($config[$entity_type_name.'-'.$entity_bundle]);
 
-    $fields_to_ignore = ['item_id', 'field_name', 'tid', 'nid', 'id', 'uuid', 'vid', 'field_drupal_content_synced', 'uri', 'apiu_file_content', 'apiu_translation', 'revision_id'];
+    $storage = \Drupal::entityTypeManager()
+      ->getStorage($entity_type_name);
+    $entity_type = $storage->getEntityType();
+    $entity_data = [
+      $entity_type->getKey('bundle') => $entity_bundle,
+    ];
 
-    $fields = array_diff(array_keys($field_definitions), $fields_to_ignore);
+    if (!$is_clone) {
+      $entity_data[$entity_type->getKey('uuid')] = $data[$entity_type->getKey('uuid')];
+    }
 
-    foreach ($fields as $key) {
-      switch ($field_definitions[$key]->getType()) {
-        case 'entity_reference_revisions':
-        case 'entity_reference':
-          if (empty($data[$key]) || !is_array($data[$key])) {
-            break;
-          }
+    if (!$uuid) {
+      $uuid = $data[$entity_type->getKey('uuid')];
+    }
 
-          $reference_ids = [];
-          foreach ($data[$key] as $value) {
-            if (!isset($value['uuid'], $value['type'])) {
-              continue;
-            }
+    $entity = $this->entityRepository->loadEntityByUuid($entity_type_name, $uuid);
 
-            try {
-              $reference = $this->entityRepository->loadEntityByUuid($value['type'], $value['uuid']);
-              if ($reference) {
-                $reference_data = [
-                  'target_id' => $reference->id(),
-                ];
-
-                if ($reference instanceof RevisionableInterface) {
-                  $reference_data['target_revision_id'] = $reference->getRevisionId();
-                }
-
-                $reference_ids[] = $reference_data;
-              }
-            }
-            catch (\Exception $exception) {
-            }
-
-            $entity->set($key, $reference_ids);
-          }
-          break;
-
-        case 'file';
-        case 'image':
-          $file_ids = [];
-          foreach ($data[$key] as $value) {
-            $dirname = \Drupal::service('file_system')->dirname($value['file_uri']);
-            file_prepare_directory($dirname, FILE_CREATE_DIRECTORY);
-            $file = file_save_data(base64_decode($value['file_content']), $value['file_uri']);
-            $file->setPermanent();
-            $file->save();
-
-            $file_ids[] = $file->id();
-          }
-
-          $entity->set($key, $file_ids);
-
-          break;
-
-        case 'field_collection':
-          if (!$entity->id()) {
-            $entity->save();
-          }
-
-          foreach ($data[$key] as $items) {
-            $fc = FieldCollectionItem::create(['field_name' => 'field_fc_teaser']);
-
-            $original_fields = $fc->getFields();
-
-            foreach ($items as $item_key => $item_value) {
-              if (!in_array($item_key, $fields_to_ignore)) {
-                if (array_key_exists($item_key, $original_fields)) {
-                  $fc_value = reset($item_value);
-
-                  if (isset($fc_value['type'], $fc_value['uuid']))
-                  try {
-                    $reference = $this->entityRepository->loadEntityByUuid($fc_value['type'], $fc_value['uuid']);
-
-                    if ($reference) {
-                      $reference_data = [
-                        'target_id' => $reference->id(),
-                      ];
-
-                      if ($reference instanceof RevisionableInterface) {
-                        $reference_data['target_revision_id'] = $reference->getRevisionId();
-                      }
-
-                      $fc_value = [$reference_data];
-                    }
-                  }
-                  catch (\Exception $exception) {
-                  }
-
-                  $fc->$item_key->setValue($fc_value);
-                }
-              }
-            }
-
-            $fc->setHostEntity($entity);
-          }
-          break;
-
-        case 'link':
-          if (!isset($data[$key])) {
-            continue;
-          }
-          foreach ($data[$key] as &$link_element) {
-            $uri = &$link_element['uri'];
-            // Find the linked entity and replace it's id with the UUID
-            // References have following pattern: entity:entity_type/entity_id
-            preg_match('/^entity:(.*)\/(.*)$/', $uri, $found);
-            if (!empty($found)) {
-              $link_entity_type = $found[1];
-              $link_entity_uuid = $found[2];
-              $link_entity = $this->entityRepository->loadEntityByUuid($link_entity_type, $link_entity_uuid);
-              if ($link_entity) {
-                $uri = 'entity:' . $link_entity_type . '/' . $link_entity->id();
-              }
-            }
-          }
-          $entity->set($key, $data[$key]);
-
-          break;
-
-        default:
-          if (isset($data[$key])) {
-            $entity->set($key, $data[$key]);
-          }
-          break;
+    if ($is_clone || !$entity) {
+      $entity = $handler->createEntity($config,$entity_type_name,$entity_bundle,$entity_data,$data,$is_clone);
+      if( !$entity) {
+        return new ResourceResponse(
+          ['message' => t(self::FILE_INPUT_DATA_IS_INVALID)], self::CODE_INVALID_DATA
+        );
       }
+    } else {
+      $handler->updateEntity($config,$entity,$data);
     }
 
-    if (!$is_clone && $entity->hasField('field_drupal_content_synced')) {
-      $entity->set('field_drupal_content_synced', TRUE);
-    }
-
-    \Drupal::moduleHandler()->alter('drupal_content_sync_set_entity_values', $entity, $data);
-    $entity->save();
-    if (!empty($data['apiu_translation'])) {
-      foreach($data['apiu_translation'] as $language => $translation_data) {
-        if ($entity->hasTranslation($language)) {
-          $translation = $entity->getTranslation($language);
-        } else {
-          $translation = $entity->addTranslation($language);
-        }
-        $this->setEntityValues($translation, $translation_data);
-      }
-    }
+    return new ModifiedResourceResponse($data);
   }
 
   /**
