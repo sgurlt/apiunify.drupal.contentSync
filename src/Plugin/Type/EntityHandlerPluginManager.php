@@ -47,6 +47,35 @@ class EntityHandlerPluginManager extends DefaultPluginManager {
     if (isset($options['id'])) {
       return $this->createInstance($options['id']);
     }
+    return NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function findDefinitions() {
+    $definitions = parent::findDefinitions();
+    uasort($definitions, function ($a, $b) {
+      return $a['weight'] <=> $b['weight'];
+    });
+    return $definitions;
+  }
+
+  /**
+   *
+   * @return array
+   */
+  public function getHandlerOptions($entity_type,$bundle,$labels_only=FALSE) {
+    $options = [];
+
+    foreach($this->getDefinitions() as $id=> $definition) {
+      if( !$definition['class']::supports($entity_type,$bundle) ) {
+        continue;
+      }
+      $options[$id] = $labels_only ? $definition['label']->render() : $definition;
+    }
+
+    return $options;
   }
 
 }

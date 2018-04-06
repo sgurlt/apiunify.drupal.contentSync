@@ -38,15 +38,25 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  * )
  */
 class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInterface {
-
+  // Configuration option only
+  // > dependent export still enabled unless ::HANDLER_IGNORE is used
   const EXPORT_DISABLED       = 'disabled';
+  // Both configuration option and export reason
   const EXPORT_AUTOMATICALLY  = 'automatically';
   const EXPORT_MANUALLY       = 'manually';
+  // Export reason only
+  const EXPORT_AS_DEPENDENCY  = 'dependency';
 
+  // Configuration option only
+  // > dependent import still enabled unless ::HANDLER_IGNORE is used
   const IMPORT_DISABLED       = 'disabled';
+  // Both configuration option and import reason
   const IMPORT_AUTOMATICALLY  = 'automatically';
   const IMPORT_MANUALLY       = 'manually';
+  // Import reason only
+  const IMPORT_AS_DEPENDENCY  = 'dependency';
 
+  // Ignore this entity type / bundle / field completely
   const HANDLER_IGNORE        = 'ignore';
 
   /**
@@ -198,20 +208,11 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
     $entityPluginManager = \Drupal::service('plugin.manager.dcs_entity_handler');
     $entityHandlerDefinitions = $entityPluginManager->getDefinitions();
-    $entityHandlers = [];
-    foreach( $entityHandlerDefinitions as $id=>$definition ) {
-      $entityHandlers[$id] = $entityPluginManager->createInstance($id);
-    }
 
     $fieldPluginManager = \Drupal::service('plugin.manager.dcs_field_handler');
     $fieldHandlerDefinitions = $fieldPluginManager->getDefinitions();
-    $fieldHandlers = [];
-    foreach( $fieldHandlerDefinitions as $id=>$definition ) {
-      $fieldHandlers[$id] = $fieldPluginManager->createInstance($id);
-    }
 
-    $sync_entities = $this->sync_entities;
-    $entity_types  = json_decode($sync_entities,TRUE);
+    $entity_types = $this->sync_entities;
 
     foreach ($entity_types as $id=>$type) {
       // Ignore field definitions
@@ -220,7 +221,14 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       }
 
       if ($type['handler'] != self::HANDLER_IGNORE) {
-        $handler = $entityHandlers[ $type['handler'] ];
+        $handler = $entityPluginManager->createInstance(
+          $type['handler'],
+          [
+            'entity_type_name'=>$type['entity_type'],
+            'bundle_name'=>$type['entity_bundle'],
+            'settings'=>$type,
+          ]
+        );
 
         /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
         $fields = $this->entityFieldManager->getFieldDefinitions($type['entity_type'], $type['entity_bundle']);
@@ -354,14 +362,23 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           'api_id' => $this->{'api'} . '-0.1',
         ];
 
-        $handler->updateEntityTypeDefinition($entity_type,$type);
+        $handler->updateEntityTypeDefinition($entity_type);
 
         foreach ($fields as $key => $field) {
           if (!isset($entity_types[$id.'-'.$key]) || $entity_types[$id.'-'.$key]['handler']==self::HANDLER_IGNORE) {
             continue;
           }
 
-          $field_handler = $fieldHandlers[ $entity_types[$id.'-'.$key]['handler'] ];
+          $field_handler = $fieldPluginManager->createInstance(
+            $entity_types[$id.'-'.$key]['handler'],
+            [
+              'entity_type_name'=>$type['entity_type'],
+              'bundle_name'=>$type['entity_bundle'],
+              'field_name'=>$key,
+              'field_definition'=>$field,
+              'settings'=>$entity_types[$id.'-'.$key],
+            ]
+          );
 
           $entity_type['new_properties'][$key] = [
             'type' => 'object',
@@ -369,7 +386,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             'multiple' => TRUE,
           ];
 
-          $field_handler->updateEntityTypeDefinition($entity_type,$entity_types[$id.'-'.$key],$key,$field);
+          $field_handler->updateEntityTypeDefinition($entity_type);
         }
 
         try {

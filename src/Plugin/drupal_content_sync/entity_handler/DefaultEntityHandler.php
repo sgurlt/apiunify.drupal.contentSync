@@ -20,11 +20,11 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
  * @package Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler
  */
 class DefaultEntityHandler extends EntityHandlerBase {
-  public function supports($entity_type,$bundle) {
+  public static function supports($entity_type,$bundle) {
     return $entity_type!='user';
   }
 
-  public function getAllowedExportOptions($entity_type,$bundle) {
+  public function getAllowedExportOptions() {
     return [
       DrupalContentSync::EXPORT_DISABLED,
       DrupalContentSync::EXPORT_AUTOMATICALLY,
@@ -33,7 +33,7 @@ class DefaultEntityHandler extends EntityHandlerBase {
     ];
   }
 
-  public function getAllowedSyncImportOptions($entity_type,$bundle) {
+  public function getAllowedSyncImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
       DrupalContentSync::IMPORT_AUTOMATICALLY,
@@ -41,7 +41,7 @@ class DefaultEntityHandler extends EntityHandlerBase {
     ];
   }
 
-  public function getAllowedClonedImportOptions($entity_type,$bundle) {
+  public function getAllowedClonedImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
       DrupalContentSync::IMPORT_AUTOMATICALLY,
@@ -49,20 +49,10 @@ class DefaultEntityHandler extends EntityHandlerBase {
     ];
   }
 
-  public function getAllowedPreviewOptions($entity_type,$bundle) {
+  public function getAllowedPreviewOptions() {
     return [
       'table' => 'Table',
       'preview_mode' => 'Preview mode',
     ];
-  }
-
-  public function getAdvancedSettings() {
-    // Nothing special here
-    return [];
-  }
-
-  public function getAdvancedSettingsForEntityType($entity_type,$bundle) {
-    // Nothing special here
-    return [];
   }
 }

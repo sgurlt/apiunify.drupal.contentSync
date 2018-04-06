@@ -20,7 +20,7 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
  * @package Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler
  */
 class DefaultBricksHandler extends FieldHandlerBase {
-  public function supports($entity_type,$bundle,$field_name,$field) {
+  public static function supports($entity_type,$bundle,$field_name,$field) {
     $allowed = ["bricks","bricks_revisioned"];
     if( in_array($field->getType(),$allowed)!==FALSE ) {
       return TRUE;
@@ -31,36 +31,5 @@ class DefaultBricksHandler extends FieldHandlerBase {
     }*/
 
     return FALSE;
-  }
-
-  public function getAllowedExportOptions($entity_type,$bundle) {
-    return [
-      DrupalContentSync::EXPORT_DISABLED,
-      DrupalContentSync::EXPORT_AUTOMATICALLY,
-    ];
-  }
-
-  public function getAllowedSyncImportOptions($entity_type,$bundle) {
-    return [
-      DrupalContentSync::IMPORT_DISABLED,
-      DrupalContentSync::IMPORT_AUTOMATICALLY,
-    ];
-  }
-
-  public function getAllowedClonedImportOptions($entity_type,$bundle) {
-    return [
-      DrupalContentSync::IMPORT_DISABLED,
-      DrupalContentSync::IMPORT_AUTOMATICALLY,
-    ];
-  }
-
-  public function getAdvancedSettings() {
-    // Nothing special here
-    return [];
-  }
-
-  public function getAdvancedSettingsForFieldAtEntityType($entity_type,$bundle) {
-    // Nothing special here
-    return [];
   }
 }

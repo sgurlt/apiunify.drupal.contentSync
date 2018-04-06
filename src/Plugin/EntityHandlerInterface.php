@@ -15,5 +15,21 @@ use Drupal\Component\Plugin\PluginInspectionInterface;
  * @ingroup third_party
  */
 interface EntityHandlerInterface extends PluginInspectionInterface {
+  public static function supports($entity_type,$bundle);
 
+  public function getAllowedExportOptions();
+
+  public function getAllowedSyncImportOptions();
+
+  public function getAllowedClonedImportOptions();
+
+  public function getAllowedPreviewOptions();
+
+  public function getAdvancedSettingsForEntityType();
+
+  public function updateEntityTypeDefinition(&$definition);
+
+  public function createEntity($base_data,&$field_data,$is_clone);
+
+  public function updateEntity($entity,&$field_data);
 }

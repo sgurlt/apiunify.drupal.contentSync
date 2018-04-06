@@ -13,18 +13,18 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
  *
  * @EntityHandler(
  *   id = "drupal_content_sync_default_node_handler",
- *   label = @Translation("Node"),
+ *   label = @Translation("Default Node"),
  *   weight = 90
  * )
  *
  * @package Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler
  */
 class DefaultNodeHandler extends EntityHandlerBase {
-  public function supports($entity_type,$bundle) {
+  public static function supports($entity_type,$bundle) {
     return $entity_type=='node';
   }
 
-  public function getAllowedExportOptions($entity_type,$bundle) {
+  public function getAllowedExportOptions() {
     return [
       DrupalContentSync::EXPORT_DISABLED,
       DrupalContentSync::EXPORT_AUTOMATICALLY,
@@ -32,7 +32,7 @@ class DefaultNodeHandler extends EntityHandlerBase {
     ];
   }
 
-  public function getAllowedSyncImportOptions($entity_type,$bundle) {
+  public function getAllowedSyncImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
       DrupalContentSync::IMPORT_AUTOMATICALLY,
@@ -40,7 +40,7 @@ class DefaultNodeHandler extends EntityHandlerBase {
     ];
   }
 
-  public function getAllowedClonedImportOptions($entity_type,$bundle) {
+  public function getAllowedClonedImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
       DrupalContentSync::IMPORT_AUTOMATICALLY,
@@ -48,54 +48,39 @@ class DefaultNodeHandler extends EntityHandlerBase {
     ];
   }
 
-  public function getAllowedPreviewOptions($entity_type,$bundle) {
+  public function getAllowedPreviewOptions() {
     return [
       'table' => 'Table',
       'preview_mode' => 'Preview mode',
     ];
   }
 
-  public function getAdvancedSettings() {
-    return [
-      'export_published_only' => 'Export published only',
-      'sync_import_published_only' => 'Sync import published only',
-      'cloned_import_published_only' => 'Clone import published only',
-      'sync_menu_items' => 'Sync menu items',
-      'restrict_editing' => 'Restrict editing of synchronized content',
-    ];
-  }
-
-  public function getAdvancedSettingsForEntityType($entity_type,$bundle,$default_values) {
+  public function getAdvancedSettingsForEntityType() {
     return [
       'export_published_only' => [
         '#type' => 'checkbox',
-        '#title' => 'Published only',
-        '#title_display' => 'invisible',
-        '#default_value' => $default_values['export_published_only']===0 ? 0 : 1,
+        '#title' => 'Export published only',
+        '#default_value' => $this->settings['export_published_only']===0 ? 0 : 1,
       ],
       'sync_import_published_only' => [
         '#type' => 'checkbox',
-        '#title' => 'Published only',
-        '#title_display' => 'invisible',
-        '#default_value' => $default_values['sync_import_published_only']===0 ? 0 : 1,
+        '#title' => 'Import published only (sync)',
+        '#default_value' => $this->settings['sync_import_published_only']===0 ? 0 : 1,
       ],
       'cloned_import_published_only' => [
         '#type' => 'checkbox',
-        '#title' => 'Published only',
-        '#title_display' => 'invisible',
-        '#default_value' => $default_values['cloned_import_published_only']===0 ? 0 : 1,
+        '#title' => 'Import published only (clone)',
+        '#default_value' => $this->settings['cloned_import_published_only']===0 ? 0 : 1,
       ],
       'sync_menu_items' => [
         '#type' => 'checkbox',
         '#title' => 'Sync menu items',
-        '#title_display' => 'invisible',
-        '#default_value' => isset($default_values['sync_menu_items']) ? $default_values['sync_menu_items'] == 1 : 0,
+        '#default_value' => isset($this->settings['sync_menu_items']) ? $this->settings['sync_menu_items'] == 1 : 0,
       ],
       'restrict_editing' => [
         '#type' => 'checkbox',
         '#title' => 'Restrict editing of synchronized content',
-        '#title_display' => 'invisible',
-        '#default_value' => isset($default_values['restrict_editing']) ? $default_values['restrict_editing'] == 1 : 0,
+        '#default_value' => isset($this->settings['restrict_editing']) ? $this->settings['restrict_editing'] == 1 : 0,
       ],
     ];
   }

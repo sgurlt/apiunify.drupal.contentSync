@@ -20,7 +20,7 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
  * @package Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler
  */
 class DefaultEntityReferenceHandler extends FieldHandlerBase {
-  public function supports($entity_type,$bundle,$field_name,$field) {
+  public static function supports($entity_type,$bundle,$field_name,$field) {
     if( $field->getType()!="entity_reference" ) {
       return FALSE;
     }
@@ -33,67 +33,35 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     return TRUE;
   }
 
-  public function getAllowedExportOptions($entity_type,$bundle,$field_name,$field) {
-    return [
-      DrupalContentSync::EXPORT_DISABLED,
-      DrupalContentSync::EXPORT_AUTOMATICALLY,
-    ];
-  }
-
-  public function getAllowedSyncImportOptions($entity_type,$bundle,$field_name,$field) {
-    return [
-      DrupalContentSync::IMPORT_DISABLED,
-      DrupalContentSync::IMPORT_AUTOMATICALLY,
-    ];
-  }
-
-  public function getAllowedClonedImportOptions($entity_type,$bundle,$field_name,$field) {
-    return [
-      DrupalContentSync::IMPORT_DISABLED,
-      DrupalContentSync::IMPORT_AUTOMATICALLY,
-    ];
-  }
-
-  public function getAdvancedSettings() {
-    return [
-      'export_referenced_entities' => 'Export referenced entities',
-      'sync_import_referenced_entities' => 'Import referenced entities (sync)',
-      'cloned_import_referenced_entities' => 'Import referenced entities (clone)',
-    ];
-  }
-
-  public function getAdvancedSettingsForFieldAtEntityType($entity_type,$bundle,$field_name,$field,$default_values) {
+  public function getAdvancedSettingsForFieldAtEntityType() {
     return [
       'export_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Export referenced entities',
-        '#title_display' => 'invisible',
-        '#default_value' => $default_values['export_referenced_entities']===0 ? 0 : 1,
+        '#default_value' => $this->settings['export_referenced_entities']===0 ? 0 : 1,
       ],
       'sync_import_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Import referenced entities (sync)',
-        '#title_display' => 'invisible',
-        '#default_value' => $default_values['sync_import_referenced_entities']===0 ? 0 : 1,
+        '#default_value' => $this->settings['sync_import_referenced_entities']===0 ? 0 : 1,
       ],
       'cloned_import_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Import referenced entities (clone)',
-        '#title_display' => 'invisible',
-        '#default_value' => $default_values['cloned_import_referenced_entities']===0 ? 0 : 1,
+        '#default_value' => $this->settings['cloned_import_referenced_entities']===0 ? 0 : 1,
       ],
     ];
   }
 
-  public function setField($field_config,$entity,$field_name,&$data,$is_clone) {
-    if (isset($data[$field_name])) {
-      if( $field_config[($is_clone?'cloned':'sync').'_import']==DrupalContentSync::IMPORT_AUTOMATICALLY ) {
-        if (empty($data[$field_name]) || !is_array($data[$field_name])) {
+  public function setField($entity,&$data,$is_clone) {
+    if (isset($data[$this->fieldName])) {
+      if( $this->settings[($is_clone?'cloned':'sync').'_import']==DrupalContentSync::IMPORT_AUTOMATICALLY ) {
+        if (empty($data[$this->fieldName]) || !is_array($data[$this->fieldName])) {
           return;
         }
 
         $reference_ids = [];
-        foreach ($data[$field_name] as $value) {
+        foreach ($data[$this->fieldName] as $value) {
           if (!isset($value['uuid'], $value['type'])) {
             continue;
           }
@@ -115,7 +83,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
           catch (\Exception $exception) {
           }
 
-          $entity->set($field_name, $reference_ids);
+          $entity->set($this->fieldName, $reference_ids);
         }
       }
     }

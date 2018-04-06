@@ -21,37 +21,37 @@ use Drupal\Component\Annotation\Plugin;
  */
 class EntityHandler extends Plugin {
 
-    /**
-     * The plugin ID.
-     *
-     * @var string
-     */
-    public $id;
+  /**
+   * The plugin ID.
+   *
+   * @var string
+   */
+  public $id;
 
-    /**
-     * The human-readable name of the handler type.
-     *
-     * @ingroup plugin_translatable
-     *
-     * @var \Drupal\Core\Annotation\Translation
-     */
-    public $label;
+  /**
+   * The human-readable name of the handler type.
+   *
+   * @ingroup plugin_translatable
+   *
+   * @var \Drupal\Core\Annotation\Translation
+   */
+  public $label;
 
-    /**
-     * The name of the handler class.
-     *
-     * This is not provided manually, it will be added by the discovery mechanism.
-     *
-     * @var string
-     */
-    public $class;
+  /**
+   * The name of the handler class.
+   *
+   * This is not provided manually, it will be added by the discovery mechanism.
+   *
+   * @var string
+   */
+  public $class;
 
-    /**
-     * An integer to determine the weight of this handler relative to other handlers
-     * in the Field UI when selecting a handler for a given field.
-     *
-     * @var int optional
-     */
-    public $weight = NULL;
+  /**
+   * An integer to determine the weight of this handler relative to other handlers
+   * in the Field UI when selecting a handler for a given field.
+   *
+   * @var int optional
+   */
+  public $weight = NULL;
 
 }
