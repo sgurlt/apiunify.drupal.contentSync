@@ -134,6 +134,21 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     }
   }
 
+  public static function getEntityTypeVersion($type_name,$bundle_name) {
+    $entityFieldManager = \Drupal::service('entity_field.manager');
+    $field_definitions = $entityFieldManager->getFieldDefinitions($type_name, $bundle_name);
+
+    $field_definitions_array = (array) $field_definitions;
+    unset($field_definitions_array['field_drupal_content_synced']);
+
+    $field_names = array_keys($field_definitions_array);
+    sort($field_names);
+
+    $version = md5(json_encode($field_names));
+
+    return $version;
+  }
+
   /**
    * Method do create all Drupal Content Sync entities which are needed for a snychronization
    *

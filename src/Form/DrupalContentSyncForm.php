@@ -225,14 +225,7 @@ class DrupalContentSyncForm extends EntityForm {
       foreach ($entity_type as $entity_bundle_name => $entity_bundle) {
         $entity_bundle_row = [];
 
-        $field_definitions = $this->entityFieldManager->getFieldDefinitions($type_key, $entity_bundle_name);
-
-        $field_definitions_array = (array) $field_definitions;
-        unset($field_definitions_array['field_drupal_content_synced']);
-        ksort($field_definitions_array);
-        $field_definitions_array = array_keys($field_definitions_array);
-
-        $version = md5(json_encode($field_definitions_array));
+        $version = DrupalContentSync::getEntityTypeVersion($type_key,$entity_bundle_name);
 
         $current_display_mode = $type_key . '.' . $entity_bundle_name . '.' . self::DRUPAL_CONTENT_SYNC_PREVIEW_FIELD;
         $has_preview_mode = in_array($current_display_mode, $display_modes_ids) || $type_key == 'file';
@@ -392,6 +385,9 @@ class DrupalContentSyncForm extends EntityForm {
           '#default_value' => $row_default_values['delete_entity'] == 1,
         ];
 
+        $entity_bundle_row['handler_settings']  = [
+          '#markup' => '',
+        ];
         if( $handler_id!='ignore' ) {
           $advanced_settings = $handler->getHandlerSettings();
           if( count($advanced_settings) ) {
@@ -590,6 +586,9 @@ class DrupalContentSyncForm extends EntityForm {
               '#markup' => '',
             ];
 
+            $field_row['handler_settings']  = [
+              '#markup' => '',
+            ];
             if( $handler_id!='ignore' ) {
               $advanced_settings = $handler->getHandlerSettings($field_default_values);
               if( count($advanced_settings) ) {
