@@ -1,5 +1,5 @@
 entity.drupal_content_sync.collection:
-  path: '/admin/config/system/drupal_content_sync/synchronizations'
+  path: '/admin/config/service/drupal_content_sync/synchronizations'
   defaults:
     _entity_list: 'drupal_content_sync'
     _title: 'Synchronizations configuration'
@@ -7,7 +7,7 @@ entity.drupal_content_sync.collection:
     _permission: 'administer site configuration'
 
 entity.drupal_content_sync.add_form:
-  path: '/admin/config/system/drupal_content_sync/synchronizations/add'
+  path: '/admin/config/services/drupal_content_sync/synchronizations/add'
   defaults:
     _entity_form: 'drupal_content_sync.add'
     _title: 'Add synchronization'
@@ -15,7 +15,7 @@ entity.drupal_content_sync.add_form:
     _permission: 'administer site configuration'
 
 entity.drupal_content_sync.edit_form:
-  path: '/admin/config/system/drupal_content_sync/synchronizations/{drupal_content_sync}'
+  path: '/admin/config/services/drupal_content_sync/synchronizations/{drupal_content_sync}'
   defaults:
     _entity_form: 'drupal_content_sync.edit'
     _title: 'Edit synchronization'
@@ -23,7 +23,7 @@ entity.drupal_content_sync.edit_form:
     _permission: 'administer site configuration'
 
 entity.drupal_content_sync.delete_form:
-  path: '/admin/config/system/drupal_content_sync/synchronizations/{drupal_content_sync}/delete'
+  path: '/admin/config/services/drupal_content_sync/synchronizations/{drupal_content_sync}/delete'
   defaults:
     _entity_form: 'drupal_content_sync.delete'
     _title: 'Delete synchronization'
