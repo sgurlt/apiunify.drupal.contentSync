@@ -87,7 +87,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
     ];
   }
 
-  public function getAdvancedSettingsForFieldAtEntityType() {
+  public function getHandlerSettings() {
     // Nothing special here
     return [];
   }

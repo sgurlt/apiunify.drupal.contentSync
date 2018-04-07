@@ -33,22 +33,22 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     return TRUE;
   }
 
-  public function getAdvancedSettingsForFieldAtEntityType() {
+  public function getHandlerSettings() {
     return [
       'export_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Export referenced entities',
-        '#default_value' => $this->settings['export_referenced_entities']===0 ? 0 : 1,
+        '#default_value' => $this->settings['handler_settings']['export_referenced_entities']===0 ? 0 : 1,
       ],
       'sync_import_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Import referenced entities (sync)',
-        '#default_value' => $this->settings['sync_import_referenced_entities']===0 ? 0 : 1,
+        '#default_value' => $this->settings['handler_settings']['sync_import_referenced_entities']===0 ? 0 : 1,
       ],
       'cloned_import_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Import referenced entities (clone)',
-        '#default_value' => $this->settings['cloned_import_referenced_entities']===0 ? 0 : 1,
+        '#default_value' => $this->settings['handler_settings']['cloned_import_referenced_entities']===0 ? 0 : 1,
       ],
     ];
   }

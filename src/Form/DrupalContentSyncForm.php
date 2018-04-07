@@ -194,6 +194,7 @@ class DrupalContentSyncForm extends EntityForm {
       '#type' => 'table',
       '#prefix' => '<div id="sync-entities-table">',
       '#suffix' => '</div>',
+      '#sticky' => TRUE,
       '#header' => array_merge([
         $this->t('Bundle'),
         $this->t('Identifier'),
@@ -201,10 +202,10 @@ class DrupalContentSyncForm extends EntityForm {
         $this->t('Export'),
         $this->t('Synchronized Import'),
         $this->t('Cloned Import'),
+        '',
         $this->t('Preview'),
         $this->t('Delete entities'),
         $this->t('Handler settings'),
-        // Additional settings (handler specific) + Hidden fields need no header
       ]),
     ];
 
@@ -368,6 +369,13 @@ class DrupalContentSyncForm extends EntityForm {
           '#default_value' => $row_default_values['cloned_import'],
         ];
 
+
+        $entity_bundle_row['has_preview_mode'] = [
+          '#type' => 'hidden',
+          '#default_value' => (int) $has_preview_mode,
+          '#title' => $this->t('Has preview mode'),
+          '#title_display' => 'invisible',
+        ];
         $entity_bundle_row['preview'] = [
           '#type' => 'select',
           '#title' => $this->t('Preview'),
@@ -380,29 +388,23 @@ class DrupalContentSyncForm extends EntityForm {
 
         $entity_bundle_row['delete_entity'] = [
           '#type' => 'checkbox',
-          '#title' => $this->t('Delete entity'),
-          '#title_display' => 'invisible',
+          '#title' => $this->t('Delete'),
           '#default_value' => $row_default_values['delete_entity'] == 1,
         ];
 
         if( $handler_id!='ignore' ) {
-          $advanced_settings = $handler->getAdvancedSettingsForEntityType($row_default_values);
-          foreach ($advanced_settings as $name => $options) {
-            $entity_bundle_row[$name] = $advanced_settings[$name];
+          $advanced_settings = $handler->getHandlerSettings();
+          if( count($advanced_settings) ) {
+            $entity_bundle_row['handler_settings']  = array_merge( [
+              '#type' => 'container',
+            ], $advanced_settings );
           }
         }
 
-        $entity_bundle_row['version_hash'] = [
+        /*$entity_bundle_row['version_hash'] = [
           '#type' => 'hidden',
           '#default_value' => $version,
           '#title' => $this->t('version_hash'),
-          '#title_display' => 'invisible',
-        ];
-
-        $entity_bundle_row['has_preview_mode'] = [
-          '#type' => 'hidden',
-          '#default_value' => (int) $has_preview_mode,
-          '#title' => $this->t('Has preview mode'),
           '#title_display' => 'invisible',
         ];
 
@@ -419,7 +421,7 @@ class DrupalContentSyncForm extends EntityForm {
         $entity_bundle_row['entity_bundle'] = [
           '#type' => 'hidden',
           '#value' => $row_default_values['entity_bundle'],
-        ];
+        ];*/
 
         $entity_table[$type_key . '-' . $entity_bundle_name] = $entity_bundle_row;
 
@@ -578,18 +580,22 @@ class DrupalContentSyncForm extends EntityForm {
               '#default_value' => $field_default_values['cloned_import'] ? $field_default_values['cloned_import'] : (isset($import_options[DrupalContentSync::EXPORT_AUTOMATICALLY]) ? DrupalContentSync::EXPORT_AUTOMATICALLY : DrupalContentSync::EXPORT_DISABLED),
             ];
 
+            $field_row['has_preview'] = [
+              '#markup' => '',
+            ];
             $field_row['preview'] = [
               '#markup' => '',
             ];
-
             $field_row['delete_entity'] = [
               '#markup' => '',
             ];
 
             if( $handler_id!='ignore' ) {
-              $advanced_settings = $handler->getAdvancedSettingsForFieldAtEntityType($field_default_values);
-              foreach ($advanced_settings as $name => $options) {
-                $field_row[$name] = $advanced_settings[$name];
+              $advanced_settings = $handler->getHandlerSettings($field_default_values);
+              if( count($advanced_settings) ) {
+                $field_row['handler_settings']  = array_merge( [
+                  '#type' => 'container',
+                ], $advanced_settings );
               }
             }
 

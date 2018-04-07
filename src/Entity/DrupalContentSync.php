@@ -207,10 +207,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $localConnections = [];
 
     $entityPluginManager = \Drupal::service('plugin.manager.dcs_entity_handler');
-    $entityHandlerDefinitions = $entityPluginManager->getDefinitions();
-
     $fieldPluginManager = \Drupal::service('plugin.manager.dcs_field_handler');
-    $fieldHandlerDefinitions = $fieldPluginManager->getDefinitions();
 
     $entity_types = $this->sync_entities;
 

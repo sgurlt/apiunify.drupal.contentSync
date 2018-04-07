@@ -25,7 +25,7 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
 
   public function getAllowedPreviewOptions();
 
-  public function getAdvancedSettingsForEntityType();
+  public function getHandlerSettings();
 
   public function updateEntityTypeDefinition(&$definition);
 

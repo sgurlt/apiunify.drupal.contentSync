@@ -55,32 +55,32 @@ class DefaultNodeHandler extends EntityHandlerBase {
     ];
   }
 
-  public function getAdvancedSettingsForEntityType() {
+  public function getHandlerSettings() {
     return [
       'export_published_only' => [
         '#type' => 'checkbox',
         '#title' => 'Export published only',
-        '#default_value' => $this->settings['export_published_only']===0 ? 0 : 1,
+        '#default_value' => $this->settings['handler_settings']['export_published_only']===0 ? 0 : 1,
       ],
       'sync_import_published_only' => [
         '#type' => 'checkbox',
         '#title' => 'Import published only (sync)',
-        '#default_value' => $this->settings['sync_import_published_only']===0 ? 0 : 1,
+        '#default_value' => $this->settings['handler_settings']['sync_import_published_only']===0 ? 0 : 1,
       ],
       'cloned_import_published_only' => [
         '#type' => 'checkbox',
         '#title' => 'Import published only (clone)',
-        '#default_value' => $this->settings['cloned_import_published_only']===0 ? 0 : 1,
+        '#default_value' => $this->settings['handler_settings']['cloned_import_published_only']===0 ? 0 : 1,
       ],
       'sync_menu_items' => [
         '#type' => 'checkbox',
         '#title' => 'Sync menu items',
-        '#default_value' => isset($this->settings['sync_menu_items']) ? $this->settings['sync_menu_items'] == 1 : 0,
+        '#default_value' => isset($this->settings['handler_settings']['sync_menu_items']) ? $this->settings['handler_settings']['sync_menu_items'] == 1 : 0,
       ],
       'restrict_editing' => [
         '#type' => 'checkbox',
         '#title' => 'Restrict editing of synchronized content',
-        '#default_value' => isset($this->settings['restrict_editing']) ? $this->settings['restrict_editing'] == 1 : 0,
+        '#default_value' => isset($this->settings['handler_settings']['restrict_editing']) ? $this->settings['handler_settings']['restrict_editing'] == 1 : 0,
       ],
     ];
   }

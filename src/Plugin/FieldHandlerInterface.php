@@ -77,7 +77,7 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    *
    * @return mixed
    */
-  public function getAdvancedSettingsForFieldAtEntityType();
+  public function getHandlerSettings();
 
   /**
    * Advanced entity type definition settings for the Node.js backend. You

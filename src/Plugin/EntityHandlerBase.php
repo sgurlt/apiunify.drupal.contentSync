@@ -65,7 +65,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   public function updateEntityTypeDefinition(&$definition) {
   }
 
-  public function getAdvancedSettingsForEntityType() {
+  public function getHandlerSettings() {
     return [];
   }
 
