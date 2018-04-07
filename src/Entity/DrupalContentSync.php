@@ -165,18 +165,18 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       // Create "drupal" API entity.
       $this->sendEntityRequest($url . '/api_unify-api_unify-api-0_1', [
         'json' => [
-          'id' => 'drupal-0.1',
+          'id' => 'drupal-1.0',
           'name' => 'drupal',
-          'version' => '0.1',
+          'version' => '1.0',
         ],
       ]);
       // Create the child entity.
       $this->sendEntityRequest($url . '/api_unify-api_unify-api-0_1', [
         'json' => [
-          'id' => $this->{'api'} . '-0.1',
+          'id' => $this->{'api'} . '-1.0',
           'name' => $this->{'api'},
-          'version' => '0.1',
-          'parent_id' => 'drupal-0.1',
+          'version' => '1.0',
+          'parent_id' => 'drupal-1.0',
         ],
       ]);
 
@@ -184,7 +184,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       $this->sendEntityRequest($url . '/api_unify-api_unify-instance-0_1', [
         'json' => [
           'id' => $this->{'site_id'},
-          'api_id' => $this->{'api'} . '-0.1',
+          'api_id' => $this->{'api'} . '-1.0',
         ],
       ]);
 
@@ -232,23 +232,29 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         continue;
       }
 
+      preg_match('/^(.+)-(.+)$/', $id, $matches);
+
+      $entity_type_name = $matches[1];
+      $bundle_name = $matches[2];
+      $version = self::getEntityTypeVersion($entity_type_name,$bundle_name);
+
       if ($type['handler'] != self::HANDLER_IGNORE) {
         $handler = $entityPluginManager->createInstance(
           $type['handler'],
           [
-            'entity_type_name'=>$type['entity_type'],
-            'bundle_name'=>$type['entity_bundle'],
+            'entity_type_name'=>$entity_type_name,
+            'bundle_name'=>$bundle_name,
             'settings'=>$type,
           ]
         );
 
         /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
-        $fields = $this->entityFieldManager->getFieldDefinitions($type['entity_type'], $type['entity_bundle']);
+        $fields = $this->entityFieldManager->getFieldDefinitions($entity_type_name, $bundle_name);
 
         $entity_type = [
-          'id' => 'drupal-' . $type['entity_type'] . '-' . $type['entity_bundle'] . '-' . $type['version_hash'],
-          'name_space' => $type['entity_type'],
-          'name' => $type['entity_bundle'],
+          'id' => 'drupal-' . $entity_type_name . '-' . $bundle_name . '-' . $version,
+          'name_space' => $entity_type_name,
+          'name' => $bundle_name,
           'version' => $type['version_hash'],
           'base_class' => "api-unify/services/drupal/v0.1/models/base.model",
           'custom' => TRUE,
@@ -371,7 +377,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
               'uuid' => 'value',
             ],
           ],
-          'api_id' => $this->{'api'} . '-0.1',
+          'api_id' => $this->{'api'} . '-1.0',
         ];
 
         $handler->updateEntityTypeDefinition($entity_type);
@@ -384,8 +390,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           $field_handler = $fieldPluginManager->createInstance(
             $entity_types[$id.'-'.$key]['handler'],
             [
-              'entity_type_name'=>$type['entity_type'],
-              'bundle_name'=>$type['entity_bundle'],
+              'entity_type_name'=>$entity_type_name,
+              'bundle_name'=>$bundle_name,
               'field_name'=>$key,
               'field_definition'=>$field,
               'settings'=>$entity_types[$id.'-'.$key],
@@ -419,12 +425,6 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
               'usage' => 'EXTERNAL',
               'status' => 'READY',
               'entity_type_id' => $entity_type['id'],
-              'options' => [
-                'crud' => [
-                  'read_list' => []
-                ],
-                'static_values' => [],
-              ],
             ],
           ]);
 
@@ -496,7 +496,6 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
           if ($type['export'] == self::EXPORT_AUTOMATICALLY) {
             $crud_operations['read_list']['url'] = $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/0?_format=json';
-            $connection_options['pull_interval'] = 86400000;
           }
 
           $local_connection_id = 'drupal_' . $this->{'site_id'} . '_' . $entity_type['name_space'] . '_' . $entity_type['name'];

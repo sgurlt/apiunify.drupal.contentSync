@@ -256,7 +256,8 @@ class DrupalContentSyncForm extends EntityForm {
           '#markup' => $this->t('@bundle (@machine_name)', [
               '@bundle' => $entity_bundle['label'],
               '@machine_name' => $entity_bundle_name,
-            ]) . '<br><small>version: ' . $version . '</small>',
+            ]) . '<br><small>version: ' . $version  . '</small>' .
+            (empty($row_default_values['version'])||$version==$row_default_values['version']?'':'<br><strong>Changed from '.$row_default_values['version'].'</strong>'),
         ];
 
         $entity_bundle_row['id'] = [
@@ -396,28 +397,6 @@ class DrupalContentSyncForm extends EntityForm {
             ], $advanced_settings );
           }
         }
-
-        /*$entity_bundle_row['version_hash'] = [
-          '#type' => 'hidden',
-          '#default_value' => $version,
-          '#title' => $this->t('version_hash'),
-          '#title_display' => 'invisible',
-        ];
-
-        $entity_bundle_row['display_name'] = [
-          '#type' => 'hidden',
-          '#value' => $row_default_values['display_name'],
-        ];
-
-        $entity_bundle_row['entity_type'] = [
-          '#type' => 'hidden',
-          '#value' => $row_default_values['entity_type'],
-        ];
-
-        $entity_bundle_row['entity_bundle'] = [
-          '#type' => 'hidden',
-          '#value' => $row_default_values['entity_bundle'],
-        ];*/
 
         $entity_table[$type_key . '-' . $entity_bundle_name] = $entity_bundle_row;
 
@@ -666,10 +645,8 @@ class DrupalContentSyncForm extends EntityForm {
    */
   public function save(array $form, FormStateInterface $form_state) {
     $config = $this->entity;
-    $is_new = !$this->exist($config->id());
-    $status = $config->save();
 
-    $sync_entities = $config->{'sync_entities'};
+    $sync_entities = &$config->{'sync_entities'};
     foreach ($sync_entities as $key => $bundle_fields) {
       // Ignore field settings
       if( substr_count($key,'-')!=1 ) {
@@ -680,6 +657,8 @@ class DrupalContentSyncForm extends EntityForm {
 
       $type_key = $matches[1];
       $bundle_key = $matches[2];
+
+      $sync_entities[$key]['version'] = DrupalContentSync::getEntityTypeVersion($type_key,$bundle_key);
 
       if ('disabled' !== $bundle_fields['sync_import']) {
         $field_storage = FieldStorageConfig::loadByName($type_key, self::FIELD_DRUPAL_CONTENT_SYNCED);
@@ -709,6 +688,9 @@ class DrupalContentSyncForm extends EntityForm {
         }
       }
     }
+
+    $is_new = !$this->exist($config->id());
+    $status = $config->save();
 
     if ($status) {
       drupal_set_message($this->t('Saved the %label Drupal Content Synchronization.', array(
