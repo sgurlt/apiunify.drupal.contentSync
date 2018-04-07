@@ -59,6 +59,15 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   // Ignore this entity type / bundle / field completely
   const HANDLER_IGNORE        = 'ignore';
 
+  // The virtual site id for the pool and it's connections / synchronizations
+  const POOL_SITE_ID = '_pool';
+
+  const PREVIEW_CONNECTION_ID   = 'drupal_drupal-content-sync_preview';
+  const PREVIEW_ENTITY_ID       = 'drupal-synchronization-entity_preview-0_1';
+  const PREVIEW_ENTITY_VERSION  = '0.1';
+
+  const READ_LIST_ENTITY_ID     = '0';
+
   /**
    * The DrupalContentSync ID.
    *
@@ -76,7 +85,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    * The DrupalContentSync entities.
    *
-   * @var string
+   * @var array
    */
   public $sync_entities;
 
@@ -191,12 +200,12 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       //Create the preview connection entity
       $this->sendEntityRequest($url . '/api_unify-api_unify-connection-0_1', [
         'json' => [
-          'id' => 'drupal_drupal-content-sync_preview',
+          'id' => self::PREVIEW_CONNECTION_ID,
           'name' => 'Drupal preview connection',
           'hash' => 'drupal/drupal-content-sync/preview',
           'usage' => 'EXTERNAL',
           'status' => 'READY',
-          'entity_type_id' => 'drupal-synchronization-entity_preview-0_1',
+          'entity_type_id' => self::PREVIEW_ENTITY_ID,
           'options' => [
             'crud' => [
               'read_list' => [],
@@ -215,10 +224,79 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     return TRUE;
   }
 
+  static public function getExternalConnectionId($api_id,$site_id,$entity_type_name,$bundle_name,$version) {
+    return sprintf('drupal-%s-%s-%s-%s-%s',
+      $api_id,
+      $site_id,
+      $entity_type_name,
+      $bundle_name,
+      $version
+    );
+  }
+  static public function getExternalEntityTypeId($api_id,$entity_type_name,$bundle_name,$version) {
+    return sprintf('drupal-%s-%s-%s-%s',
+      $api_id,
+      $entity_type_name,
+      $bundle_name,
+      $version
+    );
+  }
+  static public function getExternalConnectionPath($api_id,$site_id,$entity_type_name,$bundle_name,$version) {
+    return sprintf('drupal/%s/%s/%s/%s/%s',
+      $api_id,
+      $site_id,
+      $entity_type_name,
+      $bundle_name,
+      $version
+    );
+  }
+  public function getExternalUrl($entity_type_name,$bundle_name,$entity_uuid=NULL) {
+    $url = $this->{'url'} . '/' . self::getExternalConnectionPath(
+      $this->{'api'},
+      $this->{'site_id'},
+      $entity_type_name,
+      $bundle_name,
+      $this->sync_entities[$entity_type_name.'-'.$bundle_name]['version']
+    );
+    if( $entity_uuid ) {
+      $url .= '/' . $entity_uuid;
+    }
+    return $url;
+  }
+  public static function getInternalUrl($entity_type_name,$bundle_name,$version,$entity_uuid=NULL) {
+    global $base_url;
+
+    $url = sprintf( '%s/drupal_content_sync_entity_resource/%s/',
+      $base_url,
+      $entity_type_name,
+      $bundle_name,
+      $version
+    );
+    if( $entity_uuid ) {
+      $url .= '/' . $entity_uuid;
+    }
+    $url .= '?_format=json';
+    return $url;
+  }
+  public static function getInternalCreateItemUrl($entity_type_name,$bundle_name,$version) {
+    return self::getInternalUrl($entity_type_name,$bundle_name,$version) . '&is_clone=[is_clone]';
+  }
+  public static function getInternalUpdateItemUrl($entity_type_name,$bundle_name,$version) {
+    return self::getInternalUrl($entity_type_name,$bundle_name,$version,'[id]');
+  }
+  public static function getInternalDeleteItemUrl($entity_type_name,$bundle_name,$version) {
+    return self::getInternalUrl($entity_type_name,$bundle_name,$version,'[id]');
+  }
+  public static function getInternalReadListUrl($entity_type_name,$bundle_name,$version) {
+    return self::getInternalUrl($entity_type_name,$bundle_name,$version,self::READ_LIST_ENTITY_ID);
+  }
+
   protected function createEntityTypes() {
     global $base_url;
 
-    $url = $this->{'url'};
+    $url      = $this->{'url'};
+    $api      = $this->{'api'};
+    $site_id  = $this->{'site_id'};
     $localConnections = [];
 
     $entityPluginManager = \Drupal::service('plugin.manager.dcs_entity_handler');
@@ -251,11 +329,12 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
         $fields = $this->entityFieldManager->getFieldDefinitions($entity_type_name, $bundle_name);
 
+        $entity_type_id = self::getExternalEntityTypeId( $api, $entity_type_name, $bundle_name , $version );
         $entity_type = [
-          'id' => 'drupal-' . $entity_type_name . '-' . $bundle_name . '-' . $version,
+          'id' => $entity_type_id,
           'name_space' => $entity_type_name,
           'name' => $bundle_name,
-          'version' => $type['version_hash'],
+          'version' => $version,
           'base_class' => "api-unify/services/drupal/v0.1/models/base.model",
           'custom' => TRUE,
           'new_properties' => [
@@ -415,24 +494,24 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             'json' => $entity_type,
           ]);
 
-          $pool_connection_id = 'drupal_pool_' . $entity_type['name_space'] . '_' . $entity_type['name'];
+          $pool_connection_id = self::getExternalConnectionId($api,self::POOL_SITE_ID, $entity_type_name, $bundle_name, $version );
           //Create the pool connection entity for this entity type
           $this->sendEntityRequest($url . '/api_unify-api_unify-connection-0_1', [
             'json' => [
               'id' => $pool_connection_id,
-              'name' => 'Drupal pool connection for ' . $entity_type['name_space'] . '-' . $entity_type['name'],
-              'hash' => 'drupal/drupal-content-sync-pool/' . $entity_type['name_space'] . '/' . $entity_type['name'],
+              'name' => 'Drupal pool connection for ' . $entity_type_name . '-' . $bundle_name . '-' . $version,
+              'hash' => self::getExternalConnectionPath($api,self::POOL_SITE_ID,$entity_type_name,$bundle_name,$version),
               'usage' => 'EXTERNAL',
               'status' => 'READY',
-              'entity_type_id' => $entity_type['id'],
+              'entity_type_id' => $entity_type_id,
             ],
           ]);
 
           //Create a synchronization from the pool to the preview connection
           $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
             'json' => [
-              'id' => 'drupal_pool_' . $entity_type['name_space'] . '_' . $entity_type['id'] . '_synchronization_to_preview',
-              'name' => 'Synchronization Pool ' . $entity_type['name_space'] . '-' . $entity_type['name'] . ' -> Preview',
+              'id' => $pool_connection_id . '--to--preview',
+              'name' => 'Synchronization Pool ' . $entity_type_name . '-' . $bundle_name . ' -> Preview',
               'options' => [
                 'create_entities' => true,
                 'update_entities' => true,
@@ -445,7 +524,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
               ],
               'status' => 'READY',
               'source_connection_id' => $pool_connection_id,
-              'destination_connection_id' => 'drupal_drupal-content-sync_preview',
+              'destination_connection_id' => self::PREVIEW_CONNECTION_ID,
             ],
           ]);
 
@@ -474,13 +553,13 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
           $crud_operations = [
             'create_item' => [
-              'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '?is_clone=[is_clone]&_format=json',
+              'url' => self::getInternalCreateItemUrl($entity_type_name,$bundle_name,$version),
             ],
             'update_item' => [
-              'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/[id]?_format=json',
+              'url' => self::getInternalUpdateItemUrl($entity_type_name,$bundle_name,$version),
             ],
             'delete_item' => [
-              'url' => $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/[id]?_format=json',
+              'url' => self::getInternalDeleteItemUrl($entity_type_name,$bundle_name,$version),
             ],
           ];
           $connection_options = [
@@ -491,24 +570,23 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
               'base_url' => $base_url,
             ],
             'crud' => &$crud_operations,
-            'static_values' => [],
           ];
 
           if ($type['export'] == self::EXPORT_AUTOMATICALLY) {
-            $crud_operations['read_list']['url'] = $base_url . '/drupal_content_sync_entity_resource/' . $entity_type['name_space'] . '/' . $entity_type['name'] . '/0?_format=json';
+            $crud_operations['read_list']['url'] = self::getInternalReadListUrl($entity_type_name,$bundle_name,$version);
           }
 
-          $local_connection_id = 'drupal_' . $this->{'site_id'} . '_' . $entity_type['name_space'] . '_' . $entity_type['name'];
+          $local_connection_id = self::getExternalConnectionId($api,$site_id,$entity_type_name,$bundle_name,$version);
           //Create the instance connection entity for this entity type
           $this->sendEntityRequest($url . '/api_unify-api_unify-connection-0_1', [
             'json' => [
               'id' => $local_connection_id,
-              'name' => 'Drupal connection on ' . $this->{'site_id'} . ' for ' . $entity_type['name_space'] . '-' . $entity_type['name'],
-              'hash' => 'drupal/' . $this->{'site_id'} . '/' . $entity_type['name_space'] . '/' . $entity_type['name'],
+              'name' => 'Drupal connection on ' . $site_id . ' for ' . $entity_type_name . '-' . $bundle_name . '-' . $version,
+              'hash' => self::getExternalConnectionPath($api,$site_id,$entity_type_name,$bundle_name,$version),
               'usage' => 'EXTERNAL',
               'status' => 'READY',
-              'entity_type_id' => $entity_type['id'],
-              'instance_id' => $this->{'site_id'},
+              'entity_type_id' => $entity_type_id,
+              'instance_id' => $site_id,
               'options' => $connection_options,
             ],
           ]);
@@ -517,8 +595,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           //Create a synchronization from the pool to the local connection
           $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
             'json' => [
-              'id' => 'drupal_' . $this->{'site_id'} . '_' . $entity_type['id'] . '_synchronization_to_drupal',
-              'name' => 'Synchronization for ' . $entity_type['name_space'] . '/' . $entity_type['name'] . ' from Pool -> ' . $this->{'site_id'},
+              'id' => $local_connection_id . '--to--drupal',
+              'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from Pool -> ' . $site_id,
               'options' => [
                 'create_entities' => $type['sync_import'] == 'automatically' || $type['cloned_import'] == 'automatically',
                 'update_entities' => true,
@@ -538,8 +616,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           if ($type['export'] != self::EXPORT_DISABLED) {
             $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
               'json' => [
-                'id' => 'drupal_' . $this->{'site_id'} . '_' . $entity_type['id'] . '_synchronization_to_pool',
-                'name' => 'Synchronization for ' . $entity_type['name_space'] . '/' . $entity_type['name'] . ' from ' . $this->{'site_id'} . ' -> Pool',
+                'id' => $local_connection_id . '--to--pool',
+                'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from ' . $site_id . ' -> Pool',
                 'options' => [
                   'create_entities' => true,
                   'update_entities' => true,
