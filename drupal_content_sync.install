@@ -27,7 +27,6 @@ function drupal_content_sync_install() {
     $config_storage->write($name, $source->read($name));
   }
 
-
   $username = 'Drupal Content Sync';
 
   \Drupal::moduleHandler()->alter('drupal_content_sync_username', $username);
@@ -36,7 +35,6 @@ function drupal_content_sync_install() {
     'userName' => $username,
     'userPass' => user_password(),
   ];
-
 
   $user = User::create();
   $user->setUsername($data['userName']);
@@ -89,6 +87,8 @@ function drupal_content_sync_update_8002(&$sandbox) {
  * Implements hook_uninstall().
  */
 function drupal_content_sync_uninstall() {
+  // Delete module configurations
+  // @ToDo: Is there a better way to do that?
   $config = \Drupal::configFactory();
   $config->getEditable('encrypt.profile.drupal_content_sync')->delete();
   $config->getEditable('key.key.drupal_content_sync')->delete();
@@ -96,6 +96,8 @@ function drupal_content_sync_uninstall() {
   $config->getEditable('rest.resource.drupal_content_sync_resource')->delete();
   $config->getEditable('user.role.drupal_content_sync')->delete();
   $config->getEditable('webhooks.webhook.webhook_drupal_content_sync_export')->delete();
+  $config->getEditable('system.action.user_add_role_action.drupal_content_sync')->delete();
+  $config->getEditable('system.action.user_remove_role_action.drupal_content_sync')->delete();
 
   /** @var \Drupal\user\Entity\User $user */
   $user = user_load_by_mail(DRUPAL_CONTENT_SYNC_EMAIL);
