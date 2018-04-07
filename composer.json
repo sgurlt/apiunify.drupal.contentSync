@@ -1,0 +1,23 @@
+{
+  "name": "drupal/drupal_content_sync",
+  "description": "Provides an integration with Drupal Content Sync.",
+  "type": "drupal-module",
+  "license": "GPL-2.0+",
+  "keywords": [
+    "Drupal",
+    "Content Sync"
+  ],
+  "homepage": "https://github.com/sgurlt/apiunify.drupal.contentSync",
+  "authors": [
+    {
+      "name": "Bright Solutions GmbH",
+      "homepage": "https://www.brightsolutions.de/"
+    }
+  ],
+  "require": {
+    "drupal/config_ignore": "^2.1",
+    "drupal/webhooks": "^1.0",
+    "drupal/encrypt": "^3.0",
+    "drupal/real_aes": "^2.0"
+  }
+}
