@@ -4,11 +4,11 @@ namespace Drupal\drupal_content_sync\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Entity\EntityFieldManager;
 use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\Url;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Drupal\webhooks\Webhook;
 
 /**
  * Defines the DrupalContentSync entity.
@@ -64,6 +64,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   const PREVIEW_CONNECTION_ID  = 'drupal_drupal-content-sync_preview';
   const PREVIEW_ENTITY_ID      = 'drupal-synchronization-entity_preview-0_1';
   const PREVIEW_ENTITY_VERSION = '0.1';
+
+  const CUSTOM_API_VERSION      = '1.0';
 
   const READ_LIST_ENTITY_ID = '0';
 
@@ -176,18 +178,18 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       // Create "drupal" API entity.
       $this->sendEntityRequest($url . '/api_unify-api_unify-api-0_1', [
         'json' => [
-          'id' => 'drupal-1.0',
+          'id' => 'drupal-'.self::CUSTOM_API_VERSION,
           'name' => 'drupal',
-          'version' => '1.0',
+          'version' => self::CUSTOM_API_VERSION,
         ],
       ]);
       // Create the child entity.
       $this->sendEntityRequest($url . '/api_unify-api_unify-api-0_1', [
         'json' => [
-          'id' => $this->{'api'} . '-1.0',
+          'id' => $this->{'api'} . '-'.self::CUSTOM_API_VERSION,
           'name' => $this->{'api'},
-          'version' => '1.0',
-          'parent_id' => 'drupal-1.0',
+          'version' => self::CUSTOM_API_VERSION,
+          'parent_id' => 'drupal-'.self::CUSTOM_API_VERSION,
         ],
       ]);
 
@@ -195,7 +197,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       $this->sendEntityRequest($url . '/api_unify-api_unify-instance-0_1', [
         'json' => [
           'id' => $this->{'site_id'},
-          'api_id' => $this->{'api'} . '-1.0',
+          'api_id' => $this->{'api'} . '-'.self::CUSTOM_API_VERSION,
         ],
       ]);
 
@@ -326,6 +328,46 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    */
   public static function getInternalReadListUrl($entity_type_name, $bundle_name, $version) {
     return self::getInternalUrl($entity_type_name, $bundle_name, $version, self::READ_LIST_ENTITY_ID);
+  }
+
+  public function exportEntity($entity,$reason) {
+    if (method_exists($entity, 'getUntranslated')) {
+      $entity = $entity->getUntranslated();
+    }
+
+    // TODO: Save state in custom entity for each entity
+    $is_new = TRUE;
+
+    $event = implode(':', ['entity', $entity->getEntityType()->id(), $is_new ? 'create' : 'update']);
+
+    /** @var \Drupal\webhooks\WebhooksService $webhooks_service */
+    $webhooks_service = \Drupal::service('webhooks.service');
+
+    // Load all webhooks for the occurring event.
+    $webhook_configs = $webhooks_service->loadMultipleByEvent($event);
+
+    try {
+      /** @var \Drupal\webhooks\Entity\WebhookConfig $webhook_config */
+      foreach ($webhook_configs as $webhook_config) {
+        // Create the Webhook object.
+        $webhook = new Webhook(
+          [
+            'entity' => $entity->toArray(),
+            'reason' => $reason,
+          ],
+          [],
+          $event
+        );
+        // Send the Webhook object.
+        $webhooks_service->send($webhook_config, $webhook);
+      }
+    }
+    catch (\Exception $exception) {
+      // TODO log exception
+      return FALSE;
+    }
+
+    return TRUE;
   }
 
   /**
@@ -496,7 +538,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
               'uuid' => 'value',
             ],
           ],
-          'api_id' => $this->{'api'} . '-1.0',
+          'api_id' => $this->{'api'} . '-'.self::CUSTOM_API_VERSION,
         ];
 
         $handler->updateEntityTypeDefinition($entity_type);

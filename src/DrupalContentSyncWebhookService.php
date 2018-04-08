@@ -179,7 +179,6 @@ class DrupalContentSyncWebhookService extends WebhooksService {
       $entity = $entity_data['entity'];
     }
     $webhook->setPayload(_drupal_content_sync_preprocess_entity($entity, $entity_type, $bundle, $synchronization, TRUE));
-
   }
 
   /**

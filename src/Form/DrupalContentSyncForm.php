@@ -653,6 +653,8 @@ class DrupalContentSyncForm extends EntityForm {
       $bundle_key = $matches[2];
 
       $sync_entities[$key]['version'] = DrupalContentSync::getEntityTypeVersion($type_key, $bundle_key);
+      $sync_entities[$key]['entity_type_name'] = $type_key;
+      $sync_entities[$key]['bundle_name'] = $bundle_key;
 
       if ('disabled' !== $bundle_fields['sync_import']) {
         $field_storage = FieldStorageConfig::loadByName($type_key, self::FIELD_DRUPAL_CONTENT_SYNCED);
