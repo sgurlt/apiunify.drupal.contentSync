@@ -11,4 +11,3 @@ label: 'Drupal Content Sync'
 encryption_method: real_aes
 encryption_key: drupal_content_sync
 encryption_method_configuration: {  }
-

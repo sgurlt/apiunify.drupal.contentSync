@@ -65,11 +65,11 @@ class FieldHandlerPluginManager extends DefaultPluginManager {
    *
    * @return array
    */
-  public function getHandlerOptions($entity_type,$bundle,$field_name,$field,$labels_only=FALSE) {
+  public function getHandlerOptions($entity_type, $bundle, $field_name, $field, $labels_only = FALSE) {
     $options = [];
 
-    foreach($this->getDefinitions() as $id=> $definition) {
-      if( !$definition['class']::supports($entity_type,$bundle,$field_name,$field) ) {
+    foreach ($this->getDefinitions() as $id => $definition) {
+      if (!$definition['class']::supports($entity_type, $bundle, $field_name, $field)) {
         continue;
       }
       $options[$id] = $labels_only ? $definition['label']->render() : $definition;

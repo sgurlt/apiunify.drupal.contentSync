@@ -26,8 +26,8 @@ class DrupalContentSynchronizationController extends ControllerBase {
       'types' => [],
     ];
 
-    foreach(json_decode($drupal_content_sync->get('sync_entities')) as $type) {
-      if($type->preview != 'excluded') {
+    foreach (json_decode($drupal_content_sync->get('sync_entities')) as $type) {
+      if ($type->preview != 'excluded') {
         $config['types'][] = [
           'id' => 'drupal-' . $type->entity_type . '-' . $type->entity_bundle . '-' . $type->version_hash,
           'name' => $type->display_name,
@@ -36,11 +36,11 @@ class DrupalContentSynchronizationController extends ControllerBase {
       }
     }
 
-    return array(
+    return [
       '#theme' => 'drupal_content_sync_content_dashboard',
       '#configuration' => json_encode($config),
       '#attached' => ['library' => ['drupal_content_sync/drupal-content-synchronization']],
-    );
+    ];
   }
 
 }

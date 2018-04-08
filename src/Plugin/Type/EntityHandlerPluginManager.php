@@ -65,11 +65,11 @@ class EntityHandlerPluginManager extends DefaultPluginManager {
    *
    * @return array
    */
-  public function getHandlerOptions($entity_type,$bundle,$labels_only=FALSE) {
+  public function getHandlerOptions($entity_type, $bundle, $labels_only = FALSE) {
     $options = [];
 
-    foreach($this->getDefinitions() as $id=> $definition) {
-      if( !$definition['class']::supports($entity_type,$bundle) ) {
+    foreach ($this->getDefinitions() as $id => $definition) {
+      if (!$definition['class']::supports($entity_type, $bundle)) {
         continue;
       }
       $options[$id] = $labels_only ? $definition['label']->render() : $definition;

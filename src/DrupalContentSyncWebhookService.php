@@ -52,7 +52,7 @@ class DrupalContentSyncWebhookService extends WebhooksService {
 
     $entity_payload = $webhook->getPayload();
 
-    //Skip entities without the field_drupal_content_synced or if it's true
+    // Skip entities without the field_drupal_content_synced or if it's true.
     if (isset($entity_payload['entity']['field_drupal_content_synced']) &&
       !empty($synced = $entity_payload['entity']['field_drupal_content_synced']) &&
       $synced && empty($entity_payload['force_publish'])) {
@@ -125,7 +125,7 @@ class DrupalContentSyncWebhookService extends WebhooksService {
 
                 try {
                   if ($embed_entity = $entity_repository->loadEntityByUuid($data['type'], $data['uuid'])) {
-                    if( !empty($entity_payload['force_publish']) ) {
+                    if (!empty($entity_payload['force_publish'])) {
                       $is_new = TRUE;
                     }
                     else {
@@ -141,7 +141,7 @@ class DrupalContentSyncWebhookService extends WebhooksService {
                     }
 
                     $event = implode(':', ['entity', $embed_entity->getEntityTypeId(), $is_new ? 'create' : 'update']);
-                    $embed_entity_webhook = new Webhook(['entity' => $embed_entity->toArray(), 'publish_changes' => TRUE, 'force_publish'=>!empty($entity_payload['force_publish'])], [], $event);
+                    $embed_entity_webhook = new Webhook(['entity' => $embed_entity->toArray(), 'publish_changes' => TRUE, 'force_publish' => !empty($entity_payload['force_publish'])], [], $event);
 
                     $webhook_config->set('payload_url', self::DRUPAL_CONTENT_SYNC_PAYLOAD_URL);
                     $this->send($webhook_config, $embed_entity_webhook);
@@ -167,14 +167,18 @@ class DrupalContentSyncWebhookService extends WebhooksService {
     }
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   protected function preFormatEntity(Webhook &$webhook, $synchronization, $entity_type, $bundle) {
     $entity_data = $webhook->getPayload();
-    if(!isset($entity_data['entity']) || empty($entity_data['entity'])) {
+    if (!isset($entity_data['entity']) || empty($entity_data['entity'])) {
       $entity = $entity_data;
-    } else {
+    }
+    else {
       $entity = $entity_data['entity'];
     }
-    $webhook->setPayload(_drupal_content_sync_preprocess_entity($entity, $entity_type, $bundle, $synchronization, true));
+    $webhook->setPayload(_drupal_content_sync_preprocess_entity($entity, $entity_type, $bundle, $synchronization, TRUE));
 
   }
 
@@ -201,7 +205,7 @@ class DrupalContentSyncWebhookService extends WebhooksService {
       $webhook->getPayload(),
       $webhook_config->getContentType()
     );
-    
+
     $url = $webhook_config->getPayloadUrl();
 
     try {
@@ -242,4 +246,5 @@ class DrupalContentSyncWebhookService extends WebhooksService {
     );
 
   }
+
 }

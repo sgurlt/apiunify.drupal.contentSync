@@ -15,28 +15,29 @@ use Drupal\Component\Plugin\PluginInspectionInterface;
  * @ingroup third_party
  */
 interface FieldHandlerInterface extends PluginInspectionInterface {
+
   /**
    * Check if this handler supports the given field instance.
    *
-   * @param $entity_type string
-   * @param $bundle string
-   * @param $field_name string
-   * @param $field \Drupal\Core\Field\FieldDefinitionInterface
+   * @param string $entity_type
+   * @param string $bundle
+   * @param string $field_name
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field
    *
-   * @return boolean
+   * @return bool
    */
-  public static function supports($entity_type,$bundle,$field_name,$field);
+  public static function supports($entity_type, $bundle, $field_name, $field);
 
   /**
    * Get a list of all allowed export options for this field. Typically you
    * either allow DISABLED or DISABLED and AUTOMATICALLY.
    *
-   * @param $entity_type string
-   * @param $bundle string
-   * @param $field_name string
-   * @param $field \Drupal\Core\Field\FieldDefinitionInterface
+   * @param string $entity_type
+   * @param string $bundle
+   * @param string $field_name
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field
    *
-   * @return array<DrupalContentSync::EXPORT_*>
+   * @return arrayDrupalContentSyncEXPORT_
    */
   public function getAllowedExportOptions();
 
@@ -44,12 +45,12 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    * Get a list of all allowed import options for this field for synchronized
    * imports. Typically you either allow DISABLED or DISABLED and AUTOMATICALLY.
    *
-   * @param $entity_type string
-   * @param $bundle string
-   * @param $field_name string
-   * @param $field \Drupal\Core\Field\FieldDefinitionInterface
+   * @param string $entity_type
+   * @param string $bundle
+   * @param string $field_name
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field
    *
-   * @return array<DrupalContentSync::IMPORT_*>
+   * @return arrayDrupalContentSyncIMPORT_
    */
   public function getAllowedSyncImportOptions();
 
@@ -57,10 +58,10 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    * Get a list of all allowed import options for this field for cloned
    * imports. Typically you either allow DISABLED or DISABLED and AUTOMATICALLY.
    *
-   * @param $entity_type string
-   * @param $bundle string
-   * @param $field_name string
-   * @param $field \Drupal\Core\Field\FieldDefinitionInterface
+   * @param string $entity_type
+   * @param string $bundle
+   * @param string $field_name
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field
    *
    * @return mixed
    */
@@ -70,10 +71,10 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    * Return the actual form elements for the settings declared via
    * ::getAllowedClonedImportOptions().
    *
-   * @param $entity_type string
-   * @param $bundle string
-   * @param $field_name string
-   * @param $field \Drupal\Core\Field\FieldDefinitionInterface
+   * @param string $entity_type
+   * @param string $bundle
+   * @param string $field_name
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field
    *
    * @return mixed
    */
@@ -83,36 +84,45 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    * Advanced entity type definition settings for the Node.js backend. You
    * can usually ignore these.
    *
-   * @param $entity_type string
-   * @param $bundle string
-   * @param $field_name string
-   * @param $field \Drupal\Core\Field\FieldDefinitionInterface
+   * @param string $entity_type
+   * @param string $bundle
+   * @param string $field_name
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field
    *
-   * @return boolean
+   * @return bool
    */
   public function updateEntityTypeDefinition(&$definition);
 
   /**
    * Restore a serialized field value.
    *
-   * @param $field_config array The settings defined for this field via UI.
-   * @param $entity \Drupal\Core\Entity\Entity The entity to alter.
-   * @param $field_name string The name of the field.
-   * @param $data array The data, as provided by another site via ::getField()
-   * @param $is_clone boolean Whether this is cloned (synchronized otherwise)
+   * @param $field_config
+   *   array The settings defined for this field via UI.
+   * @param $entity
+   *   \Drupal\Core\Entity\Entity The entity to alter.
+   * @param $field_name
+   *   string The name of the field.
+   * @param $data
+   *   array The data, as provided by another site via ::getField()
+   * @param $is_clone
+   *   boolean Whether this is cloned (synchronized otherwise)
    *
-   * @return boolean
+   * @return bool
    */
-  public function setField($entity,&$data,$is_clone);
+  public function setField($entity, &$data, $is_clone);
 
   /**
    * Serialize a field value.
    *
-   * @param $field_config array The settings defined for this field via UI.
-   * @param $entity \Drupal\Core\Entity\Entity The entity to alter.
-   * @param $field_name string The name of the field.
+   * @param $field_config
+   *   array The settings defined for this field via UI.
+   * @param $entity
+   *   \Drupal\Core\Entity\Entity The entity to alter.
+   * @param $field_name
+   *   string The name of the field.
    *
    * @return array The data as it should be given to ::setField()
    */
   public function getField($entity);
+
 }

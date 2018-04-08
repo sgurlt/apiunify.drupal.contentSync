@@ -2,10 +2,8 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
-
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
-
 
 /**
  * Class DefaultEntityHandler, providing a minimalistic implementation for any
@@ -20,10 +18,17 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
  * @package Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler
  */
 class DefaultEntityHandler extends EntityHandlerBase {
-  public static function supports($entity_type,$bundle) {
-    return $entity_type!='user';
+
+  /**
+   * @ToDo: Add description.
+   */
+  public static function supports($entity_type, $bundle) {
+    return $entity_type != 'user';
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedExportOptions() {
     return [
       DrupalContentSync::EXPORT_DISABLED,
@@ -33,6 +38,9 @@ class DefaultEntityHandler extends EntityHandlerBase {
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedSyncImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
@@ -41,6 +49,9 @@ class DefaultEntityHandler extends EntityHandlerBase {
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedClonedImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
@@ -49,10 +60,14 @@ class DefaultEntityHandler extends EntityHandlerBase {
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedPreviewOptions() {
     return [
       'table' => 'Table',
       'preview_mode' => 'Preview mode',
     ];
   }
+
 }

@@ -34,7 +34,7 @@ class DrupalContentSyncPublishChanges extends ControllerBase {
       $is_new = TRUE;
     }
 
-    $event = implode(':', ['entity', $entity->getEntityType()->id(), $is_new ? 'create' : 'update' ]);
+    $event = implode(':', ['entity', $entity->getEntityType()->id(), $is_new ? 'create' : 'update']);
 
     /** @var \Drupal\webhooks\WebhooksService $webhooks_service */
     $webhooks_service = \Drupal::service('webhooks.service');
@@ -54,7 +54,8 @@ class DrupalContentSyncPublishChanges extends ControllerBase {
         // Send the Webhook object.
         $webhooks_service->send($webhook_config, $webhook);
       }
-    } catch (\Exception $exception) {
+    }
+    catch (\Exception $exception) {
       drupal_set_message('An error occured while pushing the changes to the ' .
         'Drupal Content Sync backend. Please try again later', 'error');
       return;

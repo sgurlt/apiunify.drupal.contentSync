@@ -2,10 +2,8 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
-
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
-
 
 /**
  * Class DefaultEntityHandler, providing a minimalistic implementation for any
@@ -20,10 +18,17 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
  * @package Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler
  */
 class DefaultFileHandler extends EntityHandlerBase {
-  public static function supports($entity_type,$bundle) {
-    return $entity_type=='file';
+
+  /**
+   * @ToDo: Add description.
+   */
+  public static function supports($entity_type, $bundle) {
+    return $entity_type == 'file';
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedExportOptions() {
     return [
       DrupalContentSync::EXPORT_DISABLED,
@@ -32,6 +37,9 @@ class DefaultFileHandler extends EntityHandlerBase {
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedSyncImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
@@ -40,6 +48,9 @@ class DefaultFileHandler extends EntityHandlerBase {
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedClonedImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
@@ -48,6 +59,9 @@ class DefaultFileHandler extends EntityHandlerBase {
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedPreviewOptions() {
     return [
       'table' => 'Table',
@@ -55,6 +69,9 @@ class DefaultFileHandler extends EntityHandlerBase {
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function updateEntityTypeDefinition(&$definition) {
     parent::updateEntityTypeDefinition($definition);
 
@@ -68,12 +85,17 @@ class DefaultFileHandler extends EntityHandlerBase {
     $definition['new_property_lists']['required']['apiu_file_content'] = 'value';
   }
 
-  public function createEntity($base_data,&$field_data,$is_clone) {
+  /**
+   * @ToDo: Add description.
+   */
+  public function createEntity($base_data, &$field_data, $is_clone) {
     if (!empty($field_data['uri'][0]['value'])) {
       $uri = $field_data['uri'][0]['value'];
-    } elseif (!empty($field_data['uri'])) {
+    }
+    elseif (!empty($field_data['uri'])) {
       $uri = $field_data['uri'];
-    } else {
+    }
+    else {
       return FALSE;
     }
 
@@ -90,7 +112,10 @@ class DefaultFileHandler extends EntityHandlerBase {
     return $entity;
   }
 
-  public function updateEntity($entity,&$field_data) {
+  /**
+   * @ToDo: Add description.
+   */
+  public function updateEntity($entity, &$field_data) {
     if (empty($field_data['apiu_file_content'])) {
       $content = file_get_contents($entity->getFileUri());
       if (!empty($content)) {
@@ -98,4 +123,5 @@ class DefaultFileHandler extends EntityHandlerBase {
       }
     }
   }
+
 }

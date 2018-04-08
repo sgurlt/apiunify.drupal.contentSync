@@ -40,17 +40,17 @@ class DrupalContentSyncPreviewResource extends ResourceBase {
   const DRUPAL_CONTENT_SYNC_PREVIEW_FIELD = 'drupal_content_sync_preview';
 
   /**
-   * @var \Drupal\Core\Entity\EntityTypeBundleInfo $entityTypeBundleInfo
+   * @var \Drupal\Core\Entity\EntityTypeBundleInfo
    */
   protected $entityTypeBundleInfo;
 
   /**
-   * @var \Drupal\Core\Entity\EntityTypeManager $entityTypeManager
+   * @var \Drupal\Core\Entity\EntityTypeManager
    */
   protected $entityTypeManager;
 
   /**
-   * @var \Drupal\Core\Render\Renderer $renderedManager
+   * @var \Drupal\Core\Render\Renderer
    */
   protected $renderedManager;
 
@@ -67,11 +67,11 @@ class DrupalContentSyncPreviewResource extends ResourceBase {
    *   The available serialization formats.
    * @param \Psr\Log\LoggerInterface $logger
    *   A logger instance.
-   * @param EntityTypeBundleInfo $entity_type_bundle_info
+   * @param \Drupal\Core\Entity\EntityTypeBundleInfo $entity_type_bundle_info
    *   An entity type bundle info instance.
-   * @param EntityTypeManager $entity_type_manager
+   * @param \Drupal\Core\Entity\EntityTypeManager $entity_type_manager
    *   An entity type manager instance.
-   * @param Renderer $render_manager
+   * @param \Drupal\Core\Render\Renderer $render_manager
    *   A rendered instance.
    */
   public function __construct(
@@ -121,7 +121,7 @@ class DrupalContentSyncPreviewResource extends ResourceBase {
   /**
    * Responds to entity GET requests.
    *
-   * @param $entity_uuid string
+   * @param string $entity_uuid
    *   A UUID.
    *
    * @return \Drupal\rest\ResourceResponse

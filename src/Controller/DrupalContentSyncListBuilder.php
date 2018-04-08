@@ -27,7 +27,6 @@ class DrupalContentSyncListBuilder extends ConfigEntityListBuilder {
     $row['id'] = $entity->id();
 
     // You probably want a few more properties here...
-
     return $row + parent::buildRow($entity);
   }
 

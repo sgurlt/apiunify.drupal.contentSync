@@ -5,6 +5,8 @@
  * Module file for drupal_content_sync.
  */
 
+use Drupal\field_collection\Entity\FieldCollectionItem;
+use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Render\RenderContext;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FieldItemInterface;
@@ -16,7 +18,6 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\Core\Url;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Entity\ContentEntityDeleteForm;
-use Drupal\menu_link_content\Entity\MenuLinkContent;
 
 define('DRUPAL_CONTENT_SYNC_EMAIL', 'developer@brightsolutions.de');
 define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
@@ -112,7 +113,7 @@ function drupal_content_sync_encrypt_values(array $values) {
  * @param \Drupal\Core\Form\FormStateInterface $form_state
  * @param $form_id
  */
-function _drupal_content_sync_form_alter_override_webhook_events(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+function _drupal_content_sync_form_alter_override_webhook_events(&$form, FormStateInterface $form_state, $form_id) {
   if (0 !== strpos($form_id, 'webhook_config')) {
     return;
   }
@@ -142,7 +143,7 @@ function _drupal_content_sync_form_alter_override_webhook_events(&$form, \Drupal
       sprintf('entity:%s:delete', $type_key) => [
         'type' => $readableTypeName,
         'event' => 'Delete',
-      ]
+      ],
     ];
 
     $form['events']['#options'] += $options;
@@ -154,11 +155,11 @@ function _drupal_content_sync_form_alter_override_webhook_events(&$form, \Drupal
  * @param \Drupal\Core\Form\FormStateInterface $form_state
  * @param $form_id
  */
-function _drupal_content_sync_form_alter_disabled_fields(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterface $form_state, $form_id) {
   $form_object = $form_state
     ->getFormObject();
 
-  if (!($form_object instanceof \Drupal\Core\Entity\ContentEntityForm)) {
+  if (!($form_object instanceof ContentEntityForm)) {
     return;
   }
 
@@ -188,18 +189,22 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, \Drupal\Core\Fo
 
 /**
  * Implements hook_theme().
+ *
  * @return array
  */
 function drupal_content_sync_theme() {
   $theme['drupal_content_sync_content_dashboard'] = [
     'variables' => ['configuration' => NULL],
-    'template' => 'drupal_content_sync_content_dashboard'
+    'template' => 'drupal_content_sync_content_dashboard',
   ];
 
   return $theme;
 }
 
-function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle, $synchronization, $file_content = false, $translation = false) {
+/**
+ * @ToDo: Add description.
+ */
+function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle, $synchronization, $file_content = FALSE, $translation = FALSE) {
   $site_id = '';
   if ($synchronization) {
     $site_id = $synchronization->site_id;
@@ -215,7 +220,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
 
   $fields_to_ignore = ['uid', 'type', 'path', 'field_name', 'field_drupal_content_synced', 'nid', 'vid', 'thumbnail'];
 
-  foreach($original as $field_name => $field_value) {
+  foreach ($original as $field_name => $field_value) {
     if (empty($field_definitions[$field_name]) || in_array($field_name, $fields_to_ignore) || empty($field_value)) {
       continue;
     }
@@ -263,7 +268,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
           if ($file) {
             $uri = $file->getFileUri();
             $entity[$field_name][$key] = $value;
-            //$entity[$field_name][$key]['file_content'] = base64_encode(file_get_contents($uri));
+            // $entity[$field_name][$key]['file_content'] = base64_encode(file_get_contents($uri));
             $entity[$field_name][$key]['file_uri'] = $uri;
             $entity[$field_name][$key]['file_name'] = $file->getFilename();
           }
@@ -280,7 +285,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
           /** @var \Drupal\field_collection\FieldCollectionItemInterface $field_collection_item */
           $field_collection_item = $value['field_collection_item'];
           if (!$field_collection_item && !empty($value['value'])) {
-            $field_collection_item = \Drupal\field_collection\Entity\FieldCollectionItem::load($value['value']);
+            $field_collection_item = FieldCollectionItem::load($value['value']);
             if (!$field_collection_item) {
               continue;
             }
@@ -309,7 +314,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
         foreach ($field_value as $key => $value) {
           $uri = &$field_value[$key]['uri'];
           // Find the linked entity and replace it's id with the UUID
-          // References have following pattern: entity:entity_type/entity_id
+          // References have following pattern: entity:entity_type/entity_id.
           preg_match('/^entity:(.*)\/(\d*)$/', $uri, $found);
           if (!empty($found)) {
             $link_entity_type = $found[1];
@@ -318,7 +323,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
             $link_entity = $entity_manager->getStorage($link_entity_type)
               ->load($link_entity_id);
 
-            if(empty($link_entity)) {
+            if (empty($link_entity)) {
               continue;
             }
             $link_property_name = $link_entity_type . '-' . $link_entity->bundle();
@@ -326,10 +331,9 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
               break;
             }
             $field_conf = $conf->{$link_property_name};
-            //if (!property_exists($field_conf, 'sync_menu_items')) {
+            // If (!property_exists($field_conf, 'sync_menu_items')) {
             //  break;
-            //}
-
+            // }.
             if ($link_entity && $field_conf->sync_menu_items) {
               $uri = 'entity:' . $link_entity_type . '/' . $link_entity->uuid();
             }
@@ -369,7 +373,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
       $query->condition($bundle_field, $bundle);
     }
     if (!isset($entity['uuid']) || empty($entity['uuid'])) {
-      return false;
+      return FALSE;
     }
     $query->condition('uuid', $entity['uuid']);
     $entity_ids = array_values($query->execute());
@@ -378,7 +382,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
   }
 
   $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
-  $menu_items = $menu_link_manager->loadLinksByRoute('entity.'.$entity_type.'.canonical', array($entity_type => $original->id()));
+  $menu_items = $menu_link_manager->loadLinksByRoute('entity.' . $entity_type . '.canonical', [$entity_type => $original->id()]);
   foreach ($menu_items as $menu_item) {
     $menu_uuid = $menu_item->getDerivativeId();
     $entity['embed_entities'][$menu_uuid] = [
@@ -438,7 +442,7 @@ function _drupal_content_sync_preprocess_entity($original, $entity_type, $bundle
   }
 
   if (!$translation && method_exists($original, 'getTranslationLanguages') && method_exists($original, 'getTranslation')) {
-    $translations = array_keys($original->getTranslationLanguages(false));
+    $translations = array_keys($original->getTranslationLanguages(FALSE));
     foreach ($translations as $t) {
       $entity['apiu_translation'][$t] = _drupal_content_sync_preprocess_entity($original->getTranslation($t), $entity_type, $bundle, $synchronization, $file_content, TRUE);
       $entity['embed_entities'] = array_merge($entity['embed_entities'], $entity['apiu_translation'][$t]['embed_entities']);
@@ -524,20 +528,21 @@ function drupal_content_sync_form_menu_edit_form_alter(&$form, FormStateInterfac
 }
 
 /**
- * Load all drupal_content_sync entities and add overrides from global $config
+ * Load all drupal_content_sync entities and add overrides from global $config.
+ *
  * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
  */
 function _drupal_content_sync_get_synchronization_configurations() {
   $configurations = \Drupal::entityTypeManager()
     ->getStorage('drupal_content_sync')
     ->loadMultiple();
-  foreach($configurations as $id => &$configuration) {
+  foreach ($configurations as $id => &$configuration) {
     global $config;
     $config_name = 'drupal_content_sync.drupal_content_sync.' . $id;
-    if(!isset($config[$config_name]) || empty($config[$config_name])) {
+    if (!isset($config[$config_name]) || empty($config[$config_name])) {
       continue;
     }
-    foreach($config[$config_name] as $key => $new_value) {
+    foreach ($config[$config_name] as $key => $new_value) {
       $configuration->set($key, $new_value);
     }
   }

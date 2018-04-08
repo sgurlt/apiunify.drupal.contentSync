@@ -2,10 +2,8 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
-
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
-
 
 /**
  * Class DefaultFieldHandler, providing a minimalistic implementation for any
@@ -20,42 +18,52 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
  * @package Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler
  */
 class DefaultEntityReferenceHandler extends FieldHandlerBase {
-  public static function supports($entity_type,$bundle,$field_name,$field) {
-    if( $field->getType()!="entity_reference" ) {
+
+  /**
+   * @ToDo: Add description.
+   */
+  public static function supports($entity_type, $bundle, $field_name, $field) {
+    if ($field->getType() != "entity_reference") {
       return FALSE;
     }
 
     $type = $field->getSetting('target_type');
-    if( in_array($type,['user','brick_type']) ) {
+    if (in_array($type, ['user', 'brick_type'])) {
       return FALSE;
     }
 
     return TRUE;
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getHandlerSettings() {
     return [
       'export_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Export referenced entities',
-        '#default_value' => $this->settings['handler_settings']['export_referenced_entities']===0 ? 0 : 1,
+        '#default_value' => $this->settings['handler_settings']['export_referenced_entities'] === 0 ? 0 : 1,
       ],
       'sync_import_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Import referenced entities (sync)',
-        '#default_value' => $this->settings['handler_settings']['sync_import_referenced_entities']===0 ? 0 : 1,
+        '#default_value' => $this->settings['handler_settings']['sync_import_referenced_entities'] === 0 ? 0 : 1,
       ],
       'cloned_import_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Import referenced entities (clone)',
-        '#default_value' => $this->settings['handler_settings']['cloned_import_referenced_entities']===0 ? 0 : 1,
+        '#default_value' => $this->settings['handler_settings']['cloned_import_referenced_entities'] === 0 ? 0 : 1,
       ],
     ];
   }
 
-  public function setField($entity,&$data,$is_clone) {
+  /**
+   * @ToDo: Add description.
+   */
+  public function setField($entity, &$data, $is_clone) {
     if (isset($data[$this->fieldName])) {
-      if( $this->settings[($is_clone?'cloned':'sync').'_import']==DrupalContentSync::IMPORT_AUTOMATICALLY ) {
+      if ($this->settings[($is_clone ? 'cloned' : 'sync') . '_import'] == DrupalContentSync::IMPORT_AUTOMATICALLY) {
         if (empty($data[$this->fieldName]) || !is_array($data[$this->fieldName])) {
           return;
         }
@@ -88,4 +96,5 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       }
     }
   }
+
 }

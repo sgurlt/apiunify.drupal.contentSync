@@ -50,7 +50,7 @@ class EntityHandler extends Plugin {
    * An integer to determine the weight of this handler relative to other handlers
    * in the Field UI when selecting a handler for a given field.
    *
-   * @var int optional
+   * @var intoptional
    */
   public $weight = NULL;
 

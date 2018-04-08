@@ -66,6 +66,9 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
     );
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedExportOptions() {
     return [
       DrupalContentSync::EXPORT_DISABLED,
@@ -73,6 +76,9 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedSyncImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
@@ -80,6 +86,9 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedClonedImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
@@ -87,8 +96,11 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getHandlerSettings() {
-    // Nothing special here
+    // Nothing special here.
     return [];
   }
 
@@ -96,15 +108,15 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
    * Advanced entity type definition settings for the Node.js backend. You
    * can usually ignore these.
    *
-   * @param $entity_type string
-   * @param $bundle string
-   * @param $field_name string
-   * @param $field \Drupal\Core\Field\FieldDefinitionInterface
+   * @param string $entity_type
+   * @param string $bundle
+   * @param string $field_name
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field
    *
-   * @return boolean
+   * @return bool
    */
   public function updateEntityTypeDefinition(&$definition) {
-    if( in_array($this->fieldDefinition->getType(),['file','image']) ) {
+    if (in_array($this->fieldDefinition->getType(), ['file', 'image'])) {
       $definition['new_property_lists']['filesystem'][$this->fieldName] = 'value';
     }
     else {
@@ -124,17 +136,22 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   /**
    * Restore a serialized field value.
    *
-   * @param $field_config array The settings defined for this field via UI.
-   * @param $entity \Drupal\Core\Entity\Entity The entity to alter.
-   * @param $field_name string The name of the field.
-   * @param $data array The data, as provided by another site via ::getField()
-   * @param $is_clone boolean Whether this is cloned (synchronized otherwise)
+   * @param $field_config
+   *   array The settings defined for this field via UI.
+   * @param $entity
+   *   \Drupal\Core\Entity\Entity The entity to alter.
+   * @param $field_name
+   *   string The name of the field.
+   * @param $data
+   *   array The data, as provided by another site via ::getField()
+   * @param $is_clone
+   *   boolean Whether this is cloned (synchronized otherwise)
    *
-   * @return boolean
+   * @return bool
    */
-  public function setField($entity,&$data,$is_clone) {
+  public function setField($entity, &$data, $is_clone) {
     if (isset($data[$this->fieldName])) {
-      if( $this->settings[($is_clone?'cloned':'sync').'_import']==DrupalContentSync::IMPORT_AUTOMATICALLY ) {
+      if ($this->settings[($is_clone ? 'cloned' : 'sync') . '_import'] == DrupalContentSync::IMPORT_AUTOMATICALLY) {
         $entity->set($this->fieldName, $data[$this->fieldName]);
       }
     }
@@ -145,13 +162,17 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   /**
    * Serialize a field value.
    *
-   * @param $field_config array The settings defined for this field via UI.
-   * @param $entity \Drupal\Core\Entity\Entity The entity to alter.
-   * @param $field_name string The name of the field.
+   * @param $field_config
+   *   array The settings defined for this field via UI.
+   * @param $entity
+   *   \Drupal\Core\Entity\Entity The entity to alter.
+   * @param $field_name
+   *   string The name of the field.
    *
    * @return array The data as it should be given to ::setField()
    */
   public function getField($entity) {
-    return (array)$entity->get($this->fieldName);
+    return (array) $entity->get($this->fieldName);
   }
+
 }

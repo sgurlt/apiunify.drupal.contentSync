@@ -2,13 +2,10 @@
 
 namespace Drupal\drupal_content_sync\Plugin\rest\resource;
 
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Entity\EntityTypeManager;
-use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
-use Drupal\field_collection\Entity\FieldCollectionItem;
 use Drupal\rest\ModifiedResourceResponse;
 use Drupal\rest\Plugin\ResourceBase;
 use Drupal\Core\Render\Renderer;
@@ -51,22 +48,22 @@ class DrupalContentSyncEntityResource extends ResourceBase {
   const CODE_INVALID_DATA = 401;
 
   /**
-   * @var \Drupal\Core\Entity\EntityTypeBundleInfo $entityTypeBundleInfo
+   * @var \Drupal\Core\Entity\EntityTypeBundleInfo
    */
   protected $entityTypeBundleInfo;
 
   /**
-   * @var \Drupal\Core\Entity\EntityTypeManager $entityTypeManager
+   * @var \Drupal\Core\Entity\EntityTypeManager
    */
   protected $entityTypeManager;
 
   /**
-   * @var \Drupal\Core\Render\Renderer $renderedManager
+   * @var \Drupal\Core\Render\Renderer
    */
   protected $renderedManager;
 
   /**
-   * @var EntityRepositoryInterface
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
    */
   protected $entityRepository;
 
@@ -83,11 +80,11 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   The available serialization formats.
    * @param \Psr\Log\LoggerInterface $logger
    *   A logger instance.
-   * @param EntityTypeBundleInfo $entity_type_bundle_info
+   * @param \Drupal\Core\Entity\EntityTypeBundleInfo $entity_type_bundle_info
    *   An entity type bundle info instance.
-   * @param EntityTypeManager $entity_type_manager
+   * @param \Drupal\Core\Entity\EntityTypeManager $entity_type_manager
    *   An entity type manager instance.
-   * @param Renderer $render_manager
+   * @param \Drupal\Core\Render\Renderer $render_manager
    *   A rendered instance.
    */
   public function __construct(
@@ -137,22 +134,28 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     );
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   protected function getHandlerForEntityType($config) {
     $entityPluginManager = \Drupal::service('plugin.manager.dcs_entity_handler');
 
     return $entityPluginManager->createInstance($config['handler']);
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   protected function getConfigForEntityType($entity_type_name, $entity_bundle) {
     $entities = _drupal_content_sync_get_synchronization_configurations();
 
-    foreach( $entities as $entity ) {
+    foreach ($entities as $entity) {
       $config = json_decode($entity->{'sync_entities'}, TRUE);
-      if(empty($config[$entity_type_name.'-'.$entity_bundle])) {
+      if (empty($config[$entity_type_name . '-' . $entity_bundle])) {
         continue;
       }
 
-      if($config[$entity_type_name.'-'.$entity_bundle]['handler']==DrupalContentSync::HANDLER_IGNORE) {
+      if ($config[$entity_type_name . '-' . $entity_bundle]['handler'] == DrupalContentSync::HANDLER_IGNORE) {
         continue;
       }
 
@@ -165,13 +168,13 @@ class DrupalContentSyncEntityResource extends ResourceBase {
   /**
    * Responds to entity GET requests.
    *
-   * @param $entity_type string
+   * @param string $entity_type
    *   The name of an entity type.
    *
-   * @param $entity_bundle string
+   * @param string $entity_bundle
    *   The name of an entity bundle.
    *
-   * @param $entity_uuid string
+   * @param string $entity_uuid
    *   The uuid of an entity.
    *
    * @return \Drupal\rest\ResourceResponse
@@ -204,7 +207,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       // Trying to find site ID.
       $drupal_content_syncs = _drupal_content_sync_get_synchronization_configurations();
 
-      $sync = false;
+      $sync = FALSE;
       foreach ($drupal_content_syncs as $sync) {
         $sync_entities = json_decode($sync->sync_entities, TRUE);
         $entity_key = "$entity_type-$entity_bundle";
@@ -213,8 +216,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         }
       }
 
-      foreach($entities as &$entity) {
-        $entity = _drupal_content_sync_preprocess_entity($entity, $entity_type, $entity_bundle, $sync, true);
+      foreach ($entities as &$entity) {
+        $entity = _drupal_content_sync_preprocess_entity($entity, $entity_type, $entity_bundle, $sync, TRUE);
       }
 
       if (!empty($entity_uuid)) {
@@ -233,16 +236,16 @@ class DrupalContentSyncEntityResource extends ResourceBase {
   /**
    * Responds to entity PATCH requests.
    *
-   * @param $entity_type string
+   * @param string $entity_type
    *   The name of an entity type.
    *
-   * @param $entity_bundle string
+   * @param string $entity_bundle
    *   The name of an entity bundle.
    *
-   * @param $entity_uuid string
+   * @param string $entity_uuid
    *   The uuid of an entity.
    *
-   * @param $data array
+   * @param array $data
    *   The data to be stored in the entity.
    *
    * @return Response
@@ -255,13 +258,13 @@ class DrupalContentSyncEntityResource extends ResourceBase {
   /**
    * Responds to entity DELETE requests.
    *
-   * @param $entity_type string
+   * @param string $entity_type
    *   The name of an entity type.
    *
-   * @param $entity_bundle string
+   * @param string $entity_bundle
    *   The name of an entity bundle.
    *
-   * @param $entity_uuid string
+   * @param string $entity_uuid
    *   The uuid of an entity.
    *
    * @return \Drupal\rest\ResourceResponse
@@ -293,17 +296,16 @@ class DrupalContentSyncEntityResource extends ResourceBase {
 
   }
 
-
   /**
    * Responds to entity POST requests.
    *
-   * @param $entity_type_name string
+   * @param string $entity_type_name
    *   The name of an entity type.
    *
-   * @param $entity_bundle string
+   * @param string $entity_bundle
    *   The name of an entity bundle.
    *
-   * @param $data array
+   * @param array $data
    *   The data to be stored in the entity.
    *
    * @return Response
@@ -313,7 +315,10 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     return $this->handleIncomingEntity($entity_type_name, $entity_bundle, $data);
   }
 
-  private function handleIncomingEntity($entity_type_name, $entity_bundle, $data, $uuid = false) {
+  /**
+   * @ToDo: Add description.
+   */
+  private function handleIncomingEntity($entity_type_name, $entity_bundle, $data, $uuid = FALSE) {
     if (!$this->isSyncAllowed($entity_type_name, $entity_bundle, $data)) {
       return new ModifiedResourceResponse($data);
     }
@@ -321,20 +326,20 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     $is_clone = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
 
-    if(empty($entity_types[$entity_type_name])) {
+    if (empty($entity_types[$entity_type_name])) {
       return new ResourceResponse(
         ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)], self::CODE_NOT_FOUND
       );
     }
 
-    $config = $this->getConfigForEntityType($entity_type_name,$entity_bundle);
-    if(empty($config)) {
+    $config = $this->getConfigForEntityType($entity_type_name, $entity_bundle);
+    if (empty($config)) {
       return new ResourceResponse(
         ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)], self::CODE_NOT_FOUND
       );
     }
 
-    $handler = $this->getHandlerForEntityType($config[$entity_type_name.'-'.$entity_bundle]);
+    $handler = $this->getHandlerForEntityType($config[$entity_type_name . '-' . $entity_bundle]);
 
     $storage = \Drupal::entityTypeManager()
       ->getStorage($entity_type_name);
@@ -354,14 +359,15 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     $entity = $this->entityRepository->loadEntityByUuid($entity_type_name, $uuid);
 
     if ($is_clone || !$entity) {
-      $entity = $handler->createEntity($config,$entity_type_name,$entity_bundle,$entity_data,$data,$is_clone);
-      if( !$entity) {
+      $entity = $handler->createEntity($config, $entity_type_name, $entity_bundle, $entity_data, $data, $is_clone);
+      if (!$entity) {
         return new ResourceResponse(
           ['message' => t(self::FILE_INPUT_DATA_IS_INVALID)], self::CODE_INVALID_DATA
         );
       }
-    } else {
-      $handler->updateEntity($config,$entity,$data);
+    }
+    else {
+      $handler->updateEntity($config, $entity, $data);
     }
 
     return new ModifiedResourceResponse($data);

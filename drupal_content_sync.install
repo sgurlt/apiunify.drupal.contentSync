@@ -10,7 +10,7 @@ use Drupal\Core\Config\FileStorage;
 
 /**
  * Implements hook_install()
- * Creates the Drupal Content Sync user and provides him with needed permissions
+ * Creates the Drupal Content Sync user and provides him with needed permissions.
  */
 function drupal_content_sync_install() {
   $config_path    = drupal_get_path('module', 'drupal_content_sync') . '/config/install';
@@ -87,7 +87,7 @@ function drupal_content_sync_update_8002(&$sandbox) {
  * Implements hook_uninstall().
  */
 function drupal_content_sync_uninstall() {
-  // Delete module configurations
+  // Delete module configurations.
   // @ToDo: Is there a better way to do that?
   $config = \Drupal::configFactory();
   $config->getEditable('encrypt.profile.drupal_content_sync')->delete();

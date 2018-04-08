@@ -2,10 +2,7 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
-
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
-
 
 /**
  * Class DefaultFieldHandler, providing a minimalistic implementation for any
@@ -20,16 +17,21 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
  * @package Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler
  */
 class DefaultBricksHandler extends FieldHandlerBase {
-  public static function supports($entity_type,$bundle,$field_name,$field) {
-    $allowed = ["bricks","bricks_revisioned"];
-    if( in_array($field->getType(),$allowed)!==FALSE ) {
+
+  /**
+   * @ToDo: Add description.
+   */
+  public static function supports($entity_type, $bundle, $field_name, $field) {
+    $allowed = ["bricks", "bricks_revisioned"];
+    if (in_array($field->getType(), $allowed) !== FALSE) {
       return TRUE;
     }
 
     /*if( $field->getType()=="entity_reference" && $field->getSetting('target_type')=='brick_type' ) {
-      return TRUE;
+    return TRUE;
     }*/
 
     return FALSE;
   }
+
 }

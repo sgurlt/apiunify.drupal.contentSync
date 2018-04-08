@@ -2,10 +2,8 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
-
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
-
 
 /**
  * Class DefaultFieldHandler, providing a minimalistic implementation for any
@@ -20,14 +18,21 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
  * @package Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler
  */
 class DefaultLinkHandler extends FieldHandlerBase {
-  public static function supports($entity_type,$bundle,$field_name,$field) {
+
+  /**
+   * @ToDo: Add description.
+   */
+  public static function supports($entity_type, $bundle, $field_name, $field) {
     $allowed = ["link"];
-    return in_array($field->getType(),$allowed)!==FALSE;
+    return in_array($field->getType(), $allowed) !== FALSE;
   }
 
-  public function setField($entity,&$data,$is_clone) {
+  /**
+   * @ToDo: Add description.
+   */
+  public function setField($entity, &$data, $is_clone) {
     if (isset($data[$this->fieldName])) {
-      if( $this->settings[($is_clone?'cloned':'sync').'_import']==DrupalContentSync::IMPORT_AUTOMATICALLY ) {
+      if ($this->settings[($is_clone ? 'cloned' : 'sync') . '_import'] == DrupalContentSync::IMPORT_AUTOMATICALLY) {
         if (!isset($data[$this->fieldName])) {
           return;
         }
@@ -36,7 +41,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
           $uri = &$link_element['uri'];
 
           // Find the linked entity and replace it's id with the UUID
-          // References have following pattern: entity:entity_type/entity_id
+          // References have following pattern: entity:entity_type/entity_id.
           preg_match('/^entity:(.*)\/(.*)$/', $uri, $found);
 
           if (!empty($found)) {
@@ -53,4 +58,5 @@ class DefaultLinkHandler extends FieldHandlerBase {
       }
     }
   }
+
 }

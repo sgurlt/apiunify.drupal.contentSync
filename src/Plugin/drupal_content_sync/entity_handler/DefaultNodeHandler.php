@@ -2,10 +2,8 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
-
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
-
 
 /**
  * Class DefaultEntityHandler, providing a minimalistic implementation for any
@@ -20,10 +18,17 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
  * @package Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler
  */
 class DefaultNodeHandler extends EntityHandlerBase {
-  public static function supports($entity_type,$bundle) {
-    return $entity_type=='node';
+
+  /**
+   * @ToDo: Add description.
+   */
+  public static function supports($entity_type, $bundle) {
+    return $entity_type == 'node';
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedExportOptions() {
     return [
       DrupalContentSync::EXPORT_DISABLED,
@@ -32,6 +37,9 @@ class DefaultNodeHandler extends EntityHandlerBase {
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedSyncImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
@@ -40,6 +48,9 @@ class DefaultNodeHandler extends EntityHandlerBase {
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedClonedImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
@@ -48,6 +59,9 @@ class DefaultNodeHandler extends EntityHandlerBase {
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getAllowedPreviewOptions() {
     return [
       'table' => 'Table',
@@ -55,22 +69,25 @@ class DefaultNodeHandler extends EntityHandlerBase {
     ];
   }
 
+  /**
+   * @ToDo: Add description.
+   */
   public function getHandlerSettings() {
     return [
       'export_published_only' => [
         '#type' => 'checkbox',
         '#title' => 'Export published only',
-        '#default_value' => $this->settings['handler_settings']['export_published_only']===0 ? 0 : 1,
+        '#default_value' => $this->settings['handler_settings']['export_published_only'] === 0 ? 0 : 1,
       ],
       'sync_import_published_only' => [
         '#type' => 'checkbox',
         '#title' => 'Import published only (sync)',
-        '#default_value' => $this->settings['handler_settings']['sync_import_published_only']===0 ? 0 : 1,
+        '#default_value' => $this->settings['handler_settings']['sync_import_published_only'] === 0 ? 0 : 1,
       ],
       'cloned_import_published_only' => [
         '#type' => 'checkbox',
         '#title' => 'Import published only (clone)',
-        '#default_value' => $this->settings['handler_settings']['cloned_import_published_only']===0 ? 0 : 1,
+        '#default_value' => $this->settings['handler_settings']['cloned_import_published_only'] === 0 ? 0 : 1,
       ],
       'sync_menu_items' => [
         '#type' => 'checkbox',
@@ -84,4 +101,5 @@ class DefaultNodeHandler extends EntityHandlerBase {
       ],
     ];
   }
+
 }

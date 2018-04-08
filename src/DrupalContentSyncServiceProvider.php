@@ -18,4 +18,5 @@ class DrupalContentSyncServiceProvider extends ServiceProviderBase implements Se
     $definition = $container->getDefinition('webhooks.service');
     $definition->setClass('Drupal\drupal_content_sync\DrupalContentSyncWebhookService');
   }
+
 }
