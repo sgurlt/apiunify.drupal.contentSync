@@ -95,7 +95,6 @@ function drupal_content_sync_uninstall() {
   $config->getEditable('rest.resource.drupal_content_sync_preview_resource')->delete();
   $config->getEditable('rest.resource.drupal_content_sync_resource')->delete();
   $config->getEditable('user.role.drupal_content_sync')->delete();
-  $config->getEditable('webhooks.webhook.webhook_drupal_content_sync_export')->delete();
   $config->getEditable('system.action.user_add_role_action.drupal_content_sync')->delete();
   $config->getEditable('system.action.user_remove_role_action.drupal_content_sync')->delete();
 

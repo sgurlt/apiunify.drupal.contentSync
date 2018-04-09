@@ -8,7 +8,6 @@ use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\Url;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Drupal\webhooks\Webhook;
 
 /**
  * Defines the DrupalContentSync entity.
@@ -330,41 +329,185 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     return self::getInternalUrl($entity_type_name, $bundle_name, $version, self::READ_LIST_ENTITY_ID);
   }
 
-  public function exportEntity($entity,$reason) {
+  public static function getSynchronizationForEntity($export=TRUE) {
+    $drupal_content_syncs = _drupal_content_sync_get_synchronization_configurations();
+    foreach ($drupal_content_syncs as $sync) {
+      
+    }
+  }
+
+  public function exportEntity($entity,$reason,$action='create') {
     if (method_exists($entity, 'getUntranslated')) {
       $entity = $entity->getUntranslated();
     }
 
     // TODO: Save state in custom entity for each entity
-    $is_new = TRUE;
+    //if(load_meta_info($entity)->last_export && $action=='create') {
+    //  $action = 'update';
+    //}
 
-    $event = implode(':', ['entity', $entity->getEntityType()->id(), $is_new ? 'create' : 'update']);
 
-    /** @var \Drupal\webhooks\WebhooksService $webhooks_service */
-    $webhooks_service = \Drupal::service('webhooks.service');
 
-    // Load all webhooks for the occurring event.
-    $webhook_configs = $webhooks_service->loadMultipleByEvent($event);
+    $entity_event = $webhook->getEvent();
+    preg_match('/^.+:(.+):(.+)$/', $entity_event, $matches);
+    $entity_type = $matches[1];
+    $event_type = $matches[2];
+    $entity_bundle = NULL;
+    $entity_id = NULL;
 
-    try {
-      /** @var \Drupal\webhooks\Entity\WebhookConfig $webhook_config */
-      foreach ($webhook_configs as $webhook_config) {
-        // Create the Webhook object.
-        $webhook = new Webhook(
-          [
-            'entity' => $entity->toArray(),
-            'reason' => $reason,
-          ],
-          [],
-          $event
-        );
-        // Send the Webhook object.
-        $webhooks_service->send($webhook_config, $webhook);
+    $entity_payload = $webhook->getPayload();
+
+    // Skip entities without the field_drupal_content_synced or if it's true.
+    if (isset($entity_payload['entity']['field_drupal_content_synced']) &&
+      !empty($synced = $entity_payload['entity']['field_drupal_content_synced']) &&
+      $synced && empty($entity_payload['force_publish'])) {
+      return TRUE;
+    }
+
+    if (isset($entity_payload['entity']['uuid'])) {
+      $entity_id = reset($entity_payload['entity']['uuid'])['value'];
+    }
+
+    if ('taxonomy_term' === $entity_type) {
+      $entity_bundle = reset($entity_payload['entity']['vid'])['target_id'];
+    }
+    elseif ('node' === $entity_type) {
+      $entity_bundle = reset($entity_payload['entity']['type'])['target_id'];
+    }
+    elseif ('file' === $entity_type) {
+      if (isset($entity_payload['entity']['type'][0]['target_id'])) {
+        $entity_bundle = $entity_payload['entity']['type'][0]['target_id'];
+      }
+      else {
+        $entity_bundle = $entity_type;
       }
     }
-    catch (\Exception $exception) {
-      // TODO log exception
+    elseif (isset($entity_payload['entity']['bundle'])) {
+      $bundle = reset($entity_payload['entity']['bundle']);
+      if (isset($bundle['target_id'])) {
+        $entity_bundle = ['target_id'];
+      }
+      elseif (isset($bundle['value'])) {
+        $entity_bundle = $bundle['value'];
+      }
+    }
+    elseif (isset($entity_payload['entity']['type'])) {
+      $entity_bundle = reset($entity_payload['entity']['type'])['target_id'];
+    }
+
+    if (is_null($entity_type) || is_null($entity_bundle)) {
       return FALSE;
+    }
+
+    /** @var \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository */
+    $entity_repository = \Drupal::service('entity.repository');
+
+    foreach ($drupal_content_syncs as $sync) {
+      $sync_entities = json_decode($sync->{'sync_entities'}, TRUE);
+
+      foreach ($sync_entities as $sync_entity_key => $sync_entity) {
+        preg_match('/^(.+)-(.+)$/', $sync_entity_key, $matches);
+
+        $sync_entity_type_key = $matches[1];
+        $sync_entity_bundle_key = $matches[2];
+
+        $is_manual_export = $sync_entity['export'] == DrupalContentSync::EXPORT_MANUALLY && (!empty($entity_payload['publish_changes']) || 'delete' == $event_type);
+        $is_exported = $is_manual_export || $sync_entity['export'] == DrupalContentSync::EXPORT_AUTOMATICALLY || !empty($entity_payload['force_publish']);
+
+        if ($is_exported && $sync_entity_type_key === $entity_type && $sync_entity_bundle_key === $entity_bundle) {
+          if ('delete' != $event_type) {
+            $this->preFormatEntity($webhook, $sync, $entity_type, $entity_bundle);
+
+            $preprocessed_entity = $webhook->getPayload();
+            if (!empty($preprocessed_entity['embed_entities'])) {
+              foreach ($preprocessed_entity['embed_entities'] as $data) {
+                if (in_array($data['uuid'], $this->exportedEntities)) {
+                  // Make sure that we won't export one entity twice.
+                  continue;
+                }
+
+                $this->exportedEntities[] = $data['uuid'];
+
+                try {
+                  if ($embed_entity = $entity_repository->loadEntityByUuid($data['type'], $data['uuid'])) {
+                    if (!empty($entity_payload['force_publish'])) {
+                      $is_new = TRUE;
+                    }
+                    else {
+                      $client = \Drupal::httpClient();
+                      $url = sprintf('%s/drupal/%s/%s/%s/%s', $sync->{'url'}, $sync->{'site_id'}, $embed_entity->getEntityTypeId(), $embed_entity->bundle(), $embed_entity->uuid());
+
+                      try {
+                        $is_new = $client->get($url)->getStatusCode() != 200;
+                      }
+                      catch (\Exception $exception) {
+                        $is_new = TRUE;
+                      }
+                    }
+
+                    $event = implode(':', ['entity', $embed_entity->getEntityTypeId(), $is_new ? 'create' : 'update']);
+                    $embed_entity_webhook = new Webhook(['entity' => $embed_entity->toArray(), 'publish_changes' => TRUE, 'force_publish' => !empty($entity_payload['force_publish'])], [], $event);
+
+                    $webhook_config->set('payload_url', self::DRUPAL_CONTENT_SYNC_PAYLOAD_URL);
+                    $this->send($webhook_config, $embed_entity_webhook);
+                  }
+                }
+                catch (\Exception $exception) {
+                }
+              }
+            }
+          }
+
+          if ('create' === $event_type) {
+            $url = sprintf('%s/drupal/%s/%s/%s', $sync->{'url'}, $sync->{'site_id'}, $entity_type, $entity_bundle);
+          }
+          else {
+            $url = sprintf('%s/drupal/%s/%s/%s/%s', $sync->{'url'}, $sync->{'site_id'}, $entity_type, $entity_bundle, $entity_id);
+          }
+
+          $webhook_config->set('payload_url', $url);
+          $this->sendRequest($webhook_config, $webhook, $event_type);
+        }
+      }
+    }
+
+    $headers = $webhook->getHeaders();
+    $body = self::encode(
+      $webhook->getPayload(),
+      $webhook_config->getContentType()
+    );
+
+    $url = $webhook_config->getPayloadUrl();
+
+    try {
+      switch ($type) {
+        case 'create':
+          $response = $this->client->post(
+            $url,
+            ['headers' => $headers, 'body' => $body]
+          );
+          break;
+
+        case 'update':
+          $response = $this->client->put(
+            $url,
+            ['headers' => $headers, 'body' => $body]
+          );
+          break;
+
+        case 'delete':
+          $response = $this->client->delete(
+            $url,
+            ['headers' => $headers]
+          );
+          break;
+      }
+    }
+    catch (\Exception $e) {
+      $this->loggerFactory->get('drupal_content_sync')->error(
+        'Could export entity: @message, url: @url',
+        ['@message' => $e->getMessage(), '@url' => $webhook_config->getPayloadUrl()]
+      );
     }
 
     return TRUE;

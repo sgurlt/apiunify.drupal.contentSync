@@ -8,7 +8,6 @@ dependencies:
   - rest
   - serialization
   - config_ignore
-  - webhooks
   - encrypt
   - real_aes
   - menu_link_content
