@@ -97,6 +97,7 @@ function drupal_content_sync_uninstall() {
   $config->getEditable('user.role.drupal_content_sync')->delete();
   $config->getEditable('system.action.user_add_role_action.drupal_content_sync')->delete();
   $config->getEditable('system.action.user_remove_role_action.drupal_content_sync')->delete();
+  $config->getEditable('webhooks.webhook.webhook_drupal_content_sync_export')->delete();
 
   /** @var \Drupal\user\Entity\User $user */
   $user = user_load_by_mail(DRUPAL_CONTENT_SYNC_EMAIL);
