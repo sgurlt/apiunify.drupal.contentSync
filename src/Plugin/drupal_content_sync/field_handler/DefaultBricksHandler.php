@@ -18,9 +18,6 @@ use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
  */
 class DefaultBricksHandler extends FieldHandlerBase {
 
-  /**
-   * @ToDo: Add description.
-   */
   public static function supports($entity_type, $bundle, $field_name, $field) {
     $allowed = ["bricks", "bricks_revisioned"];
     if (in_array($field->getType(), $allowed) !== FALSE) {

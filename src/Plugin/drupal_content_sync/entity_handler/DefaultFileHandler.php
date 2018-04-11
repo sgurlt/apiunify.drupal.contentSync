@@ -2,8 +2,10 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\ApiUnifyRequest;
 
 /**
  * Class DefaultEntityHandler, providing a minimalistic implementation for any
@@ -85,43 +87,76 @@ class DefaultFileHandler extends EntityHandlerBase {
     $definition['new_property_lists']['required']['apiu_file_content'] = 'value';
   }
 
-  /**
-   * @ToDo: Add description.
-   */
-  public function createEntity($base_data, &$field_data, $is_clone) {
-    if (!empty($field_data['uri'][0]['value'])) {
-      $uri = $field_data['uri'][0]['value'];
+  public function import(ApiUnifyRequest $request,$is_clone,$reason,$action) {
+    $entity = $this->loadEntity($request);
+
+    if( $action==DrupalContentSync::ACTION_DELETE ) {
+      if( $entity ) {
+        return $this->deleteEntity($entity,$reason);
+      }
+      return TRUE;
     }
-    elseif (!empty($field_data['uri'])) {
-      $uri = $field_data['uri'];
+
+    $uri  = $request->getField('uri');
+    if( !$uri ) {
+      return FALSE;
     }
-    else {
+    if (!empty($uri[0]['value'])) {
+      $uri = $uri[0]['value'];
+    }
+
+    $content  = $request->getField('apiu_file_content');
+    if( !$content ) {
       return FALSE;
     }
 
-    $directory = \Drupal::service('file_system')->dirname($uri);
-    $was_prepared = file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
+    if( $action==DrupalContentSync::ACTION_CREATE ) {
+      $directory = \Drupal::service('file_system')->dirname($uri);
+      $was_prepared = file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
 
-    if ($was_prepared && !empty($field_data['apiu_file_content'])) {
-      $entity = file_save_data(base64_decode($field_data['apiu_file_content']), $uri);
-      $entity->setPermanent();
-      $entity->set('uuid', $field_data['uuid']);
-      $entity->save();
+      if ($was_prepared) {
+        $entity = file_save_data(base64_decode($content), $uri);
+        $entity->setPermanent();
+        if( !$is_clone ) {
+          $entity->set('uuid', $request->getUuid());
+        }
+        $entity->save();
+      }
+
+      return TRUE;
+    }
+    if( $action==DrupalContentSync::ACTION_UPDATE ) {
+      $content  = $request->getField('apiu_file_content');
+      if( !$content ) {
+        return FALSE;
+      }
+
+      return !!file_save_data(base64_decode($content), $uri,FILE_EXISTS_REPLACE);
     }
 
-    return $entity;
+    return FALSE;
   }
 
-  /**
-   * @ToDo: Add description.
-   */
-  public function updateEntity($entity, &$field_data) {
-    if (empty($field_data['apiu_file_content'])) {
-      $content = file_get_contents($entity->getFileUri());
-      if (!empty($content)) {
-        $field_data['apiu_file_content'] = base64_encode($content);
-      }
+  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
+    if( !parent::export($request,$entity,$request,$action) ) {
+      return FALSE;
     }
+
+    // Base Info
+    $uri = $entity->getFileUri();
+    $request->setField('apiu_file_content', base64_encode( file_get_contents($uri)) );
+    $request->setField('uri', $uri );
+    $request->setField('title', $entity->getFilename() );
+
+    // Preview
+    $request->setField('preview', '<img style="max-height: 200px" src="' . file_create_url($uri) . '"/>' );
+
+    // No Translations, No Menu items compared to EntityHandlerBase
+
+    // Source URL
+    $this->setSourceUrl($request,$entity);
+
+    return TRUE;
   }
 
 }
