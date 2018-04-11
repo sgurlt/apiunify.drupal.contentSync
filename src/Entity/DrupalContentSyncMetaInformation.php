@@ -41,8 +41,6 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
-    // @ToDo: Set Entity Version ID if not set (getEntityTypeVersion($type_name, $bundle_name))
-
     // Set Entity ID or UUID by default one or the other is not set.
     if (!isset($values['entity_type'])) {
       throw new \Exception(t('The type of the entity is required.'));
@@ -60,11 +58,17 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
     }
     // Throw and exception if neither the id or the uuid is given.
     elseif (!isset($values['entity_id']) && !isset($values['entity_uuid'])) {
-      throw new \Exception(t('Neither the entity_id or the entity_uuid is given.'));
+      throw new \Exception(t('Either the entity_id or the entity_uuid must be given.'));
     }
 
+    // Set the Entity Version ID if it is not given.
+    if (!isset($values['entity_type_version'])) {
+      $entity = \Drupal::entityTypeManager()->getStorage($values['entity_type'])->load($values['entity_id']);
+      $values['entity_type_version'] = DrupalContentSync::getEntityTypeVersion($entity->getEntityType()->id(), $entity->getType());
+      return;
+    }
 
-    // @ToDo: Set URL of entity by default if not set.
+    // @ToDo: Set URL of entity by default if not set - check if the entity type has an url in general.
     return;
   }
 
@@ -80,20 +84,46 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @param integer $entity_uuid
    *   The UUID of the entity.
    *
-   * @return array
-   *   Entity ID, Entity Type, Entity Bundle, Data, Created, Updated.
+   * @return \Drupal\Core\Entity\EntityInterface $entity
+   *
+   * @throws
+   *   An exception if neither the entity_id nor the entity_uuid is given.
    */
   public static function getInfoByEntity($entity_type, $entity_id = NULL, $entity_uuid = NULL) {
-    \Drupal::entityTypeManager()->getStorage('node')->loadByProperties(['type' => 'article']);
+
+    // Load the object by the entity id.
+    if (!is_null($entity_id)) {
+      $entity = \Drupal::entityTypeManager()->getStorage('drupal_content_sync_meta_info')->loadByProperties([
+        'entity_type' => $entity_type,
+        'entity_id' => $entity_id
+      ]);
+    }
+    // Load the object by the entity uuid.
+    elseif (!is_null($entity_uuid)) {
+      $entity = \Drupal::entityTypeManager()->getStorage('drupal_content_sync_meta_info')->loadByProperties([
+        'entity_type' => $entity_type,
+        'entity_uuid' => $entity_uuid
+      ]);
+    }
+    // Throw and exception if neither the id nor the uuid is given.
+    elseif (is_null($entity_id) && is_null($entity_uuid)) {
+      throw new \Exception(t('Either the entity_id or the entity_uuid must be given.'));
+    }
+
+    // @ToDo: Is there a better way to just receive one object here?
+    return reset($entity);
   }
 
   /**
    * Return an element by
    *
    * @param $entity
+   *
+   * @return \Drupal\Core\Entity\EntityInterface
+   *
    */
   public static function getInfoForEntity($entity) {
-
+    return \Drupal::entityTypeManager()->getStorage('drupal_content_sync_meta_info')->load($entity->id());
   }
 
   /**
@@ -123,7 +153,13 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @return bool
    */
   public function didUserAllowExport($set = NULL) {
-
+    if($set===TRUE) {
+      $this->flags |= self::FLAG_USER_ALLOWED_EXPORT;
+    }
+    else if($set===FALSE) {
+      $this->flags = $this->flags & ~self::FLAG_USER_ALLOWED_EXPORT;
+    }
+    return (bool)($this->flags & self::FLAG_USER_ALLOWED_EXPORT);
   }
 
   /**
@@ -135,7 +171,13 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @return bool
    */
   public function isDeleted($set = NULL) {
-
+    if($set===TRUE) {
+      $this->flags |= self::FLAG_DELETED;
+    }
+    else if($set===FALSE) {
+      $this->flags = $this->flags & ~self::FLAG_DELETED;
+    }
+    return (bool)($this->flags & self::FLAG_DELETED);
   }
 
   /**
@@ -144,7 +186,7 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @return integer
    */
   public function getLastImport() {
-
+    return $this->get('last_import')->value;
   }
 
   /**
@@ -153,7 +195,8 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @param $timestamp integer
    */
   public function setLastImport($timestamp) {
-
+    $this->set('last_import', $timestamp);
+    $this->save();
   }
 
   /**
@@ -162,7 +205,7 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @return integer
    */
   public function getLastExport() {
-
+    return $this->get('last_export')->value;
   }
 
   /**
@@ -171,7 +214,8 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @param $timestamp integer
    */
   public function setLastExport($timestamp) {
-
+    $this->set('last_export', $timestamp);
+    $this->save();
   }
 
   /**
@@ -180,7 +224,7 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @return string
    */
   public function getEntityTypeVersion() {
-
+    return $this->get('entity_type_version')->value;
   }
 
   /**
@@ -189,7 +233,8 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @param $version string
    */
   public function setEntityTypeVersion($version) {
-
+    $this->set('entity_type_version', $version);
+    $this->save();
   }
 
   /**
@@ -198,7 +243,7 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @return string
    */
   public function getSourceURL() {
-
+    return $this->get('source_url')->value;
   }
 
   /**
