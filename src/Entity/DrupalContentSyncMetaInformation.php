@@ -22,7 +22,6 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *     "entity_id" = "entity_id",
  *     "entity_uuid" = "entity_uuid",
  *     "entity_type" = "entity_type",
- *     "source_url" = "source_url",
  *     "last_export" = "last_export",
  *     "last_import" = "last_import",
  *     "entity_type_version" = "entity_type_version",
@@ -228,7 +227,8 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
 
     $fields['source_url'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Source URL'))
-      ->setDescription(t('The entities source URL.'));
+      ->setDescription(t('The entities source URL.'))
+      ->setRequired(FALSE);
 
     $fields['last_export'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Last exported'))
