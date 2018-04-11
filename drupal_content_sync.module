@@ -13,6 +13,7 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\Core\Url;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Entity\ContentEntityDeleteForm;
+use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 
 define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
 
@@ -50,6 +51,64 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
 function _drupal_content_sync_get_user_email() {
   // @TODO Make this configurable
   return 'developer@brightsolutions.de';
+}
+
+function drupal_content_sync_entity_insert(EntityInterface $entity) {
+  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity,DrupalContentSync::EXPORT_AUTOMATICALLY);
+  if( $sync ) {
+    $status = $sync->exportEntity($entity,DrupalContentSync::EXPORT_AUTOMATICALLY,DrupalContentSync::ACTION_CREATE);
+    if( $status->successful() ) {
+      if( $status->code==SuccessResult::CODE_SUCCESS ) {
+        drupal_set_message(t('%label has been exported automatically with Drupal Content Sync.', ['%label' => $entity->label()]));
+      }
+    }
+    elseif( $status->exception ) {
+      drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code). Message: %message',['%label'=>$entity->label(),'%code'=>$status->code,'%message'=>$status->exception->getMessage()]),'warning');
+    }
+    else {
+      drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code).',['%label'=>$entity->label(),'%code'=>$status->code]),'warning');
+    }
+  }
+}
+
+function drupal_content_sync_entity_update(EntityInterface $entity) {
+  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity,DrupalContentSync::EXPORT_AUTOMATICALLY);
+  if( $sync ) {
+    // This is actually an update, but for the case this entity existed
+    // before the synchronization was created or the entity could not be
+    // exported before for any reason, using ::ACTION_UPDATE would lead to
+    // errors. Thus we're just using ::ACTION_CREATE which always works.
+    $status = $sync->exportEntity($entity,DrupalContentSync::EXPORT_AUTOMATICALLY,DrupalContentSync::ACTION_CREATE);
+    if( $status->successful() ) {
+      if( $status->code==SuccessResult::CODE_SUCCESS ) {
+        drupal_set_message(t('%label has been exported automatically with Drupal Content Sync.', ['%label' => $entity->label()]));
+      }
+    }
+    elseif( $status->exception ) {
+      drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code). Message: %message',['%label'=>$entity->label(),'%code'=>$status->code,'%message'=>$status->exception->getMessage()]),'warning');
+    }
+    else {
+      drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code).',['%label'=>$entity->label(),'%code'=>$status->code]),'warning');
+    }
+  }
+}
+
+function drupal_content_sync_entity_delete(EntityInterface $entity) {
+  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity,DrupalContentSync::EXPORT_AUTOMATICALLY);
+  if( $sync ) {
+    $status = $sync->exportEntity($entity,DrupalContentSync::EXPORT_AUTOMATICALLY,DrupalContentSync::ACTION_DELETE);
+    if( $status->successful() ) {
+      if( $status->code==SuccessResult::CODE_SUCCESS ) {
+        drupal_set_message(t('Deletion of %label has been exported automatically with Drupal Content Sync.', ['%label' => $entity->label()]));
+      }
+    }
+    elseif( $status->exception ) {
+      drupal_set_message(t('Failed to export deletion of %label automatically with Drupal Content Sync (%code). Message: %message',['%label'=>$entity->label(),'%code'=>$status->code,'%message'=>$status->exception->getMessage()]),'warning');
+    }
+    else {
+      drupal_set_message(t('Failed to export deletion of %label automatically with Drupal Content Sync (%code).',['%label'=>$entity->label(),'%code'=>$status->code]),'warning');
+    }
+  }
 }
 
 /**
@@ -114,6 +173,11 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
   $entity = $form_object
     ->getEntity();
 
+  // @TODO Check why this is NULL
+  if( !$entity ) {
+    return;
+  }
+
   // @TODO: Disable editing only if meta says entity is NOT CLONED
   //$meta = ***load_meta_info***($entity);
   //if( !$meta || $meta->isCloned() ) {
@@ -121,6 +185,10 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
   //}
 
   $sync   = DrupalContentSync::getImportSynchronizationForEntityType($entity->getEntityType(), $entity->bundle(),DrupalContentSync::IMPORT_FORCED);
+  if( !$sync ) {
+    return;
+  }
+
   $config = $sync->getEntityTypeConfig($entity->getEntityType(), $entity->bundle());
 
   if( !empty($config['handler_settings']['restrict_editing']) ) {

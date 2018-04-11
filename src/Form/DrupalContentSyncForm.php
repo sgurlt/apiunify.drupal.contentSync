@@ -98,20 +98,6 @@ class DrupalContentSyncForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-    /*$forbidden_fields = [
-    'uuid','id','revision_id',
-
-    'block_content' => ['type'],
-    'freeform' => ['cid','vid','type','entity_id','entity_type'],
-    'file' => ['fid'],
-    'media'=>['mid','vid','bundle'],
-    'node'=>['nid','vid'],
-    'search_api_task'=>['type','server_id','index_id'],
-    'access_token'=>['bundle'],
-    'taxonomy_term'=>['tid','vid'],
-    'user'=>['uid','pass'],
-    ];*/
-
     $export_option_labels = [
       DrupalContentSync::EXPORT_DISABLED => $this->t('Disabled')->render(),
       DrupalContentSync::EXPORT_AUTOMATICALLY => $this->t('Automatically')->render(),
@@ -303,6 +289,7 @@ class DrupalContentSyncForm extends EntityForm {
             'entity_type_name' => $type_key,
             'bundle_name' => $entity_bundle_name,
             'settings' => $row_default_values,
+            'sync' => NULL,
           ]);
 
           $allowed_export_options = $handler->getAllowedExportOptions();
@@ -438,12 +425,32 @@ class DrupalContentSyncForm extends EntityForm {
 
             $entity_type_entity = \Drupal::entityTypeManager()
               ->getStorage($type_key)->getEntityType();
-            $forbidden_fields = [
+            $forbidden_fields = array_merge([
+              // These basic fields are already taken care of, so we ignore them
+              // here.
               $entity_type_entity->getKey('id'),
               $entity_type_entity->getKey('revision'),
               $entity_type_entity->getKey('bundle'),
               $entity_type_entity->getKey('uuid'),
-            ];
+              $entity_type_entity->getKey('label'),
+            ],
+              // These are standard fields defined by the DrupalContentSync
+              // Entity type that entities may not override (otherwise
+              // these fields will collide with DCS functionality)
+              [
+              'source',
+              'source_id',
+              'source_connection_id',
+              'preview',
+              'url',
+              'apiu_translation',
+              'metadata',
+              'embed_entities',
+              'title',
+              'created',
+              'changed',
+              'uuid',
+            ]);
 
             if (in_array($key, $forbidden_fields) !== FALSE) {
               $handler_id = 'ignore';
@@ -493,6 +500,7 @@ class DrupalContentSyncForm extends EntityForm {
                 'field_name' => $key,
                 'field_definition' => $field,
                 'settings' => $field_default_values,
+                'sync' => NULL,
               ]);
 
               $allowed_export_options = $handler->getAllowedExportOptions();
@@ -612,6 +620,35 @@ class DrupalContentSyncForm extends EntityForm {
           ->get($field_key);
         unset($form[$field_key]['#default_value']);
       }
+    }
+  }
+
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    parent::validateForm($form,$form_state);
+
+    $api = $form_state->getValue('api');
+    if( !preg_match('@^([a-z0-9\-]+)$@',$api) ) {
+      $form_state->setErrorByName('api',$this->t('Please only use letters, numbers and dashes.'));
+    }
+    if( $api=='drupal' || $api=='api-unify' ) {
+      $form_state->setErrorByName('api',$this->t('This name is reserved.'));
+    }
+
+    $site_id = $form_state->getValue('site_id');
+    if( $site_id==DrupalContentSync::POOL_SITE_ID ) {
+      $form_state->setErrorByName('site_id',$this->t('This name is reserved.'));
+    }
+
+    $url    = $form_state->getValue('url');
+    $client = \Drupal::httpClient();
+    try {
+      $response = $client->get($url . '/status');
+      if( $response->getStatusCode()!=200 ) {
+        $form_state->setErrorByName('url',$this->t('The backend didn\'t respond with 200 OK. Please ask your technical contact person for support.'));
+      }
+    }
+    catch(\Exception $e) {
+      $form_state->setErrorByName('url',$this->t('The backend didn\'t respond with 200 OK. Please ask your technical contact person for support. The error messages is @message',['@message'=>$e->getMessage()]));
     }
   }
 

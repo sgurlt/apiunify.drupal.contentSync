@@ -22,6 +22,9 @@ class DefaultPanelizerHandler extends FieldHandlerBase {
    * @ToDo: Add description.
    */
   public static function supports($entity_type, $bundle, $field_name, $field) {
+    // @TODO Implement handler.
+    return FALSE;
+
     $allowed = ["panelizer"];
     return in_array($field->getType(), $allowed) !== FALSE;
   }

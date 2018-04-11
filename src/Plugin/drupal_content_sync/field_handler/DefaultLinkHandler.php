@@ -6,6 +6,7 @@ use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 
 /**
  * Class DefaultFieldHandler, providing a minimalistic implementation for any
@@ -32,7 +33,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
   public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
     // Deletion doesn't require any action on field basis for static data
     if( $action==DrupalContentSync::ACTION_DELETE ) {
-      return TRUE;
+      return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
     }
 
     $data = $request->getField($this->fieldName);
@@ -62,13 +63,13 @@ class DefaultLinkHandler extends FieldHandlerBase {
       $entity->set($this->fieldName, $result);
     }
 
-    return TRUE;
+    return new SuccessResult();
   }
 
   public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
     // Deletion doesn't require any action on field basis for static data
     if( $action==DrupalContentSync::ACTION_DELETE ) {
-      return TRUE;
+      return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
     }
 
     $data = $entity->get($this->fieldName);
@@ -112,7 +113,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
 
     $request->setField($this->fieldName,$result);
 
-    return TRUE;
+    return new SuccessResult();
   }
 
 }

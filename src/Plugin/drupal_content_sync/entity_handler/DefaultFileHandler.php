@@ -6,6 +6,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
+use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 
 /**
  * Class DefaultEntityHandler, providing a minimalistic implementation for any
@@ -137,9 +138,12 @@ class DefaultFileHandler extends EntityHandlerBase {
     return FALSE;
   }
 
+  /**
+   * @inheritdoc
+   */
   public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
-    if( !parent::export($request,$entity,$request,$action) ) {
-      return FALSE;
+    if( ($status=parent::export($request,$entity,$request,$action))->failed() ) {
+      return $status;
     }
 
     // Base Info
@@ -156,7 +160,7 @@ class DefaultFileHandler extends EntityHandlerBase {
     // Source URL
     $this->setSourceUrl($request,$entity);
 
-    return TRUE;
+    return new SuccessResult();
   }
 
 }

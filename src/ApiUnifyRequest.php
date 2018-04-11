@@ -21,28 +21,37 @@ class ApiUnifyRequest {
   const CONNECTION_ID_KEY = 'connection_id';
 
   public function __construct($sync,$entity_type,$bundle,$data=NULL) {
-    $this->sync       = $sync;
-    $this->entityType = $entity_type;
-    $this->bundle     = $bundle;
+    $this->sync           = $sync;
+    $this->entityType     = $entity_type;
+    $this->bundle         = $bundle;
 
-    if( empty($data) ) {
-      return;
-    }
-
-    $this->embedEntities          = $data['embed_entities'];
-    $this->uuid                   = $data['uuid'];
-    $this->translationFieldValues = $data['apiu_translation'];
+    $this->uuid                   = NULL;
+    $this->embedEntities          = [];
     $this->activeLanguage         = NULL;
-    $this->fieldValues            = array_diff_key(
-      $data,
-      [
-        'embed_entities'=>[],
-        'apiu_translation'=>[],
-        'uuid'=>NULL,
-        'id'=>NULL,
-        'bundle'=>NULL,
-      ]
-    );
+    $this->translationFieldValues = NULL;
+    $this->fieldValues            = [];
+
+    if( !empty($data['embed_entities']) ) {
+      $this->embedEntities = $data['embed_entities'];
+    }
+    if( !empty($data['uuid']) ) {
+      $this->uuid = $data['uuid'];
+    }
+    if( !empty($data['apiu_translation']) ) {
+      $this->translationFieldValues = $data['apiu_translation'];
+    }
+    if( !empty($data) ) {
+      $this->fieldValues = array_diff_key(
+        $data,
+        [
+          'embed_entities'=>[],
+          'apiu_translation'=>[],
+          'uuid'=>NULL,
+          'id'=>NULL,
+          'bundle'=>NULL,
+        ]
+      );
+    }
   }
 
   public function getTranslationLanguages() {
@@ -127,9 +136,13 @@ class ApiUnifyRequest {
 
   public function setField($name,$value) {
     if( $this->activeLanguage ) {
+      if( $this->translationFieldValues===NULL ) {
+        $this->translationFieldValues = [];
+      }
       $this->translationFieldValues[$this->activeLanguage][$name] = $value;
       return;
     }
+
     $this->fieldValues[$name] = $value;
   }
 

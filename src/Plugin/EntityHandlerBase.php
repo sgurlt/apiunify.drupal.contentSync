@@ -5,9 +5,11 @@ namespace Drupal\drupal_content_sync\Plugin;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\PluginBase;
+use Drupal\Core\Render\RenderContext;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -83,6 +85,18 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     return \Drupal::entityRepository()->loadEntityByUuid($request->getEntityType(), $request->getUuid());
   }
 
+  public function allowsImport(ApiUnifyRequest $request,$is_clone,$reason,$action) {
+    if( $reason==DrupalContentSync::IMPORT_AUTOMATICALLY || $reason==DrupalContentSync::IMPORT_MANUALLY ) {
+      if( $this->settings[($is_clone ? 'cloned' : 'sync') . '_import']!=$reason ) {
+        return FALSE;
+      }
+    }
+
+    // If any handler is available, we can import this entity
+    // Including for ::EXPORT_AS_DEPENDENCY and ::EXPORT_FORCED
+    return TRUE;
+  }
+
   public function import(ApiUnifyRequest $request,$is_clone,$reason,$action) {
     $entity = $this->loadEntity($request);
 
@@ -143,14 +157,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
 
       $handler = $this->sync->getFieldHandler();
 
-      if( !$handler->allowsImport($request,$entity,$is_clone,$reason,$action) ) {
-        continue;
-      }
-
-      $handler->import($request,$entity,$is_clone,$reason,$action);
+      $status = $handler->import($request,$entity,$is_clone,$reason,$action);
     }
 
-    \Drupal::moduleHandler()->alter('drupal_content_sync_set_entity_values', $request, $entity );
     $entity->save();
 
     foreach ($request->getTranslationLanguages() as $language) {
@@ -179,7 +188,16 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     }
   }
 
+  /**
+   * @inheritdoc
+   */
   public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
+    if( $reason==DrupalContentSync::EXPORT_AUTOMATICALLY || $reason==DrupalContentSync::EXPORT_MANUALLY ) {
+      if( $this->settings['export']!=$reason ) {
+        return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
+      }
+    }
+
     // Base info
     $request->setUuid( $entity->uuid() );
     $request->setField('title', $entity->label() );
@@ -192,8 +210,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
 
       foreach ($languages as $language) {
         $request->changeTranslationLanguage($language);
-        if( !$this->export($request,$entity->getTranslation($language),$request,$action) ) {
-          return FALSE;
+        if( ($status=$this->export($request,$entity->getTranslation($language),$request,$action))->failed() ) {
+          return $status;
         }
       }
 
@@ -227,7 +245,28 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     // Source URL
     $this->setSourceUrl($request,$entity);
 
-    return TRUE;
+    // Fields
+    /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
+    $entityFieldManager = \Drupal::service('entity_field.manager');
+    $type   = $entity->getEntityTypeId();
+    $bundle = $entity->bundle();
+    $field_definitions = $entityFieldManager->getFieldDefinitions($type, $bundle);
+
+    foreach ($field_definitions as $key => $field) {
+      $handler = $this->sync->getFieldHandler($type, $bundle, $key);
+
+      if( !$handler ) {
+        continue;
+      }
+
+      $status = $handler->export($request,$entity,$reason,$action);
+
+      if($status->failed()){
+        return $status;
+      }
+    }
+
+    return new SuccessResult();
   }
 
 }

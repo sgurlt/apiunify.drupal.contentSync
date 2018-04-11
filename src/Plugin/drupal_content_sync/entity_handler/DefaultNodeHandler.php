@@ -2,8 +2,11 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 
 /**
  * Class DefaultEntityHandler, providing a minimalistic implementation for any
@@ -100,6 +103,29 @@ class DefaultNodeHandler extends EntityHandlerBase {
         '#default_value' => isset($this->settings['handler_settings']['restrict_editing']) ? $this->settings['handler_settings']['restrict_editing'] == 1 : 0,
       ],
     ];
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
+    if( !$entity->isPublished() && $this->settings['handler_settings']['export_published_only'] ) {
+      return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
+    }
+
+    return parent::export($request,$entity,$request,$action);
+  }
+
+  public function allowsImport(ApiUnifyRequest $request,$is_clone,$reason,$action) {
+    if( !parent::allowsImport($request,$is_clone,$reason,$action) ) {
+      return FALSE;
+    }
+
+    if( empty($request->getField('status')) && $this->settings['handler_settings'][($is_clone ? 'cloned' : 'sync').'_import_published_only'] ) {
+      return FALSE;
+    }
+
+    return TRUE;
   }
 
 }

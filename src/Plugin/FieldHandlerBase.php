@@ -5,6 +5,7 @@ namespace Drupal\drupal_content_sync\Plugin;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\PluginBase;
@@ -160,24 +161,21 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
     return TRUE;
   }
 
-  public function allowsExport(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
+  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
     if( $reason==DrupalContentSync::EXPORT_AUTOMATICALLY || $reason==DrupalContentSync::EXPORT_MANUALLY ) {
       if( $this->settings['export']!=$reason ) {
-        return FALSE;
+        return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
       }
     }
 
-    return TRUE;
-  }
-
-  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
     // Deletion doesn't require any action on field basis for static data
     if( $action==DrupalContentSync::ACTION_DELETE ) {
-      return TRUE;
+      return new SuccessResult();
     }
 
-    $request->setField($this->fieldName,(array) $entity->get($this->fieldName));
-    return TRUE;
+    $request->setField($this->fieldName,$entity->get($this->fieldName)->getValue());
+
+    return new SuccessResult();
   }
 
 }

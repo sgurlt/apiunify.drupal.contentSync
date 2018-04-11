@@ -6,6 +6,7 @@ use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 
 /**
  * Class DefaultFieldHandler, providing a minimalistic implementation for any
@@ -92,10 +93,13 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     }
   }
 
+  /**
+   * @inheritdoc
+   */
   public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
     // Deletion doesn't require any action on field basis for static data
     if( $action==DrupalContentSync::ACTION_DELETE ) {
-      return TRUE;
+      return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
     }
 
     $entityFieldManager = Drupal::service('entity_field.manager');
@@ -129,7 +133,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
 
     $request->setField($this->fieldName,$result);
 
-    return TRUE;
+    return new SuccessResult();
   }
 
 }
