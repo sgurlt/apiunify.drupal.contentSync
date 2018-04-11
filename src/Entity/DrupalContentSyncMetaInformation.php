@@ -62,14 +62,19 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
     }
 
     // Set the Entity Version ID if it is not given.
+    $entity = \Drupal::entityTypeManager()->getStorage($values['entity_type'])->load($values['entity_id']);
     if (!isset($values['entity_type_version'])) {
-      $entity = \Drupal::entityTypeManager()->getStorage($values['entity_type'])->load($values['entity_id']);
+
       $values['entity_type_version'] = DrupalContentSync::getEntityTypeVersion($entity->getEntityType()->id(), $entity->getType());
       return;
     }
 
-    // @ToDo: Set URL of entity by default if not set - check if the entity type has an url in general.
-    return;
+    // Set source URL if is not given.
+    if ($entity->hasLinkTemplate('canonical')) {
+      $values['source_url'] = $entity->toUrl('canonical', ['absolute' => TRUE])
+        ->toString(TRUE)
+        ->getGeneratedUrl();
+    }
   }
 
   /**
@@ -136,12 +141,14 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    */
   public function isCloned($set = NULL) {
     if($set===TRUE) {
-      $this->flags |= self::FLAG_CLONED;
+      $this->set('flags', $this->get('flags')->value | self::FLAG_CLONED);
+      $this->save();
     }
     else if($set===FALSE) {
-      $this->flags = $this->flags & ~self::FLAG_CLONED;
+      $this->set('flags', $this->get('flags')->value & ~self::FLAG_CLONED);
+      $this->save();
     }
-    return (bool)($this->flags & self::FLAG_CLONED);
+    return (bool)($this->get('flags')->value & self::FLAG_CLONED);
   }
 
   /**
@@ -154,12 +161,14 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    */
   public function didUserAllowExport($set = NULL) {
     if($set===TRUE) {
-      $this->flags |= self::FLAG_USER_ALLOWED_EXPORT;
+      $this->set('flags', $this->get('flags')->value | self::FLAG_USER_ALLOWED_EXPORT);
+      $this->save();
     }
     else if($set===FALSE) {
-      $this->flags = $this->flags & ~self::FLAG_USER_ALLOWED_EXPORT;
+      $this->set('flags', $this->get('flags')->value & ~self::FLAG_USER_ALLOWED_EXPORT);
+      $this->save();
     }
-    return (bool)($this->flags & self::FLAG_USER_ALLOWED_EXPORT);
+    return (bool)($this->get('flags')->value & self::FLAG_USER_ALLOWED_EXPORT);
   }
 
   /**
@@ -172,12 +181,14 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    */
   public function isDeleted($set = NULL) {
     if($set===TRUE) {
-      $this->flags |= self::FLAG_DELETED;
+      $this->set('flags', $this->get('flags')->value | self::FLAG_DELETED);
+      $this->save();
     }
     else if($set===FALSE) {
-      $this->flags = $this->flags & ~self::FLAG_DELETED;
+      $this->set('flags', $this->get('flags')->value & ~self::FLAG_DELETED);
+      $this->save();
     }
-    return (bool)($this->flags & self::FLAG_DELETED);
+    return (bool)($this->get('flags')->value & self::FLAG_DELETED);
   }
 
   /**
