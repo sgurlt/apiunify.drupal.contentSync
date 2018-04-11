@@ -4,6 +4,8 @@ namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\ApiUnifyRequest;
+use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Class DefaultFieldHandler, providing a minimalistic implementation for any
@@ -18,35 +20,54 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
  * @package Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler
  */
 class DefaultFileHandler extends FieldHandlerBase {
-
-  /**
-   * @ToDo: Add description.
-   */
   public static function supports($entity_type, $bundle, $field_name, $field) {
     $allowed = ["image", "file_uri", "file"];
     return in_array($field->getType(), $allowed) !== FALSE;
   }
 
-  /**
-   * @ToDo: Add description.
-   */
-  public function setField($entity, &$data, $is_clone) {
-    if (isset($data[$this->fieldName])) {
-      if ($this->settings[($is_clone ? 'cloned' : 'sync') . '_import'] == DrupalContentSync::IMPORT_AUTOMATICALLY) {
-        $file_ids = [];
-        foreach ($data[$this->fieldName] as $value) {
-          $dirname = \Drupal::service('file_system')->dirname($value['file_uri']);
-          file_prepare_directory($dirname, FILE_CREATE_DIRECTORY);
-          $file = file_save_data(base64_decode($value['file_content']), $value['file_uri']);
-          $file->setPermanent();
-          $file->save();
+  public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
+    // Deletion doesn't require any action on field basis for static data
+    if( $action==DrupalContentSync::ACTION_DELETE ) {
+      return TRUE;
+    }
 
-          $file_ids[] = $file->id();
+    $data = $request->getField($this->fieldName);
+
+    if (empty($data)) {
+      $entity->set($this->fieldName, NULL);
+    }
+    else {
+      $file_ids = [];
+      foreach ($data as $value) {
+        $entity = $request->loadEmbeddedEntity($value);
+        if( $entity ) {
+          $file_ids[] = $entity->id();
         }
+      }
 
-        $entity->set($this->fieldName, $file_ids);
+      $entity->set($this->fieldName, $file_ids);
+    }
+  }
+
+  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
+    // Deletion doesn't require any action on field basis for static data
+    if( $action==DrupalContentSync::ACTION_DELETE ) {
+      return TRUE;
+    }
+
+    $data   = $entity->get($this->fieldName);
+    $result = [];
+
+    foreach ($data as $key => $value) {
+      $file = File::load($value['target_id']);
+      if ($file) {
+        $result[] = $request->embedEntity($file);
       }
     }
+
+    $request->setField($this->fieldName,$result);
+
+    return TRUE;
   }
 
 }

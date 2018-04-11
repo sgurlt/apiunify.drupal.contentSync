@@ -144,28 +144,6 @@ class DrupalContentSyncEntityResource extends ResourceBase {
   }
 
   /**
-   * @ToDo: Add description.
-   */
-  protected function getConfigForEntityType($entity_type_name, $entity_bundle) {
-    $entities = _drupal_content_sync_get_synchronization_configurations();
-
-    foreach ($entities as $entity) {
-      $config = json_decode($entity->{'sync_entities'}, TRUE);
-      if (empty($config[$entity_type_name . '-' . $entity_bundle])) {
-        continue;
-      }
-
-      if ($config[$entity_type_name . '-' . $entity_bundle]['handler'] == DrupalContentSync::HANDLER_IGNORE) {
-        continue;
-      }
-
-      return $config;
-    }
-
-    return NULL;
-  }
-
-  /**
    * Responds to entity GET requests.
    *
    * @param string $entity_type
@@ -204,20 +182,9 @@ class DrupalContentSyncEntityResource extends ResourceBase {
 
       $entities = array_values(\Drupal::entityTypeManager()->getStorage($entity_type)->loadMultiple($entity_ids));
 
-      // Trying to find site ID.
-      $drupal_content_syncs = _drupal_content_sync_get_synchronization_configurations();
-
-      $sync = FALSE;
-      foreach ($drupal_content_syncs as $sync) {
-        $sync_entities = json_decode($sync->sync_entities, TRUE);
-        $entity_key = "$entity_type-$entity_bundle";
-        if (!empty($sync_entities[$entity_key]['export'])) {
-          break;
-        }
-      }
-
       foreach ($entities as &$entity) {
-        $entity = _drupal_content_sync_preprocess_entity($entity, $entity_type, $entity_bundle, $sync, TRUE);
+        $sync   = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
+        $entity = $sync->getSerializedEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
       }
 
       if (!empty($entity_uuid)) {
@@ -252,7 +219,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   A list of entities of the given type and bundle.
    */
   public function patch($entity_type_name, $entity_bundle, $entity_uuid, $data) {
-    return $this->handleIncomingEntity($entity_type_name, $entity_bundle, $data, $entity_uuid);
+    return $this->handleIncomingEntity($entity_type_name, $entity_bundle, $data, DrupalContentSync::ACTION_UPDATE);
   }
 
   /**
@@ -270,30 +237,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @return \Drupal\rest\ResourceResponse
    *   A list of entities of the given type and bundle.
    */
-  public function delete($entity_type, $entity_bundle, $entity_uuid) {
-    $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
-
-    $entity_types_keys = array_keys($entity_types);
-    if (in_array($entity_type, $entity_types_keys)) {
-      $query = \Drupal::entityQuery($entity_type);
-      $query->condition('type', $entity_bundle);
-      $query->condition('uuid', $entity_uuid);
-      $entity_ids = array_values($query->execute());
-      $entities = array_values(\Drupal::entityTypeManager()->getStorage($entity_type)->loadMultiple($entity_ids));
-
-      if (isset($entities[0])) {
-        $entities[0]->delete();
-        $this->logger->notice('Deleted entity %type with ID %id.', ['%type' => $entity_type, '%id' => $entity_ids[0]]);
-      }
-
-      // DELETE responses have an empty body.
-      return new ModifiedResourceResponse(NULL, 204);
-    }
-
-    return new ResourceResponse(
-      ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)], self::CODE_NOT_FOUND
-    );
-
+  public function delete($entity_type_name, $entity_bundle, $entity_uuid) {
+    return $this->handleIncomingEntity($entity_type_name, $entity_bundle, NULL, DrupalContentSync::ACTION_DELETE);
   }
 
   /**
@@ -312,18 +257,13 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   A list of entities of the given type and bundle.
    */
   public function post($entity_type_name, $entity_bundle, $data) {
-    return $this->handleIncomingEntity($entity_type_name, $entity_bundle, $data);
+    return $this->handleIncomingEntity($entity_type_name, $entity_bundle, $data, DrupalContentSync::ACTION_CREATE);
   }
 
   /**
    * @ToDo: Add description.
    */
-  private function handleIncomingEntity($entity_type_name, $entity_bundle, $data, $uuid = FALSE) {
-    if (!$this->isSyncAllowed($entity_type_name, $entity_bundle, $data)) {
-      return new ModifiedResourceResponse($data);
-    }
-
-    $is_clone = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
+  private function handleIncomingEntity($entity_type_name, $entity_bundle, $data, $action) {
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
 
     if (empty($entity_types[$entity_type_name])) {
@@ -332,64 +272,34 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
 
-    $config = $this->getConfigForEntityType($entity_type_name, $entity_bundle);
-    if (empty($config)) {
+    $is_dependency  = isset($_GET['is_dependency']) && $_GET['is_dependency'] == 'true';
+    $is_clone       = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
+    $reason         = $is_dependency?DrupalContentSync::IMPORT_AS_DEPENDENCY:DrupalContentSync::IMPORT_AUTOMATICALLY;
+
+    $sync = DrupalContentSync::getImportSynchronizationForEntity($entity_type_name, $entity_bundle, $reason, $is_clone);
+    if (empty($sync)) {
       return new ResourceResponse(
         ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)], self::CODE_NOT_FOUND
       );
     }
 
-    $handler = $this->getHandlerForEntityType($config[$entity_type_name . '-' . $entity_bundle]);
-
-    $storage = \Drupal::entityTypeManager()
-      ->getStorage($entity_type_name);
-    $entity_type = $storage->getEntityType();
-    $entity_data = [
-      $entity_type->getKey('bundle') => $entity_bundle,
-    ];
-
-    if (!$is_clone) {
-      $entity_data[$entity_type->getKey('uuid')] = $data[$entity_type->getKey('uuid')];
-    }
-
-    if (!$uuid) {
-      $uuid = $data[$entity_type->getKey('uuid')];
-    }
-
-    $entity = $this->entityRepository->loadEntityByUuid($entity_type_name, $uuid);
-
-    if ($is_clone || !$entity) {
-      $entity = $handler->createEntity($config, $entity_type_name, $entity_bundle, $entity_data, $data, $is_clone);
-      if (!$entity) {
-        return new ResourceResponse(
-          ['message' => t(self::FILE_INPUT_DATA_IS_INVALID)], self::CODE_INVALID_DATA
-        );
-      }
+    if( $sync->importEntity(
+      $entity_type_name,
+      $entity_bundle,
+      $data,
+      $is_clone,
+      $reason,
+      $action
+    ) ) {
+      return new ModifiedResourceResponse($data,$action==DrupalContentSync::ACTION_DELETE?204:200);
     }
     else {
-      $handler->updateEntity($config, $entity, $data);
+      return new ResourceResponse(
+        ['message' => t(self::FILE_INPUT_DATA_IS_INVALID)], self::CODE_INVALID_DATA
+      );
     }
-
-    return new ModifiedResourceResponse($data);
   }
 
-  /**
-   * Responds to entity POST requests.
-   *
-   * @param string $entity_type_name
-   *   The name of an entity type.
-   * @param string $entity_bundle
-   *   The name of an entity bundle.
-   * @param array $data
-   *   The data to be stored in the entity.
-   *
-   * @return bool
-   *   A list of entities of the given type and bundle.
-   */
-  protected function isSyncAllowed($entity_type_name, $entity_bundle, $data) {
-    $hook_args = [$entity_type_name, $entity_bundle, $data];
-    $is_allowed = \Drupal::moduleHandler()->invokeAll('drupal_content_sync_is_sync_allowed', $hook_args);
-    return !in_array(FALSE, $is_allowed, TRUE);
-  }
+
 
 }

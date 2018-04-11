@@ -4,6 +4,7 @@ namespace Drupal\drupal_content_sync\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\Url;
 use GuzzleHttp\Exception\RequestException;
@@ -38,35 +39,43 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInterface {
   // Configuration option only
   // > dependent export still enabled unless ::HANDLER_IGNORE is used.
-  const EXPORT_DISABLED = 'disabled';
+  const EXPORT_DISABLED         = 'disabled';
   // Both configuration option and export reason.
-  const EXPORT_AUTOMATICALLY = 'automatically';
-  const EXPORT_MANUALLY      = 'manually';
+  const EXPORT_AUTOMATICALLY    = 'automatically';
+  const EXPORT_MANUALLY         = 'manually';
   // Export reason only.
-  const EXPORT_AS_DEPENDENCY = 'dependency';
+  const EXPORT_AS_DEPENDENCY    = 'dependency';
+  // Export reason only. Can be used programmatically for custom workflows.
+  const EXPORT_FORCED           = 'forced';
 
   // Configuration option only
   // > dependent import still enabled unless ::HANDLER_IGNORE is used.
-  const IMPORT_DISABLED = 'disabled';
+  const IMPORT_DISABLED         = 'disabled';
   // Both configuration option and import reason.
-  const IMPORT_AUTOMATICALLY = 'automatically';
-  const IMPORT_MANUALLY      = 'manually';
+  const IMPORT_AUTOMATICALLY    = 'automatically';
+  const IMPORT_MANUALLY         = 'manually';
   // Import reason only.
-  const IMPORT_AS_DEPENDENCY = 'dependency';
+  const IMPORT_AS_DEPENDENCY    = 'dependency';
+  // Import reason only. Can be used programmatically for custom workflows.
+  const IMPORT_FORCED           = 'forced';
 
   // Ignore this entity type / bundle / field completely.
-  const HANDLER_IGNORE = 'ignore';
+  const HANDLER_IGNORE          = 'ignore';
 
   // The virtual site id for the pool and it's connections / synchronizations.
-  const POOL_SITE_ID = '_pool';
+  const POOL_SITE_ID            = '_pool';
 
-  const PREVIEW_CONNECTION_ID  = 'drupal_drupal-content-sync_preview';
-  const PREVIEW_ENTITY_ID      = 'drupal-synchronization-entity_preview-0_1';
-  const PREVIEW_ENTITY_VERSION = '0.1';
+  const PREVIEW_CONNECTION_ID   = 'drupal_drupal-content-sync_preview';
+  const PREVIEW_ENTITY_ID       = 'drupal-synchronization-entity_preview-0_1';
+  const PREVIEW_ENTITY_VERSION  = '0.1';
 
   const CUSTOM_API_VERSION      = '1.0';
 
-  const READ_LIST_ENTITY_ID = '0';
+  const READ_LIST_ENTITY_ID     = '0';
+
+  const ACTION_CREATE           = 'create';
+  const ACTION_UPDATE           = 'update';
+  const ACTION_DELETE           = 'delete';
 
   /**
    * The DrupalContentSync ID.
@@ -329,188 +338,345 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     return self::getInternalUrl($entity_type_name, $bundle_name, $version, self::READ_LIST_ENTITY_ID);
   }
 
-  public static function getSynchronizationForEntity($export=TRUE) {
-    $drupal_content_syncs = _drupal_content_sync_get_synchronization_configurations();
+  public static function getExportSynchronizationForEntity($entity,$reason) {
+    $drupal_content_syncs = self::getAll();
+
     foreach ($drupal_content_syncs as $sync) {
-      
+      if($sync->exportsEntity($entity,$reason)) {
+        return $sync;
+      }
     }
+
+    return NULL;
   }
 
-  public function exportEntity($entity,$reason,$action='create') {
+  public function exportsEntity($entity,$reason) {
+    // @TODO For menu items, use $menu_item->getBaseId()
+
+    $config = $this->getEntityTypeConfig( $entity->getEntityTypeId(), $entity->bundle() );
+    if($config['handler']==self::HANDLER_IGNORE) {
+      return FALSE;
+    }
+    // If any handler is available, we can export this entity
+    if($reason==self::EXPORT_AS_DEPENDENCY || $reason==self::EXPORT_FORCED) {
+      return TRUE;
+    }
+    return $config['export']==$reason;
+  }
+
+  public static $all = NULL;
+  /**
+   * Load all drupal_content_sync entities and add overrides from global $config.
+   *
+   * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
+   */
+  public static function getAll() {
+    if(self::$all!==NULL){
+      return self::$all;
+    }
+
+    $configurations = \Drupal::entityTypeManager()
+      ->getStorage('drupal_content_sync')
+      ->loadMultiple();
+
+    foreach ($configurations as $id => &$configuration) {
+      global $config;
+      $config_name = 'drupal_content_sync.drupal_content_sync.' . $id;
+      if (!isset($config[$config_name]) || empty($config[$config_name])) {
+        continue;
+      }
+      foreach ($config[$config_name] as $key => $new_value) {
+        $configuration->set($key, $new_value);
+      }
+      $configuration->getEntityTypeConfig();
+    }
+
+    return self::$all=$configurations;
+  }
+
+  public static function getImportSynchronizationForEntityType($entity_type_name,$bundle_name,$reason,$is_clone=FALSE) {
+    $drupal_content_syncs = self::getAll();
+
+    foreach ($drupal_content_syncs as $sync) {
+      if($sync->importsEntity($entity_type_name,$bundle_name,$reason,$is_clone)) {
+        return $sync;
+      }
+    }
+
+    return NULL;
+  }
+
+  public function importsEntity($entity_type_name,$bundle_name,$reason,$is_clone=FALSE) {
+    $config = $this->getEntityTypeConfig($entity_type_name, $bundle_name );
+    if($config['handler']==self::HANDLER_IGNORE) {
+      return FALSE;
+    }
+    // If any handler is available, we can import this entity
+    if($reason==self::IMPORT_AS_DEPENDENCY || $reason==self::IMPORT_FORCED) {
+      return TRUE;
+    }
+    return $config[($is_clone?'cloned':'sync').'_import']==$reason;
+  }
+
+  public function supportsEntity($entity) {
+    return $this->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle() )['handler']!=self::HANDLER_IGNORE;
+  }
+
+  /**
+   * Responds to entity POST requests.
+   *
+   * @param string $entity_type_name
+   *   The name of an entity type.
+   * @param string $entity_bundle
+   *   The name of an entity bundle.
+   * @param array $data
+   *   The data to be stored in the entity.
+   *
+   * @return bool
+   *   A list of entities of the given type and bundle.
+   */
+  protected function isSyncAllowed($entity_type_name, $entity_bundle, $data) {
+    $hook_args = [$entity_type_name, $entity_bundle, $data];
+    $is_allowed = \Drupal::moduleHandler()->invokeAll('drupal_content_sync_is_sync_allowed', $hook_args);
+    return !in_array(FALSE, $is_allowed, TRUE);
+  }
+
+  public function importEntity($entity_type_name, $entity_bundle, $data, $is_clone, $reason, $action=self::ACTION_CREATE) {
+    if (!$this->isSyncAllowed($entity_type_name, $entity_bundle, $data)) {
+      return FALSE;
+    }
+
+    // @TODO Save state in custom entity for each entity
+    //$meta = ***load_meta_info***($entity_type_name,$data['uuid']);
+    //if($meta && $action==self::ACTION_CREATE) {
+    //  $action = self::ACTION_UPDATE;
+    //}
+
+    // @TODO If the entity was deleted, we ignore it
+    //if( $meta && $meta->isDeleted() && $reason!=self::IMPORT_FORCED ) {
+    //  return TRUE;
+    //}}
+
+    $request  = new ApiUnifyRequest($this,$entity_type_name,$entity_bundle,$data);
+
+    $config   = $this->getEntityTypeConfig($entity_type_name,$entity_bundle);
+    $handler  = $this->getEntityTypeHandler($config);
+
+    $result   = $handler->import($request,$is_clone,$reason,$action);
+
+    // @TODO Save meta information
+    //if( $result ) {
+    //  if( $meta ) {
+    //    $meta->setLastImport(time());
+    //    $meta->save();
+    //  }
+    //  else {
+    //    ***create_meta*** [
+    //      'source_url' => $request->getField('url')
+    //    ]
+    //  }
+    //}
+
+    return $result;
+  }
+
+  public function getSerializedEntity($entity,$reason,$action=self::ACTION_UPDATE) {
+    $entity_type    = $entity->getEntityTypeId();
+    $entity_bundle  = $entity->bundle();
+    $entity_uuid    = $entity->uuid();
+
+    $config   = $this->getEntityTypeConfig($entity_type,$entity_bundle);
+    $handler  = $this->getEntityTypeHandler($config);
+
+    $request  = new ApiUnifyRequest($this,$entity_type,$entity_bundle);
+    $request->setUuid($entity_uuid);
+    $handler->export($request,$entity,$reason,$action);
+
+    $body     = $request->getData();
+
+    return $body;
+  }
+
+  public function exportEntity($entity,$reason,$action=self::ACTION_UPDATE) {
     if (method_exists($entity, 'getUntranslated')) {
       $entity = $entity->getUntranslated();
     }
 
-    // TODO: Save state in custom entity for each entity
-    //if(load_meta_info($entity)->last_export && $action=='create') {
-    //  $action = 'update';
+    // @TODO: Save state in custom entity for each entity
+    //$meta = ***load_meta_info***($entity);
+    //if(!$meta && $action==self::ACTION_UPDATE) {
+    //  $action = self::ACTION_CREATE;
     //}
 
+    // @TODO If the entity didn't change, it doesn't have to be re-exported
+    //if( $meta && $meta->getLastExport()>$entity->changed() && $reason!=self::EXPORT_FORCED ) {
+    //  return TRUE;
+    //}}
 
-
-    $entity_event = $webhook->getEvent();
-    preg_match('/^.+:(.+):(.+)$/', $entity_event, $matches);
-    $entity_type = $matches[1];
-    $event_type = $matches[2];
-    $entity_bundle = NULL;
-    $entity_id = NULL;
-
-    $entity_payload = $webhook->getPayload();
-
-    // Skip entities without the field_drupal_content_synced or if it's true.
-    if (isset($entity_payload['entity']['field_drupal_content_synced']) &&
-      !empty($synced = $entity_payload['entity']['field_drupal_content_synced']) &&
-      $synced && empty($entity_payload['force_publish'])) {
-      return TRUE;
-    }
-
-    if (isset($entity_payload['entity']['uuid'])) {
-      $entity_id = reset($entity_payload['entity']['uuid'])['value'];
-    }
-
-    if ('taxonomy_term' === $entity_type) {
-      $entity_bundle = reset($entity_payload['entity']['vid'])['target_id'];
-    }
-    elseif ('node' === $entity_type) {
-      $entity_bundle = reset($entity_payload['entity']['type'])['target_id'];
-    }
-    elseif ('file' === $entity_type) {
-      if (isset($entity_payload['entity']['type'][0]['target_id'])) {
-        $entity_bundle = $entity_payload['entity']['type'][0]['target_id'];
-      }
-      else {
-        $entity_bundle = $entity_type;
-      }
-    }
-    elseif (isset($entity_payload['entity']['bundle'])) {
-      $bundle = reset($entity_payload['entity']['bundle']);
-      if (isset($bundle['target_id'])) {
-        $entity_bundle = ['target_id'];
-      }
-      elseif (isset($bundle['value'])) {
-        $entity_bundle = $bundle['value'];
-      }
-    }
-    elseif (isset($entity_payload['entity']['type'])) {
-      $entity_bundle = reset($entity_payload['entity']['type'])['target_id'];
-    }
-
-    if (is_null($entity_type) || is_null($entity_bundle)) {
-      return FALSE;
-    }
+    $entity_type    = $entity->getEntityTypeId();
+    $entity_bundle  = $entity->bundle();
+    $entity_uuid    = $entity->uuid();
 
     /** @var \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository */
     $entity_repository = \Drupal::service('entity.repository');
 
-    foreach ($drupal_content_syncs as $sync) {
-      $sync_entities = json_decode($sync->{'sync_entities'}, TRUE);
+    if ($action!=self::ACTION_DELETE) {
+      $body = $this->getSerializedEntity($entity,$reason,$action);
 
-      foreach ($sync_entities as $sync_entity_key => $sync_entity) {
-        preg_match('/^(.+)-(.+)$/', $sync_entity_key, $matches);
+      if (!empty($body['embed_entities'])) {
+        foreach ($body['embed_entities'] as $data) {
+          $embed_entity = $entity_repository->loadEntityByUuid($data['entity_type'], $data['uuid']);
 
-        $sync_entity_type_key = $matches[1];
-        $sync_entity_bundle_key = $matches[2];
-
-        $is_manual_export = $sync_entity['export'] == DrupalContentSync::EXPORT_MANUALLY && (!empty($entity_payload['publish_changes']) || 'delete' == $event_type);
-        $is_exported = $is_manual_export || $sync_entity['export'] == DrupalContentSync::EXPORT_AUTOMATICALLY || !empty($entity_payload['force_publish']);
-
-        if ($is_exported && $sync_entity_type_key === $entity_type && $sync_entity_bundle_key === $entity_bundle) {
-          if ('delete' != $event_type) {
-            $this->preFormatEntity($webhook, $sync, $entity_type, $entity_bundle);
-
-            $preprocessed_entity = $webhook->getPayload();
-            if (!empty($preprocessed_entity['embed_entities'])) {
-              foreach ($preprocessed_entity['embed_entities'] as $data) {
-                if (in_array($data['uuid'], $this->exportedEntities)) {
-                  // Make sure that we won't export one entity twice.
-                  continue;
-                }
-
-                $this->exportedEntities[] = $data['uuid'];
-
-                try {
-                  if ($embed_entity = $entity_repository->loadEntityByUuid($data['type'], $data['uuid'])) {
-                    if (!empty($entity_payload['force_publish'])) {
-                      $is_new = TRUE;
-                    }
-                    else {
-                      $client = \Drupal::httpClient();
-                      $url = sprintf('%s/drupal/%s/%s/%s/%s', $sync->{'url'}, $sync->{'site_id'}, $embed_entity->getEntityTypeId(), $embed_entity->bundle(), $embed_entity->uuid());
-
-                      try {
-                        $is_new = $client->get($url)->getStatusCode() != 200;
-                      }
-                      catch (\Exception $exception) {
-                        $is_new = TRUE;
-                      }
-                    }
-
-                    $event = implode(':', ['entity', $embed_entity->getEntityTypeId(), $is_new ? 'create' : 'update']);
-                    $embed_entity_webhook = new Webhook(['entity' => $embed_entity->toArray(), 'publish_changes' => TRUE, 'force_publish' => !empty($entity_payload['force_publish'])], [], $event);
-
-                    $webhook_config->set('payload_url', self::DRUPAL_CONTENT_SYNC_PAYLOAD_URL);
-                    $this->send($webhook_config, $embed_entity_webhook);
-                  }
-                }
-                catch (\Exception $exception) {
-                }
-              }
-            }
+          if( !$this->supportsEntity($embed_entity) ) {
+            continue;
           }
 
-          if ('create' === $event_type) {
-            $url = sprintf('%s/drupal/%s/%s/%s', $sync->{'url'}, $sync->{'site_id'}, $entity_type, $entity_bundle);
+          if( !$this->exportEntity($embed_entity,$reason,$action==self::ACTION_UPDATE) ) {
+            return FALSE;
           }
-          else {
-            $url = sprintf('%s/drupal/%s/%s/%s/%s', $sync->{'url'}, $sync->{'site_id'}, $entity_type, $entity_bundle, $entity_id);
-          }
-
-          $webhook_config->set('payload_url', $url);
-          $this->sendRequest($webhook_config, $webhook, $event_type);
         }
       }
     }
 
-    $headers = $webhook->getHeaders();
-    $body = self::encode(
-      $webhook->getPayload(),
-      $webhook_config->getContentType()
-    );
+    $url = $this->getExternalUrl($entity_type,$entity_bundle,$action==self::ACTION_CREATE?NULL:$entity_uuid);
 
-    $url = $webhook_config->getPayloadUrl();
+    $headers  = [
+      'Content-Type' => 'application/json',
+    ];
+
+    $methods = [
+      self::ACTION_CREATE => 'post',
+      self::ACTION_UPDATE => 'put',
+      self::ACTION_DELETE => 'delete',
+    ];
 
     try {
-      switch ($type) {
-        case 'create':
-          $response = $this->client->post(
-            $url,
-            ['headers' => $headers, 'body' => $body]
-          );
-          break;
-
-        case 'update':
-          $response = $this->client->put(
-            $url,
-            ['headers' => $headers, 'body' => $body]
-          );
-          break;
-
-        case 'delete':
-          $response = $this->client->delete(
-            $url,
-            ['headers' => $headers]
-          );
-          break;
-      }
+      $response = $this->client->request(
+        $methods[$action],
+        $url,
+        array_merge(['headers' => $headers],$body?['json' => $body]:[])
+      );
     }
     catch (\Exception $e) {
       $this->loggerFactory->get('drupal_content_sync')->error(
-        'Could export entity: @message, url: @url',
-        ['@message' => $e->getMessage(), '@url' => $webhook_config->getPayloadUrl()]
+        'Failed to export entity @entity_type-@entity_bundle @entity_uuid to @url' . PHP_EOL . '@message',
+        [
+          '@entity_type' => $entity_type,
+          '@entity_bundle' => $entity_bundle,
+          '@entity_uuid' => $entity_uuid,
+          '@message' => $e->getMessage(),
+          '@url' => $url,
+        ]
       );
+      return FALSE;
     }
 
+    if( $response->getStatusCode()!=200 && $response->getStatusCode()!=201 ) {
+      $this->loggerFactory->get('drupal_content_sync')->error(
+        'Failed to export entity @entity_type-@entity_bundle @entity_uuid to @url' . PHP_EOL . 'Got status code @status_code @reason_phrase with body:'.PHP_EOL.'@body',
+        [
+          '@entity_type' => $entity_type,
+          '@entity_bundle' => $entity_bundle,
+          '@entity_uuid' => $entity_uuid,
+          '@status_code' => $response->getStatusCode(),
+          '@reason_phrase' => $response->getReasonPhrase(),
+          '@message' => $response->getBody().'',
+          '@url' => $url,
+        ]
+      );
+      return FALSE;
+    }
+
+    // @TODO Uncomment when ready
+    //if( $meta ) {
+    //  $meta->setLastExport(time());
+    //}
+    //else {
+    //  $meta = ***create_meta_info***([
+    //    'entity_type' => $entity_type,
+    //    'uuid' => $entity_uuid,
+    //    'last_export' => time(),
+    //  ]);
+    //}
+
     return TRUE;
+  }
+
+  public function getEntityTypeConfig($entity_type=NULL,$entity_bundle=NULL) {
+    $entity_types = $this->sync_entities;
+
+    $result = [];
+
+    foreach ($entity_types as $id => &$type) {
+      // Ignore field definitions.
+      if (substr_count($id, '-') != 1) {
+        continue;
+      }
+
+      preg_match('/^(.+)-(.+)$/', $id, $matches);
+
+      $entity_type_name = $matches[1];
+      $bundle_name      = $matches[2];
+
+      if( $entity_type && $entity_type_name!=$entity_type ) {
+        continue;
+      }
+      if( $entity_bundle && $bundle_name!=$entity_bundle ) {
+        continue;
+      }
+
+      // If this is called before being saved, we want to have version etc.
+      // available still
+      if( empty($type['version']) ) {
+        $type['version']          = DrupalContentSync::getEntityTypeVersion($entity_type_name, $bundle_name);
+        $type['entity_type_name'] = $entity_type_name;
+        $type['bundle_name']      = $bundle_name;
+      }
+
+      if( $entity_type && $entity_bundle ) {
+        return $type;
+      }
+
+      $result[$id] = $type;
+    }
+
+    return $result;
+  }
+
+  public function getEntityTypeHandler($config) {
+    $entityPluginManager = \Drupal::service('plugin.manager.dcs_entity_handler');
+
+    $handler = $entityPluginManager->createInstance(
+      $config['handler'],
+      [
+        'entity_type_name' => $config['entity_type_name'],
+        'bundle_name' => $config['bundle_name'],
+        'settings' => $config,
+        'sync' => $this,
+      ]
+    );
+
+    return $handler;
+  }
+
+  public function getFieldHandler($entity_type_name,$bundle_name,$field_name) {
+    $fieldPluginManager = \Drupal::service('plugin.manager.dcs_field_handler');
+
+    $key = $entity_type_name . '-' . $bundle_name . '-' . $field_name;
+
+    $handler = $fieldPluginManager->createInstance(
+      $this->sync_entities[$key]['handler'],
+      [
+        'entity_type_name' => $entity_type_name,
+        'bundle_name' => $bundle_name,
+        'field_name' => $field_name,
+        'field_definition' => $field_name,
+        'settings' => $this->sync_entities[$key],
+        'sync' => $this,
+      ]
+    );
+
+    return $handler;
   }
 
   /**
@@ -524,32 +690,15 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $site_id          = $this->{'site_id'};
     $localConnections = [];
 
-    $entityPluginManager = \Drupal::service('plugin.manager.dcs_entity_handler');
-    $fieldPluginManager = \Drupal::service('plugin.manager.dcs_field_handler');
-
     $entity_types = $this->sync_entities;
 
-    foreach ($entity_types as $id => $type) {
-      // Ignore field definitions.
-      if (substr_count($id, '-') != 1) {
-        continue;
-      }
-
-      preg_match('/^(.+)-(.+)$/', $id, $matches);
-
-      $entity_type_name = $matches[1];
-      $bundle_name = $matches[2];
-      $version = self::getEntityTypeVersion($entity_type_name, $bundle_name);
+    foreach ($this->getEntityTypeConfig() as $id=>$type) {
+      $entity_type_name = $type['entity_type_name'];
+      $bundle_name      = $type['bundle_name'];
+      $version          = $type['version'];
 
       if ($type['handler'] != self::HANDLER_IGNORE) {
-        $handler = $entityPluginManager->createInstance(
-          $type['handler'],
-          [
-            'entity_type_name' => $entity_type_name,
-            'bundle_name' => $bundle_name,
-            'settings' => $type,
-          ]
-        );
+        $handler = $this->getEntityTypeHandler($type);
 
         /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
         $fields = $this->entityFieldManager->getFieldDefinitions($entity_type_name, $bundle_name);
@@ -691,16 +840,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             continue;
           }
 
-          $field_handler = $fieldPluginManager->createInstance(
-            $entity_types[$id . '-' . $key]['handler'],
-            [
-              'entity_type_name' => $entity_type_name,
-              'bundle_name' => $bundle_name,
-              'field_name' => $key,
-              'field_definition' => $field,
-              'settings' => $entity_types[$id . '-' . $key],
-            ]
-          );
+          $field_handler = $this->getFieldHandler($entity_type_name,$bundle_name,$key);
 
           $entity_type['new_properties'][$key] = [
             'type' => 'object',
@@ -753,12 +893,12 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             ],
           ]);
 
-          $user = user_load_by_mail(DRUPAL_CONTENT_SYNC_EMAIL);
+          $user = user_load_by_mail(_drupal_content_sync_get_user_email());
 
           if (!$user) {
             throw new \Exception(
               t("No user found with email: @email. Encrypted data can't be saved",
-                ['@email' => DRUPAL_CONTENT_SYNC_EMAIL])
+                ['@email' => _drupal_content_sync_get_user_email()])
             );
           }
 

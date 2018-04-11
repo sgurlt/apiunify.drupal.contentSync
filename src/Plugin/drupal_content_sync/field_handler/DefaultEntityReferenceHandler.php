@@ -4,6 +4,8 @@ namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\ApiUnifyRequest;
+use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Class DefaultFieldHandler, providing a minimalistic implementation for any
@@ -58,43 +60,76 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     ];
   }
 
-  /**
-   * @ToDo: Add description.
-   */
-  public function setField($entity, &$data, $is_clone) {
-    if (isset($data[$this->fieldName])) {
-      if ($this->settings[($is_clone ? 'cloned' : 'sync') . '_import'] == DrupalContentSync::IMPORT_AUTOMATICALLY) {
-        if (empty($data[$this->fieldName]) || !is_array($data[$this->fieldName])) {
-          return;
-        }
+  public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
+    // Deletion doesn't require any action on field basis for static data
+    if( $action==DrupalContentSync::ACTION_DELETE ) {
+      return TRUE;
+    }
 
-        $reference_ids = [];
-        foreach ($data[$this->fieldName] as $value) {
-          if (!isset($value['uuid'], $value['type'])) {
-            continue;
+    $data = $request->getField($this->fieldName);
+
+    if( empty($data) ) {
+      $entity->set($this->fieldName,NULL);
+    }
+    else {
+      $reference_ids = [];
+      foreach ($data as $value) {
+        $reference = $request->loadEmbeddedEntity($value);
+        if ($reference) {
+          $reference_data = [
+            'target_id' => $reference->id(),
+          ];
+
+          if ($reference instanceof RevisionableInterface) {
+            $reference_data['target_revision_id'] = $reference->getRevisionId();
           }
 
-          try {
-            $reference = $this->entityRepository->loadEntityByUuid($value['type'], $value['uuid']);
-            if ($reference) {
-              $reference_data = [
-                'target_id' => $reference->id(),
-              ];
-
-              if ($reference instanceof RevisionableInterface) {
-                $reference_data['target_revision_id'] = $reference->getRevisionId();
-              }
-
-              $reference_ids[] = $reference_data;
-            }
-          }
-          catch (\Exception $exception) {
-          }
-
-          $entity->set($this->fieldName, $reference_ids);
+          $reference_ids[] = $reference_data;
         }
       }
+
+      $entity->set($this->fieldName, $reference_ids);
     }
+  }
+
+  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
+    // Deletion doesn't require any action on field basis for static data
+    if( $action==DrupalContentSync::ACTION_DELETE ) {
+      return TRUE;
+    }
+
+    $entityFieldManager = Drupal::service('entity_field.manager');
+    $field_definitions  = $entityFieldManager->getFieldDefinitions($entity->getEntityType(), $entity->bundle());
+    $field_definition   = $field_definitions[$this->fieldName];
+    $entityTypeManager  = \Drupal::entityTypeManager();
+
+    $data   = $entity->get($this->fieldName);
+    $result = [];
+
+    foreach ($data as $key => $value) {
+      if (empty($value['target_id'])) {
+        continue;
+      }
+
+      $target_id      = $value['target_id'];
+      $reference_type = $field_definition
+        ->getFieldStorageDefinition()
+        ->getPropertyDefinition('entity')
+        ->getTargetDefinition()
+        ->getEntityTypeId();
+
+      $reference = $entityTypeManager
+        ->getStorage($reference_type)
+        ->load($target_id);
+
+      if ($reference && $reference->uuid() != $request->getUuid()) {
+        $result[] = $request->embedEntity($reference);
+      }
+    }
+
+    $request->setField($this->fieldName,$result);
+
+    return TRUE;
   }
 
 }

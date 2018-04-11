@@ -3,6 +3,8 @@
 namespace Drupal\drupal_content_sync\Plugin;
 
 use Drupal\Component\Plugin\PluginInspectionInterface;
+use Drupal\drupal_content_sync\ApiUnifyRequest;
+use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Specifies the publicly available methods of a resource plugin.
@@ -93,36 +95,10 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    */
   public function updateEntityTypeDefinition(&$definition);
 
-  /**
-   * Restore a serialized field value.
-   *
-   * @param $field_config
-   *   array The settings defined for this field via UI.
-   * @param $entity
-   *   \Drupal\Core\Entity\Entity The entity to alter.
-   * @param $field_name
-   *   string The name of the field.
-   * @param $data
-   *   array The data, as provided by another site via ::getField()
-   * @param $is_clone
-   *   boolean Whether this is cloned (synchronized otherwise)
-   *
-   * @return bool
-   */
-  public function setField($entity, &$data, $is_clone);
+  public function allowsImport(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action);
+  public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action);
 
-  /**
-   * Serialize a field value.
-   *
-   * @param $field_config
-   *   array The settings defined for this field via UI.
-   * @param $entity
-   *   \Drupal\Core\Entity\Entity The entity to alter.
-   * @param $field_name
-   *   string The name of the field.
-   *
-   * @return array The data as it should be given to ::setField()
-   */
-  public function getField($entity);
+  public function allowsExport(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action);
+  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action);
 
 }

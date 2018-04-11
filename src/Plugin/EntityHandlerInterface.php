@@ -2,7 +2,9 @@
 
 namespace Drupal\drupal_content_sync\Plugin;
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Component\Plugin\PluginInspectionInterface;
+use Drupal\drupal_content_sync\ApiUnifyRequest;
 
 /**
  * Specifies the publicly available methods of a resource plugin.
@@ -54,11 +56,8 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
   /**
    * @ToDo: Add description.
    */
-  public function createEntity($base_data, &$field_data, $is_clone);
+  public function import(ApiUnifyRequest $request,$is_clone,$reason,$action);
 
-  /**
-   * @ToDo: Add description.
-   */
-  public function updateEntity($entity, &$field_data);
+  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action);
 
 }

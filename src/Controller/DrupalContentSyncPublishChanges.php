@@ -18,7 +18,10 @@ class DrupalContentSyncPublishChanges extends ControllerBase {
    */
   public function publishChanges($sync_id, EntityInterface $entity) {
     $sync   = DrupalContentSync::load($sync_id);
-    $result = $sync->exportEntity($entity);
+    $result = $sync->exportEntity(
+      $entity,
+      DrupalContentSync::EXPORT_MANUALLY
+    );
 
     if($result) {
       drupal_set_message('The changes has been successfully pushed.');

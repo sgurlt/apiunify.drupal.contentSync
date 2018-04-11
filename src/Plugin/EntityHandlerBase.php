@@ -2,6 +2,8 @@
 
 namespace Drupal\drupal_content_sync\Plugin;
 
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -29,6 +31,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   protected $entityTypeName;
   protected $bundleName;
   protected $settings;
+  protected $sync;
 
   /**
    * Constructs a Drupal\rest\Plugin\ResourceBase object.
@@ -46,8 +49,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->logger = $logger;
     $this->entityTypeName = $configuration['entity_type_name'];
-    $this->bundleName = $configuration['bundle_name'];
-    $this->settings = $configuration['settings'];
+    $this->bundleName     = $configuration['bundle_name'];
+    $this->settings       = $configuration['settings'];
+    $this->sync           = $configuration['sync'];
   }
 
   /**
@@ -75,76 +79,155 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     return [];
   }
 
-  /**
-   * @ToDo: Add description.
-   */
-  public function createEntity($base_data, &$field_data, $is_clone) {
-    $storage = \Drupal::entityTypeManager()
-      ->getStorage($this->entityTypeName);
-    $entity = $storage->create($base_data);
+  protected function loadEntity($request) {
+    return \Drupal::entityRepository()->loadEntityByUuid($request->getEntityType(), $request->getUuid());
+  }
 
-    $this->setEntityValues($entity, $field_data, $is_clone);
+  public function import(ApiUnifyRequest $request,$is_clone,$reason,$action) {
+    $entity = $this->loadEntity($request);
 
-    if (!$is_clone && $entity->hasField('field_drupal_content_synced')) {
-      $entity->set('field_drupal_content_synced', TRUE);
+    if( $action==DrupalContentSync::ACTION_DELETE ) {
+      if( $entity ) {
+        return $this->deleteEntity($entity,$reason);
+      }
+      return TRUE;
     }
 
-    return $entity;
+    if ($is_clone || !$entity) {
+      $entity_type  = $request->getEntityType();
+
+      $base_data = [
+        $entity_type->getKey('bundle') => $request->getBundle(),
+      ];
+
+      if (!$is_clone) {
+        $base_data[$entity_type->getKey('uuid')] = $request->getUuid();
+      }
+
+      $storage = \Drupal::entityTypeManager()->getStorage($request->getEntityType());
+      $entity = $storage->create($base_data);
+
+      if (!$entity) {
+        return FALSE;
+      }
+    }
+
+    $this->setEntityValues($request, $entity,$is_clone, $request->getFieldValues(), $is_clone,$reason,$action);
+
+    return TRUE;
+  }
+
+  protected function deleteEntity($entity,$reason) {
+    $entity->delete();
+    return TRUE;
   }
 
   /**
    * @ToDo: Add description.
    */
-  protected function setEntityValues(EntityInterface $entity, $data, $is_clone) {
+  protected function setEntityValues(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
     /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
     $entityFieldManager = \Drupal::service('entity_field.manager');
     $type = $entity->getEntityTypeId();
     $bundle = $entity->bundle();
     $field_definitions = $entityFieldManager->getFieldDefinitions($type, $bundle);
 
-    $field_handlers = [];
-    $fieldPluginManager = \Drupal::service('plugin.manager.dcs_field_handler');
-
     foreach ($field_definitions as $key => $field) {
       if (empty($config[$type . '-' . $bundle . '-' . $key])) {
         continue;
       }
 
-      if ($config[$type . '-' . $bundle . '-' . $key] == DrupalContentSync::HANDLER_IGNORE) {
+      if ($config[$type . '-' . $bundle . '-' . $key]['handler'] == DrupalContentSync::HANDLER_IGNORE) {
         continue;
       }
 
-      $field_config = $config[$type . '-' . $bundle . '-' . $key];
-      if (empty($field_handlers[$field_config['handler']])) {
-        $field_handlers[$field_config['handler']] = $fieldPluginManager->createInstance($field_config['handler']);
+      $handler = $this->sync->getFieldHandler();
+
+      if( !$handler->allowsImport($request,$entity,$is_clone,$reason,$action) ) {
+        continue;
       }
 
-      $handler = $field_handlers[$field_config['handler']];
-
-      $handler->setField($field_config, $entity, $key, $data, $is_clone);
+      $handler->import($request,$entity,$is_clone,$reason,$action);
     }
 
-    \Drupal::moduleHandler()->alter('drupal_content_sync_set_entity_values', $entity, $data);
+    \Drupal::moduleHandler()->alter('drupal_content_sync_set_entity_values', $request, $entity );
     $entity->save();
 
-    if (!empty($data['apiu_translation'])) {
-      foreach ($data['apiu_translation'] as $language => $translation_data) {
-        if ($entity->hasTranslation($language)) {
-          $translation = $entity->getTranslation($language);
-        }
-        else {
-          $translation = $entity->addTranslation($language);
-        }
-        $this->setEntityValues($config, $translation, $translation_data, $is_clone);
+    foreach ($request->getTranslationLanguages() as $language) {
+      if ($entity->hasTranslation($language)) {
+        $translation = $entity->getTranslation($language);
       }
+      else {
+        $translation = $entity->addTranslation($language);
+      }
+
+      $request->changeTranslationLanguage($language);
+      $this->setEntityValues($request, $translation, $is_clone,$reason,$action);
+    }
+
+    $request->changeTranslationLanguage();
+  }
+
+  protected function setSourceUrl(ApiUnifyRequest $request,EntityInterface $entity) {
+    if ($entity->hasLinkTemplate('canonical')) {
+      $request->setField(
+        'url',
+        $entity->toUrl('canonical', ['absolute' => TRUE])
+          ->toString(TRUE)
+          ->getGeneratedUrl()
+      );
     }
   }
 
-  /**
-   * @ToDo: Add description.
-   */
-  public function updateEntity($entity, &$field_data) {
-    $this->setEntityValues($entity, $field_data);
+  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
+    // Base info
+    $request->setUuid( $entity->uuid() );
+    $request->setField('title', $entity->label() );
+
+    // Translations
+    if (!$request->getActiveLanguage() &&
+      method_exists($entity, 'getTranslationLanguages') &&
+      method_exists($entity, 'getTranslation')) {
+      $languages = array_keys($entity->getTranslationLanguages(FALSE));
+
+      foreach ($languages as $language) {
+        $request->changeTranslationLanguage($language);
+        if( !$this->export($request,$entity->getTranslation($language),$request,$action) ) {
+          return FALSE;
+        }
+      }
+
+      $request->changeTranslationLanguage();
+    }
+
+    // Menu items
+    $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
+    $menu_items = $menu_link_manager->loadLinksByRoute('entity.' . $this->entityTypeName . '.canonical', [$this->entityTypeName => $entity->id()]);
+    foreach ($menu_items as $menu_item) {
+      if( !$this->sync->exportsEntity($menu_item,DrupalContentSync::EXPORT_AS_DEPENDENCY) ) {
+        continue;
+      }
+
+      $request->embedEntity($menu_item);
+    }
+
+    // Preview
+    $entityTypeManager = \Drupal::entityTypeManager();
+    $view_builder = $entityTypeManager->getViewBuilder($this->entityTypeName);
+    $preview = $view_builder->view($entity, 'drupal_content_sync_preview');
+    $rendered = \Drupal::service('renderer');
+    $html = $rendered->executeInRenderContext(
+      new RenderContext(),
+      function () use ($rendered, $preview) {
+        return $rendered->render($preview);
+      }
+    );
+    $request->setField('preview', $html);
+
+    // Source URL
+    $this->setSourceUrl($request,$entity);
+
+    return TRUE;
   }
 
 }
