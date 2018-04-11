@@ -43,8 +43,30 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    */
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
     // @ToDo: Set Entity Version ID if not set (getEntityTypeVersion($type_name, $bundle_name))
-    // @ToDo: Set Entity ID or UUID by default one or the other is not set.
+
+    // Set Entity ID or UUID by default one or the other is not set.
+    if (!isset($values['entity_type'])) {
+      throw new \Exception(t('The type of the entity is required.'));
+    }
+
+    // Set the uuid if the entity_id is given and the entity_uuid is not given.
+    if (isset($values['entity_id']) && !isset($values['entity_uuid'])) {
+      $entity = \Drupal::entityTypeManager()->getStorage($values['entity_type'])->load($values['entity_id']);
+      $values['entity_uuid'] = $entity->uuid();
+    }
+    // Set the id if the entity_uuid is given and the entity_id is not given.
+    elseif (!isset($values['entity_id']) && isset($values['entity_uuid'])) {
+      $entity = \Drupal::service('entity.repository')->loadEntityByUuid($values['entity_type'], $values['entity_uuid']);
+      $values['entity_id'] = $entity->id();
+    }
+    // Throw and exception if neither the id or the uuid is given.
+    elseif (!isset($values['entity_id']) && !isset($values['entity_uuid'])) {
+      throw new \Exception(t('Neither the entity_id or the entity_uuid is given.'));
+    }
+
+
     // @ToDo: Set URL of entity by default if not set.
+    return;
   }
 
   /**
@@ -64,6 +86,15 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    */
   public static function getInfoByEntity($entity_type, $entity_id = NULL, $entity_uuid = NULL) {
     \Drupal::entityTypeManager()->getStorage('node')->loadByProperties(['type' => 'article']);
+  }
+
+  /**
+   * Return an element by
+   *
+   * @param $entity
+   */
+  public static function getInfoForEntity($entity) {
+
   }
 
   /**
