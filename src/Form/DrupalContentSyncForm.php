@@ -84,14 +84,19 @@ class DrupalContentSyncForm extends EntityForm {
    *   An array of migration names.
    */
   public function updateSyncHandler($form, FormStateInterface $form_state) {
-    /*$trigger  = $form_state->getTriggeringElement();
-    $trigger  = explode('[',str_replace(']','',$trigger['#name']));
-    $id       = $trigger[1];
-    $value    = $form_state->getValue(['sync_entities',$id,'handler']);
-    list($entity_type,$bundle,$field) = explode('-',$id);
-    if(empty($field)) {
-    }*/
-    return $form['sync_entities'];
+//    $trigger  = $form_state->getTriggeringElement();
+//    $trigger  = explode('[',str_replace(']','',$trigger['#name']));
+//    $id       = $trigger[1];
+//    $value    = $form_state->getValue(['sync_entities',$id,'handler']);
+//    list($entity_type,$bundle,$field) = explode('-',$id);
+//    if(empty($field)) {
+//
+//    }
+
+//    $trigger  = $form_state->getTriggeringElement();
+//    $trigger['#ajax']['wrapper'] = 'tr[edit-sync-entities-file-file]';
+
+    return $form['sync_entities']['file-file'];
   }
 
   /**
@@ -166,6 +171,9 @@ class DrupalContentSyncForm extends EntityForm {
 
     $entity_types = $this->bundleInfoService->getAllBundleInfo();
 
+    // Remove the Drupal Content Sync Meta Info entity type form the array.
+    unset($entity_types['drupal_content_sync_meta_info']);
+
     $display_modes = $this->entityTypeManager
       ->getStorage('entity_view_display')
       ->loadMultiple();
@@ -203,7 +211,9 @@ class DrupalContentSyncForm extends EntityForm {
 
       $entity_table[$type_key]['title'] = [
         '#markup' => '<h2>' . str_replace('_', ' ', ucfirst($type_key)) . '</h2>',
-        '#wrapper_attributes' => ['colspan' => sizeof($entity_table['#header'])],
+        '#wrapper_attributes' => [
+          'colspan' => sizeof($entity_table['#header'])
+        ],
       ];
 
       foreach ($entity_type as $entity_bundle_name => $entity_bundle) {
@@ -380,6 +390,9 @@ class DrupalContentSyncForm extends EntityForm {
             ], $advanced_settings);
           }
         }
+
+        // Add row class.
+        $entity_bundle_row['#attributes'] = ['id' => 'row-' . $entity_bundle_row['id']['#default_value']];
 
         $entity_table[$type_key . '-' . $entity_bundle_name] = $entity_bundle_row;
 
