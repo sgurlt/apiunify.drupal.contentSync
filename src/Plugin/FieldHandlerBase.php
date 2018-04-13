@@ -113,7 +113,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
    * Advanced entity type definition settings for the Node.js backend. You
    * can usually ignore these.
    *
-   * @param $definition array
+   * @param array $definition
    */
   public function updateEntityTypeDefinition(&$definition) {
     if (in_array($this->fieldDefinition->getType(), ['file', 'image'])) {
@@ -133,9 +133,12 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
     }
   }
 
-  public function allowsImport(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
-    if( $reason==DrupalContentSync::IMPORT_AUTOMATICALLY || $reason==DrupalContentSync::IMPORT_MANUALLY ) {
-      if( $this->settings[($is_clone ? 'cloned' : 'sync') . '_import']!=$reason ) {
+  /**
+   *
+   */
+  public function allowsImport(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
+    if ($reason == DrupalContentSync::IMPORT_AUTOMATICALLY || $reason == DrupalContentSync::IMPORT_MANUALLY) {
+      if ($this->settings[($is_clone ? 'cloned' : 'sync') . '_import'] != $reason) {
         return FALSE;
       }
     }
@@ -143,9 +146,12 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
     return TRUE;
   }
 
-  public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
-    // Deletion doesn't require any action on field basis for static data
-    if( $action==DrupalContentSync::ACTION_DELETE ) {
+  /**
+   *
+   */
+  public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
+    // Deletion doesn't require any action on field basis for static data.
+    if ($action == DrupalContentSync::ACTION_DELETE) {
       return TRUE;
     }
 
@@ -161,19 +167,22 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
     return TRUE;
   }
 
-  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
-    if( $reason==DrupalContentSync::EXPORT_AUTOMATICALLY || $reason==DrupalContentSync::EXPORT_MANUALLY ) {
-      if( $this->settings['export']!=$reason ) {
+  /**
+   *
+   */
+  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+    if ($reason == DrupalContentSync::EXPORT_AUTOMATICALLY || $reason == DrupalContentSync::EXPORT_MANUALLY) {
+      if ($this->settings['export'] != $reason) {
         return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
       }
     }
 
-    // Deletion doesn't require any action on field basis for static data
-    if( $action==DrupalContentSync::ACTION_DELETE ) {
+    // Deletion doesn't require any action on field basis for static data.
+    if ($action == DrupalContentSync::ACTION_DELETE) {
       return new SuccessResult();
     }
 
-    $request->setField($this->fieldName,$entity->get($this->fieldName)->getValue());
+    $request->setField($this->fieldName, $entity->get($this->fieldName)->getValue());
 
     return new SuccessResult();
   }

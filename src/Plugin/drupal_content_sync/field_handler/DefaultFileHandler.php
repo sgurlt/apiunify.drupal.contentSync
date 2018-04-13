@@ -21,14 +21,21 @@ use Drupal\drupal_content_sync\SyncResult\SuccessResult;
  * @package Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler
  */
 class DefaultFileHandler extends FieldHandlerBase {
+
+  /**
+   *
+   */
   public static function supports($entity_type, $bundle, $field_name, $field) {
     $allowed = ["image", "file_uri", "file"];
     return in_array($field->getType(), $allowed) !== FALSE;
   }
 
-  public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
-    // Deletion doesn't require any action on field basis for static data
-    if( $action==DrupalContentSync::ACTION_DELETE ) {
+  /**
+   *
+   */
+  public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
+    // Deletion doesn't require any action on field basis for static data.
+    if ($action == DrupalContentSync::ACTION_DELETE) {
       return TRUE;
     }
 
@@ -41,7 +48,7 @@ class DefaultFileHandler extends FieldHandlerBase {
       $file_ids = [];
       foreach ($data as $value) {
         $entity = $request->loadEmbeddedEntity($value);
-        if( $entity ) {
+        if ($entity) {
           $file_ids[] = $entity->id();
         }
       }
@@ -53,9 +60,9 @@ class DefaultFileHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
-    // Deletion doesn't require any action on field basis for static data
-    if( $action==DrupalContentSync::ACTION_DELETE ) {
+  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+    // Deletion doesn't require any action on field basis for static data.
+    if ($action == DrupalContentSync::ACTION_DELETE) {
       return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
     }
 
@@ -69,7 +76,7 @@ class DefaultFileHandler extends FieldHandlerBase {
       }
     }
 
-    $request->setField($this->fieldName,$result);
+    $request->setField($this->fieldName, $result);
 
     return new SuccessResult();
   }

@@ -18,6 +18,9 @@ use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
  */
 class DefaultBricksHandler extends FieldHandlerBase {
 
+  /**
+   *
+   */
   public static function supports($entity_type, $bundle, $field_name, $field) {
     // @TODO Implement this handler.
     return FALSE;

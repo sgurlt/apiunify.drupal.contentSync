@@ -272,9 +272,9 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
 
-    $is_dependency  = isset($_GET['is_dependency']) && $_GET['is_dependency'] == 'true';
-    $is_clone       = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
-    $reason         = $is_dependency?DrupalContentSync::IMPORT_AS_DEPENDENCY:DrupalContentSync::IMPORT_AUTOMATICALLY;
+    $is_dependency = isset($_GET['is_dependency']) && $_GET['is_dependency'] == 'true';
+    $is_clone      = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
+    $reason        = $is_dependency ? DrupalContentSync::IMPORT_AS_DEPENDENCY : DrupalContentSync::IMPORT_AUTOMATICALLY;
 
     $sync = DrupalContentSync::getImportSynchronizationForEntity($entity_type_name, $entity_bundle, $reason, $is_clone);
     if (empty($sync)) {
@@ -283,15 +283,15 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
 
-    if( $sync->importEntity(
+    if ($sync->importEntity(
       $entity_type_name,
       $entity_bundle,
       $data,
       $is_clone,
       $reason,
       $action
-    ) ) {
-      return new ModifiedResourceResponse($data,$action==DrupalContentSync::ACTION_DELETE?204:200);
+    )) {
+      return new ModifiedResourceResponse($data, $action == DrupalContentSync::ACTION_DELETE ? 204 : 200);
     }
     else {
       return new ResourceResponse(
@@ -299,7 +299,5 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
   }
-
-
 
 }

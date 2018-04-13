@@ -61,16 +61,19 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     ];
   }
 
-  public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
-    // Deletion doesn't require any action on field basis for static data
-    if( $action==DrupalContentSync::ACTION_DELETE ) {
+  /**
+   *
+   */
+  public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
+    // Deletion doesn't require any action on field basis for static data.
+    if ($action == DrupalContentSync::ACTION_DELETE) {
       return TRUE;
     }
 
     $data = $request->getField($this->fieldName);
 
-    if( empty($data) ) {
-      $entity->set($this->fieldName,NULL);
+    if (empty($data)) {
+      $entity->set($this->fieldName, NULL);
     }
     else {
       $reference_ids = [];
@@ -96,9 +99,9 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
-    // Deletion doesn't require any action on field basis for static data
-    if( $action==DrupalContentSync::ACTION_DELETE ) {
+  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+    // Deletion doesn't require any action on field basis for static data.
+    if ($action == DrupalContentSync::ACTION_DELETE) {
       return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
     }
 
@@ -131,7 +134,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       }
     }
 
-    $request->setField($this->fieldName,$result);
+    $request->setField($this->fieldName, $result);
 
     return new SuccessResult();
   }

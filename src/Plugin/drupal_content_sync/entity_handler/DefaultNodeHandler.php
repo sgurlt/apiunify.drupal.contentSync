@@ -108,20 +108,23 @@ class DefaultNodeHandler extends EntityHandlerBase {
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
-    if( !$entity->isPublished() && $this->settings['handler_settings']['export_published_only'] ) {
+  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+    if (!$entity->isPublished() && $this->settings['handler_settings']['export_published_only']) {
       return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
     }
 
-    return parent::export($request,$entity,$request,$action);
+    return parent::export($request, $entity, $request, $action);
   }
 
-  public function allowsImport(ApiUnifyRequest $request,$is_clone,$reason,$action) {
-    if( !parent::allowsImport($request,$is_clone,$reason,$action) ) {
+  /**
+   *
+   */
+  public function allowsImport(ApiUnifyRequest $request, $is_clone, $reason, $action) {
+    if (!parent::allowsImport($request, $is_clone, $reason, $action)) {
       return FALSE;
     }
 
-    if( empty($request->getField('status')) && $this->settings['handler_settings'][($is_clone ? 'cloned' : 'sync').'_import_published_only'] ) {
+    if (empty($request->getField('status')) && $this->settings['handler_settings'][($is_clone ? 'cloned' : 'sync') . '_import_published_only']) {
       return FALSE;
     }
 

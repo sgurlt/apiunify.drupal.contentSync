@@ -23,7 +23,7 @@ class DrupalContentSyncPublishChanges extends ControllerBase {
       DrupalContentSync::EXPORT_MANUALLY
     );
 
-    if($result) {
+    if ($result) {
       drupal_set_message('The changes has been successfully pushed.');
     }
     else {

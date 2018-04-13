@@ -84,18 +84,16 @@ class DrupalContentSyncForm extends EntityForm {
    *   An array of migration names.
    */
   public function updateSyncHandler($form, FormStateInterface $form_state) {
-//    $trigger  = $form_state->getTriggeringElement();
-//    $trigger  = explode('[',str_replace(']','',$trigger['#name']));
-//    $id       = $trigger[1];
-//    $value    = $form_state->getValue(['sync_entities',$id,'handler']);
-//    list($entity_type,$bundle,$field) = explode('-',$id);
-//    if(empty($field)) {
-//
-//    }
-
-//    $trigger  = $form_state->getTriggeringElement();
-//    $trigger['#ajax']['wrapper'] = 'row-file-file';
-
+    // $trigger  = $form_state->getTriggeringElement();
+    //    $trigger  = explode('[',str_replace(']','',$trigger['#name']));
+    //    $id       = $trigger[1];
+    //    $value    = $form_state->getValue(['sync_entities',$id,'handler']);
+    //    list($entity_type,$bundle,$field) = explode('-',$id);
+    //    if(empty($field)) {
+    //
+    //    }
+    //    $trigger  = $form_state->getTriggeringElement();
+    //    $trigger['#ajax']['wrapper'] = 'row-file-file';.
     return $form['sync_entities'];
   }
 
@@ -212,7 +210,7 @@ class DrupalContentSyncForm extends EntityForm {
       $entity_table[$type_key]['title'] = [
         '#markup' => '<h2>' . str_replace('_', ' ', ucfirst($type_key)) . '</h2>',
         '#wrapper_attributes' => [
-          'colspan' => sizeof($entity_table['#header'])
+          'colspan' => sizeof($entity_table['#header']),
         ],
       ];
 
@@ -451,19 +449,19 @@ class DrupalContentSyncForm extends EntityForm {
               // Entity type that entities may not override (otherwise
               // these fields will collide with DCS functionality)
               [
-              'source',
-              'source_id',
-              'source_connection_id',
-              'preview',
-              'url',
-              'apiu_translation',
-              'metadata',
-              'embed_entities',
-              'title',
-              'created',
-              'changed',
-              'uuid',
-            ]);
+                'source',
+                'source_id',
+                'source_connection_id',
+                'preview',
+                'url',
+                'apiu_translation',
+                'metadata',
+                'embed_entities',
+                'title',
+                'created',
+                'changed',
+                'uuid',
+              ]);
 
             if (in_array($key, $forbidden_fields) !== FALSE) {
               $handler_id = 'ignore';
@@ -637,32 +635,35 @@ class DrupalContentSyncForm extends EntityForm {
     }
   }
 
+  /**
+   *
+   */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    parent::validateForm($form,$form_state);
+    parent::validateForm($form, $form_state);
 
     $api = $form_state->getValue('api');
-    if( !preg_match('@^([a-z0-9\-]+)$@',$api) ) {
-      $form_state->setErrorByName('api',$this->t('Please only use letters, numbers and dashes.'));
+    if (!preg_match('@^([a-z0-9\-]+)$@', $api)) {
+      $form_state->setErrorByName('api', $this->t('Please only use letters, numbers and dashes.'));
     }
-    if( $api=='drupal' || $api=='api-unify' ) {
-      $form_state->setErrorByName('api',$this->t('This name is reserved.'));
+    if ($api == 'drupal' || $api == 'api-unify') {
+      $form_state->setErrorByName('api', $this->t('This name is reserved.'));
     }
 
     $site_id = $form_state->getValue('site_id');
-    if( $site_id==DrupalContentSync::POOL_SITE_ID ) {
-      $form_state->setErrorByName('site_id',$this->t('This name is reserved.'));
+    if ($site_id == DrupalContentSync::POOL_SITE_ID) {
+      $form_state->setErrorByName('site_id', $this->t('This name is reserved.'));
     }
 
     $url    = $form_state->getValue('url');
     $client = \Drupal::httpClient();
     try {
       $response = $client->get($url . '/status');
-      if( $response->getStatusCode()!=200 ) {
-        $form_state->setErrorByName('url',$this->t('The backend didn\'t respond with 200 OK. Please ask your technical contact person for support.'));
+      if ($response->getStatusCode() != 200) {
+        $form_state->setErrorByName('url', $this->t('The backend didn\'t respond with 200 OK. Please ask your technical contact person for support.'));
       }
     }
-    catch(\Exception $e) {
-      $form_state->setErrorByName('url',$this->t('The backend didn\'t respond with 200 OK. Please ask your technical contact person for support. The error messages is @message',['@message'=>$e->getMessage()]));
+    catch (\Exception $e) {
+      $form_state->setErrorByName('url', $this->t('The backend didn\'t respond with 200 OK. Please ask your technical contact person for support. The error messages is @message', ['@message' => $e->getMessage()]));
     }
   }
 

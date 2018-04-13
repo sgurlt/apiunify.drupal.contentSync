@@ -95,18 +95,29 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    */
   public function updateEntityTypeDefinition(&$definition);
 
-  public function allowsImport(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action);
-  public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action);
+  /**
+   *
+   */
+  public function allowsImport(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action);
 
   /**
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request The request
-   *      object to store all data at that should be exported.
-   * @param \Drupal\Core\Entity\EntityInterface $entity The entity to export
-   * @param string $reason See DrupalContentSync::EXPORT_*
-   * @param string $action See DrupalContentSync::ACTION_*
+   *
+   */
+  public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action);
+
+  /**
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   *   The request
+   *   object to store all data at that should be exported.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to export.
+   * @param string $reason
+   *   See DrupalContentSync::EXPORT_*.
+   * @param string $action
+   *   See DrupalContentSync::ACTION_*.
    *
    * @return \Drupal\drupal_content_sync\SyncResult\SyncResult
    */
-  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action);
+  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action);
 
 }

@@ -33,9 +33,9 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
 
   use EntityChangedTrait;
 
-  const FLAG_CLONED               = 0x00000001;
-  const FLAG_DELETED              = 0x00000002;
-  const FLAG_USER_ALLOWED_EXPORT  = 0x00000004;
+  const FLAG_CLONED              = 0x00000001;
+  const FLAG_DELETED             = 0x00000002;
+  const FLAG_USER_ALLOWED_EXPORT = 0x00000004;
 
   /**
    * {@inheritdoc}
@@ -83,10 +83,10 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @param string $entity_type
    *   The type of the entity.
    *
-   * @param integer $entity_id
+   * @param int $entity_id
    *   The ID of the entity.
    *
-   * @param integer $entity_uuid
+   * @param int $entity_uuid
    *   The UUID of the entity.
    *
    * @return \Drupal\Core\Entity\EntityInterface $entity
@@ -100,14 +100,14 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
     if (!is_null($entity_id)) {
       $entity = \Drupal::entityTypeManager()->getStorage('drupal_content_sync_meta_info')->loadByProperties([
         'entity_type' => $entity_type,
-        'entity_id' => $entity_id
+        'entity_id' => $entity_id,
       ]);
     }
     // Load the object by the entity uuid.
     elseif (!is_null($entity_uuid)) {
       $entity = \Drupal::entityTypeManager()->getStorage('drupal_content_sync_meta_info')->loadByProperties([
         'entity_type' => $entity_type,
-        'entity_uuid' => $entity_uuid
+        'entity_uuid' => $entity_uuid,
       ]);
     }
     // Throw and exception if neither the id nor the uuid is given.
@@ -120,12 +120,11 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
   }
 
   /**
-   * Return an element by
+   * Return an element by.
    *
    * @param $entity
    *
    * @return \Drupal\Core\Entity\EntityInterface
-   *
    */
   public static function getInfoForEntity($entity) {
     return \Drupal::entityTypeManager()->getStorage('drupal_content_sync_meta_info')->load($entity->id());
@@ -140,15 +139,15 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @return bool
    */
   public function isCloned($set = NULL) {
-    if($set===TRUE) {
+    if ($set === TRUE) {
       $this->set('flags', $this->get('flags')->value | self::FLAG_CLONED);
       $this->save();
     }
-    else if($set===FALSE) {
+    elseif ($set === FALSE) {
       $this->set('flags', $this->get('flags')->value & ~self::FLAG_CLONED);
       $this->save();
     }
-    return (bool)($this->get('flags')->value & self::FLAG_CLONED);
+    return (bool) ($this->get('flags')->value & self::FLAG_CLONED);
   }
 
   /**
@@ -160,15 +159,15 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @return bool
    */
   public function didUserAllowExport($set = NULL) {
-    if($set===TRUE) {
+    if ($set === TRUE) {
       $this->set('flags', $this->get('flags')->value | self::FLAG_USER_ALLOWED_EXPORT);
       $this->save();
     }
-    else if($set===FALSE) {
+    elseif ($set === FALSE) {
       $this->set('flags', $this->get('flags')->value & ~self::FLAG_USER_ALLOWED_EXPORT);
       $this->save();
     }
-    return (bool)($this->get('flags')->value & self::FLAG_USER_ALLOWED_EXPORT);
+    return (bool) ($this->get('flags')->value & self::FLAG_USER_ALLOWED_EXPORT);
   }
 
   /**
@@ -180,30 +179,30 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @return bool
    */
   public function isDeleted($set = NULL) {
-    if($set===TRUE) {
+    if ($set === TRUE) {
       $this->set('flags', $this->get('flags')->value | self::FLAG_DELETED);
       $this->save();
     }
-    else if($set===FALSE) {
+    elseif ($set === FALSE) {
       $this->set('flags', $this->get('flags')->value & ~self::FLAG_DELETED);
       $this->save();
     }
-    return (bool)($this->get('flags')->value & self::FLAG_DELETED);
+    return (bool) ($this->get('flags')->value & self::FLAG_DELETED);
   }
 
   /**
    * Returns the timestamp for the last import.
    *
-   * @return integer
+   * @return int
    */
   public function getLastImport() {
     return $this->get('last_import')->value;
   }
 
   /**
-   * Set the last import timestamp
+   * Set the last import timestamp.
    *
-   * @param $timestamp integer
+   * @param int $timestamp
    */
   public function setLastImport($timestamp) {
     $this->set('last_import', $timestamp);
@@ -213,16 +212,16 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
   /**
    * Returns the timestamp for the last export.
    *
-   * @return integer
+   * @return int
    */
   public function getLastExport() {
     return $this->get('last_export')->value;
   }
 
   /**
-   * Set the last import timestamp
+   * Set the last import timestamp.
    *
-   * @param $timestamp integer
+   * @param int $timestamp
    */
   public function setLastExport($timestamp) {
     $this->set('last_export', $timestamp);
@@ -239,9 +238,9 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
   }
 
   /**
-   * Set the last import timestamp
+   * Set the last import timestamp.
    *
-   * @param $version string
+   * @param string $version
    */
   public function setEntityTypeVersion($version) {
     $this->set('entity_type_version', $version);

@@ -88,37 +88,40 @@ class DefaultFileHandler extends EntityHandlerBase {
     $definition['new_property_lists']['required']['apiu_file_content'] = 'value';
   }
 
-  public function import(ApiUnifyRequest $request,$is_clone,$reason,$action) {
+  /**
+   *
+   */
+  public function import(ApiUnifyRequest $request, $is_clone, $reason, $action) {
     $entity = $this->loadEntity($request);
 
-    if( $action==DrupalContentSync::ACTION_DELETE ) {
-      if( $entity ) {
-        return $this->deleteEntity($entity,$reason);
+    if ($action == DrupalContentSync::ACTION_DELETE) {
+      if ($entity) {
+        return $this->deleteEntity($entity, $reason);
       }
       return TRUE;
     }
 
-    $uri  = $request->getField('uri');
-    if( !$uri ) {
+    $uri = $request->getField('uri');
+    if (!$uri) {
       return FALSE;
     }
     if (!empty($uri[0]['value'])) {
       $uri = $uri[0]['value'];
     }
 
-    $content  = $request->getField('apiu_file_content');
-    if( !$content ) {
+    $content = $request->getField('apiu_file_content');
+    if (!$content) {
       return FALSE;
     }
 
-    if( $action==DrupalContentSync::ACTION_CREATE ) {
+    if ($action == DrupalContentSync::ACTION_CREATE) {
       $directory = \Drupal::service('file_system')->dirname($uri);
       $was_prepared = file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
 
       if ($was_prepared) {
         $entity = file_save_data(base64_decode($content), $uri);
         $entity->setPermanent();
-        if( !$is_clone ) {
+        if (!$is_clone) {
           $entity->set('uuid', $request->getUuid());
         }
         $entity->save();
@@ -126,13 +129,13 @@ class DefaultFileHandler extends EntityHandlerBase {
 
       return TRUE;
     }
-    if( $action==DrupalContentSync::ACTION_UPDATE ) {
-      $content  = $request->getField('apiu_file_content');
-      if( !$content ) {
+    if ($action == DrupalContentSync::ACTION_UPDATE) {
+      $content = $request->getField('apiu_file_content');
+      if (!$content) {
         return FALSE;
       }
 
-      return !!file_save_data(base64_decode($content), $uri,FILE_EXISTS_REPLACE);
+      return !!file_save_data(base64_decode($content), $uri, FILE_EXISTS_REPLACE);
     }
 
     return FALSE;
@@ -141,12 +144,12 @@ class DefaultFileHandler extends EntityHandlerBase {
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
-    if( ($status=parent::export($request,$entity,$request,$action))->failed() ) {
+  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+    if (($status = parent::export($request, $entity, $request, $action))->failed()) {
       return $status;
     }
 
-    // Base Info
+    // Base Info.
     $uri = $entity->getFileUri();
     $request->setField('apiu_file_content', base64_encode( file_get_contents($uri)) );
     $request->setField('uri', $uri );

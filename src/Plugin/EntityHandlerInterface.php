@@ -53,18 +53,29 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    */
   public function updateEntityTypeDefinition(&$definition);
 
-  public function allowsImport(ApiUnifyRequest $request,$is_clone,$reason,$action);
-  public function import(ApiUnifyRequest $request,$is_clone,$reason,$action);
+  /**
+   *
+   */
+  public function allowsImport(ApiUnifyRequest $request, $is_clone, $reason, $action);
 
   /**
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request The request to
-   *    store all relevant info at.
-   * @param \Drupal\Core\Entity\EntityInterface $entity The entity to export
-   * @param string $reason See DrupalContentSync::EXPORT_*
-   * @param string $action See DrupalContentSync::ACTION_*
+   *
+   */
+  public function import(ApiUnifyRequest $request, $is_clone, $reason, $action);
+
+  /**
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   *   The request to
+   *   store all relevant info at.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to export.
+   * @param string $reason
+   *   See DrupalContentSync::EXPORT_*.
+   * @param string $action
+   *   See DrupalContentSync::ACTION_*.
    *
    * @return \Drupal\drupal_content_sync\SyncResult\SyncResult
    */
-  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action);
+  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action);
 
 }

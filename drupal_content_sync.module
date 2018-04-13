@@ -29,10 +29,10 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
     if ($form_state->getUserInput()['confirm']) {
       return;
     }
-    $entity   = $form_object->getEntity();
-    $sync     = DrupalContentSync::getExportSynchronizationForEntity($entity,DrupalContentSync::EXPORT_AUTOMATICALLY);
+    $entity = $form_object->getEntity();
+    $sync   = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
 
-    if( $sync && $sync->delete_entities ) {
+    if ($sync && $sync->delete_entities) {
       drupal_set_message(t('This will delete the %type from all sites using it.', [
         '%type' => $entity->getEntityTypeId(),
       ]), 'error');
@@ -48,65 +48,77 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
   _drupal_content_sync_form_alter_disabled_fields($form, $form_state, $form_id);
 }
 
+/**
+ *
+ */
 function _drupal_content_sync_get_user_email() {
   // @TODO Make this configurable
   return 'developer@brightsolutions.de';
 }
 
+/**
+ * Implements hook_entity_insert().
+ */
 function drupal_content_sync_entity_insert(EntityInterface $entity) {
-  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity,DrupalContentSync::EXPORT_AUTOMATICALLY);
-  if( $sync ) {
-    $status = $sync->exportEntity($entity,DrupalContentSync::EXPORT_AUTOMATICALLY,DrupalContentSync::ACTION_CREATE);
-    if( $status->successful() ) {
-      if( $status->code==SuccessResult::CODE_SUCCESS ) {
+  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
+  if ($sync) {
+    $status = $sync->exportEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_CREATE);
+    if ($status->successful()) {
+      if ($status->code == SuccessResult::CODE_SUCCESS) {
         drupal_set_message(t('%label has been exported automatically with Drupal Content Sync.', ['%label' => $entity->label()]));
       }
     }
-    elseif( $status->exception ) {
-      drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code). Message: %message',['%label'=>$entity->label(),'%code'=>$status->code,'%message'=>$status->exception->getMessage()]),'warning');
+    elseif ($status->exception) {
+      drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code). Message: %message', ['%label' => $entity->label(), '%code' => $status->code, '%message' => $status->exception->getMessage()]), 'warning');
     }
     else {
-      drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code).',['%label'=>$entity->label(),'%code'=>$status->code]),'warning');
+      drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code).', ['%label' => $entity->label(), '%code' => $status->code]), 'warning');
     }
   }
 }
 
+/**
+ * Implements hook_entity_update().
+ */
 function drupal_content_sync_entity_update(EntityInterface $entity) {
-  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity,DrupalContentSync::EXPORT_AUTOMATICALLY);
-  if( $sync ) {
+  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
+  if ($sync) {
     // This is actually an update, but for the case this entity existed
     // before the synchronization was created or the entity could not be
     // exported before for any reason, using ::ACTION_UPDATE would lead to
     // errors. Thus we're just using ::ACTION_CREATE which always works.
-    $status = $sync->exportEntity($entity,DrupalContentSync::EXPORT_AUTOMATICALLY,DrupalContentSync::ACTION_CREATE);
-    if( $status->successful() ) {
-      if( $status->code==SuccessResult::CODE_SUCCESS ) {
+    $status = $sync->exportEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_CREATE);
+    if ($status->successful()) {
+      if ($status->code == SuccessResult::CODE_SUCCESS) {
         drupal_set_message(t('%label has been exported automatically with Drupal Content Sync.', ['%label' => $entity->label()]));
       }
     }
-    elseif( $status->exception ) {
-      drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code). Message: %message',['%label'=>$entity->label(),'%code'=>$status->code,'%message'=>$status->exception->getMessage()]),'warning');
+    elseif ($status->exception) {
+      drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code). Message: %message', ['%label' => $entity->label(), '%code' => $status->code, '%message' => $status->exception->getMessage()]), 'warning');
     }
     else {
-      drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code).',['%label'=>$entity->label(),'%code'=>$status->code]),'warning');
+      drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code).', ['%label' => $entity->label(), '%code' => $status->code]), 'warning');
     }
   }
 }
 
+/**
+ * Implements hook_entity_delete().
+ */
 function drupal_content_sync_entity_delete(EntityInterface $entity) {
-  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity,DrupalContentSync::EXPORT_AUTOMATICALLY);
-  if( $sync ) {
-    $status = $sync->exportEntity($entity,DrupalContentSync::EXPORT_AUTOMATICALLY,DrupalContentSync::ACTION_DELETE);
-    if( $status->successful() ) {
-      if( $status->code==SuccessResult::CODE_SUCCESS ) {
+  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
+  if ($sync) {
+    $status = $sync->exportEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_DELETE);
+    if ($status->successful()) {
+      if ($status->code == SuccessResult::CODE_SUCCESS) {
         drupal_set_message(t('Deletion of %label has been exported automatically with Drupal Content Sync.', ['%label' => $entity->label()]));
       }
     }
-    elseif( $status->exception ) {
-      drupal_set_message(t('Failed to export deletion of %label automatically with Drupal Content Sync (%code). Message: %message',['%label'=>$entity->label(),'%code'=>$status->code,'%message'=>$status->exception->getMessage()]),'warning');
+    elseif ($status->exception) {
+      drupal_set_message(t('Failed to export deletion of %label automatically with Drupal Content Sync (%code). Message: %message', ['%label' => $entity->label(), '%code' => $status->code, '%message' => $status->exception->getMessage()]), 'warning');
     }
     else {
-      drupal_set_message(t('Failed to export deletion of %label automatically with Drupal Content Sync (%code).',['%label'=>$entity->label(),'%code'=>$status->code]),'warning');
+      drupal_set_message(t('Failed to export deletion of %label automatically with Drupal Content Sync (%code).', ['%label' => $entity->label(), '%code' => $status->code]), 'warning');
     }
   }
 }
@@ -174,24 +186,23 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
     ->getEntity();
 
   // @TODO Check why this is NULL
-  if( !$entity ) {
+  if (!$entity) {
     return;
   }
 
   // @TODO: Disable editing only if meta says entity is NOT CLONED
-  //$meta = ***load_meta_info***($entity);
-  //if( !$meta || $meta->isCloned() ) {
+  // $meta = ***load_meta_info***($entity);
+  // if( !$meta || $meta->isCloned() ) {
   //  return;
-  //}
-
-  $sync   = DrupalContentSync::getImportSynchronizationForEntityType($entity->getEntityType(), $entity->bundle(),DrupalContentSync::IMPORT_FORCED);
-  if( !$sync ) {
+  // }
+  $sync = DrupalContentSync::getImportSynchronizationForEntityType($entity->getEntityType(), $entity->bundle(), DrupalContentSync::IMPORT_FORCED);
+  if (!$sync) {
     return;
   }
 
   $config = $sync->getEntityTypeConfig($entity->getEntityType(), $entity->bundle());
 
-  if( !empty($config['handler_settings']['restrict_editing']) ) {
+  if (!empty($config['handler_settings']['restrict_editing'])) {
     $drupal_content_synched_value = $entity->get('field_drupal_content_synced')->getValue();
     $field_drupal_content_synce_value = reset($drupal_content_synched_value);
 
@@ -235,9 +246,9 @@ function drupal_content_sync_get_publish_changes_operations(EntityInterface $ent
   /** @var \Drupal\Core\Routing\RedirectDestinationInterface $redirect_destination */
   $redirect_destination = Drupal::service('redirect.destination');
 
-  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity,DrupalContentSync::EXPORT_MANUALLY);
+  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_MANUALLY);
 
-  if( !$sync ) {
+  if (!$sync) {
     return [];
   }
 
