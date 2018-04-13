@@ -94,9 +94,9 @@ class DrupalContentSyncForm extends EntityForm {
 //    }
 
 //    $trigger  = $form_state->getTriggeringElement();
-//    $trigger['#ajax']['wrapper'] = 'tr[edit-sync-entities-file-file]';
+//    $trigger['#ajax']['wrapper'] = 'row-file-file';
 
-    return $form['sync_entities']['file-file'];
+    return $form['sync_entities'];
   }
 
   /**
@@ -392,7 +392,7 @@ class DrupalContentSyncForm extends EntityForm {
         }
 
         // Add row class.
-        $entity_bundle_row['#attributes'] = ['id' => 'row-' . $entity_bundle_row['id']['#default_value']];
+        $entity_bundle_row['#attributes'] = ['class' => ['row-' . $entity_bundle_row['id']['#default_value']]];
 
         $entity_table[$type_key . '-' . $entity_bundle_name] = $entity_bundle_row;
 
@@ -593,6 +593,7 @@ class DrupalContentSyncForm extends EntityForm {
               }
             }
 
+            $field_row['#attributes'] = ['class' => ['row-' . $entity_bundle_row['id']['#default_value']]];
             $entity_table[$field_id] = $field_row;
           }
         }
