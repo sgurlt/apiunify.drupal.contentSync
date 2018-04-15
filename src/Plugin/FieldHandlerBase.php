@@ -133,15 +133,18 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
     }
   }
 
+  /**
+   * @inheritdoc
+   */
   public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
     // Deletion doesn't require any action on field basis for static data
     if( $action==DrupalContentSync::ACTION_DELETE ) {
-      return new SuccessResult();
+      return FALSE;
     }
 
     if( $reason==DrupalContentSync::IMPORT_AUTOMATICALLY || $reason==DrupalContentSync::IMPORT_MANUALLY ) {
       if( $this->settings[($is_clone ? 'cloned' : 'sync') . '_import']!=$reason ) {
-        return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
+        return FALSE;
       }
     }
 
@@ -154,7 +157,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
       $entity->set($this->fieldName, $data);
     }
 
-    return new SuccessResult();
+    return TRUE;
   }
 
   /**
@@ -163,18 +166,18 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
     if( $reason==DrupalContentSync::EXPORT_AUTOMATICALLY || $reason==DrupalContentSync::EXPORT_MANUALLY ) {
       if( $this->settings['export']!=$reason ) {
-        return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
+        return FALSE;
       }
     }
 
     // Deletion doesn't require any action on field basis for static data
     if( $action==DrupalContentSync::ACTION_DELETE ) {
-      return new SuccessResult();
+      return FALSE;
     }
 
     $request->setField($this->fieldName,$entity->get($this->fieldName)->getValue());
 
-    return new SuccessResult();
+    return TRUE;
   }
 
 }

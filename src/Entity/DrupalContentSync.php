@@ -5,13 +5,12 @@ namespace Drupal\drupal_content_sync\Entity;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
+use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\Url;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Drupal\drupal_content_sync\SyncResult\SyncResult;
-use Drupal\drupal_content_sync\SyncResult\ErrorResult;
-use Drupal\drupal_content_sync\SyncResult\SuccessResult;
+use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Defines the DrupalContentSync entity.
@@ -463,6 +462,18 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     return !in_array(FALSE, $is_allowed, TRUE);
   }
 
+  /**
+   * @param string $entity_type_name
+   * @param string $entity_bundle
+   * @param array $data
+   * @param bool $is_clone
+   * @param string $reason
+   * @param string $action
+   *
+   * @throws \Drupal\drupal_content_sync\Exception\SyncException
+   *
+   * @return bool
+   */
   public function importEntity($entity_type_name, $entity_bundle, $data, $is_clone, $reason, $action=self::ACTION_CREATE) {
     if (!$this->isSyncAllowed($entity_type_name, $entity_bundle, $data)) {
       return FALSE;
@@ -484,16 +495,11 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $config   = $this->getEntityTypeConfig($entity_type_name,$entity_bundle);
     $handler  = $this->getEntityTypeHandler($config);
 
-    try {
-      $result = $handler->import($request, $is_clone, $reason, $action);
-    }
-    catch(\Exception $e ) {
-      return new ErrorResult(ErrorResult::CODE_UNEXPECTED_EXCEPTION,$e);
-    }
+   $result  = $handler->import($request, $is_clone, $reason, $action);
 
     // Don't save meta entity if entity wasn't imported anyway
-    if( $result->failed() || $result->code==SuccessResult::CODE_HANDLER_IGNORED ) {
-      return $result;
+    if( !$result ) {
+      return FALSE;
     }
 
     // @TODO Save meta information
@@ -513,12 +519,14 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   /**
-   * @param $result
-   * @param $entity
-   * @param $reason
+   * @param array &$result
+   * @param EntityInterface $entity
+   * @param string $reason
    * @param string $action
    *
-   * @return SyncResult
+   * @throws \Drupal\drupal_content_sync\Exception\SyncException
+   *
+   * @return bool Whether or not the export could be gotten.
    */
   public function getSerializedEntity(&$result,$entity,$reason,$action=self::ACTION_UPDATE) {
     $entity_type    = $entity->getEntityTypeId();
@@ -532,22 +540,23 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $request->setUuid($entity_uuid);
 
     $status = $handler->export($request,$entity,$reason,$action);
-    if( $status->failed() || $status->code!=SuccessResult::CODE_SUCCESS ) {
-      return $status;
+    if( !$status ) {
+      return FALSE;
     }
 
     $result = $request->getData();
 
-    return new SuccessResult();
+    return TRUE;
   }
 
   /**
-   * @param $entity
-   * @param $reason
+   * @param EntityInterface $entity
+   * @param string $reason
    * @param string $action
    *
-   * @return \Drupal\drupal_content_sync\SyncResult\SyncResult
-   * @throws \Drupal\Core\Entity\EntityStorageException
+   * @throws \Drupal\drupal_content_sync\Exception\SyncException
+   *
+   * @return bool Whether or not the entity has actually been exported.
    */
   public function exportEntity($entity,$reason,$action=self::ACTION_UPDATE) {
     if (method_exists($entity, 'getUntranslated')) {
@@ -576,23 +585,26 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       $body   = NULL;
       $status = $this->getSerializedEntity($body,$entity,$reason,$action);
 
-      // Handler failed or chose to deliberately ignore this entity,
+      // Handler chose to deliberately ignore this entity,
       // e.g. a node that wasn't published yet and is not exported unpublished
-      if( $status->failed() || $status->code!=SuccessResult::CODE_SUCCESS ) {
-        return $status;
+      if( !$status ) {
+        return FALSE;
       }
 
       if (!empty($body['embed_entities'])) {
         foreach ($body['embed_entities'] as $data) {
-          $embed_entity = $entity_repository->loadEntityByUuid($data['entity_type'], $data['uuid']);
+          try {
+            $embed_entity = $entity_repository->loadEntityByUuid($data['entity_type'], $data['uuid']);
+          }
+          catch(\Exception $e) {
+            throw new SyncException(SyncException::CODE_UNEXPECTED_EXCEPTION,$e);
+          }
 
           if( !$this->supportsEntity($embed_entity) ) {
             continue;
           }
 
-          if( ($status=$this->exportEntity($embed_entity,$reason,$action==self::ACTION_UPDATE))->failed() ) {
-            return $status;
-          }
+          $this->exportEntity($embed_entity,$reason,$action==self::ACTION_UPDATE);
         }
       }
     }
@@ -628,7 +640,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           '@url' => $url,
         ]
       );
-      return new ErrorResult(ErrorResult::CODE_EXPORT_REQUEST_FAILED, $e);
+      throw new SyncException(SyncException::CODE_EXPORT_REQUEST_FAILED, $e);
     }
 
     if( $response->getStatusCode()!=200 && $response->getStatusCode()!=201 ) {
@@ -644,7 +656,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           '@url' => $url,
         ]
       );
-      return new ErrorResult(ErrorResult::CODE_EXPORT_REQUEST_FAILED);
+      throw new SyncException(SyncException::CODE_EXPORT_REQUEST_FAILED);
     }
 
     // @TODO Uncomment when ready
@@ -659,7 +671,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     //  ]);
     //}
 
-    return new SuccessResult();
+    return TRUE;
   }
 
   public function getEntityTypeConfig($entity_type=NULL,$entity_bundle=NULL) {

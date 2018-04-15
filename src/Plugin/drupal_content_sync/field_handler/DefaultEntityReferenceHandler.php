@@ -64,7 +64,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
   public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
     // Deletion doesn't require any action on field basis for static data
     if( $action==DrupalContentSync::ACTION_DELETE ) {
-      return new SuccessResult();
+      return FALSE;
     }
 
     $data = $request->getField($this->fieldName);
@@ -92,7 +92,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       $entity->set($this->fieldName, $reference_ids);
     }
 
-    return new SuccessResult();
+    return TRUE;
   }
 
   /**
@@ -101,7 +101,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
   public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
     // Deletion doesn't require any action on field basis for static data
     if( $action==DrupalContentSync::ACTION_DELETE ) {
-      return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
+      return FALSE;
     }
 
     $entityFieldManager = Drupal::service('entity_field.manager');
@@ -135,7 +135,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
 
     $request->setField($this->fieldName,$result);
 
-    return new SuccessResult();
+    return TRUE;
   }
 
 }

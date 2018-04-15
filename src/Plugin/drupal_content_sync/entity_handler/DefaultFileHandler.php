@@ -4,6 +4,7 @@ namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Utility\Error;
+use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
@@ -91,6 +92,9 @@ class DefaultFileHandler extends EntityHandlerBase {
     $definition['new_property_lists']['required']['apiu_file_content'] = 'value';
   }
 
+  /**
+   * @inheritdoc
+   */
   public function import(ApiUnifyRequest $request,$is_clone,$reason,$action) {
     $entity = $this->loadEntity($request);
 
@@ -98,12 +102,12 @@ class DefaultFileHandler extends EntityHandlerBase {
       if( $entity ) {
         return $this->deleteEntity($entity,$reason);
       }
-      return new SuccessResult();
+      return FALSE;
     }
 
     $uri  = $request->getField('uri');
     if( !$uri ) {
-      return new ErrorResult(ErrorResult::CODE_INVALID_REQUEST);
+      throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST );
     }
     if (!empty($uri[0]['value'])) {
       $uri = $uri[0]['value'];
@@ -111,7 +115,7 @@ class DefaultFileHandler extends EntityHandlerBase {
 
     $content  = $request->getField('apiu_file_content');
     if( !$content ) {
-      return new ErrorResult( ErrorResult::CODE_INVALID_REQUEST );
+      throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST );
     }
 
     if( $action==DrupalContentSync::ACTION_CREATE ) {
@@ -127,29 +131,29 @@ class DefaultFileHandler extends EntityHandlerBase {
         $entity->save();
       }
 
-      return new SuccessResult();
+      return TRUE;
     }
     if( $action==DrupalContentSync::ACTION_UPDATE ) {
       $content  = $request->getField('apiu_file_content');
       if( !$content ) {
-        return new ErrorResult( ErrorResult::CODE_INVALID_REQUEST );
+        throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST );
       }
 
       if( file_save_data(base64_decode($content), $uri,FILE_EXISTS_REPLACE) ) {
-        return new SuccessResult();
+        return TRUE;
       };
-      return new ErrorResult( ErrorResult::CODE_ENTITY_API_FAILURE );
+      throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE );
     }
 
-    return new ErrorResult( ErrorResult::CODE_INVALID_REQUEST );
+    throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST );
   }
 
   /**
    * @inheritdoc
    */
   public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
-    if( ($status=parent::export($request,$entity,$request,$action))->failed() ) {
-      return $status;
+    if( !parent::export($request,$entity,$request,$action) ) {
+      return FALSE;
     }
 
     // Base Info
@@ -166,7 +170,7 @@ class DefaultFileHandler extends EntityHandlerBase {
     // Source URL
     $this->setSourceUrl($request,$entity);
 
-    return new SuccessResult();
+    return TRUE;
   }
 
 }

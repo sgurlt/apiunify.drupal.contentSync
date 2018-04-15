@@ -3,8 +3,10 @@
 namespace Drupal\drupal_content_sync\Plugin;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Driver\Exception\Exception;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\drupal_content_sync\SyncResult\ErrorResult;
 use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -86,14 +88,22 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     return [];
   }
 
+  /**
+   * @param ApiUnifyRequest $request
+   *
+   * @return EntityInterface
+   */
   protected function loadEntity($request) {
     return \Drupal::service('entity.repository')->loadEntityByUuid($request->getEntityType(), $request->getUuid());
   }
 
+  /**
+   * @inheritdoc
+   */
   public function import(ApiUnifyRequest $request,$is_clone,$reason,$action) {
     if( $reason==DrupalContentSync::IMPORT_AUTOMATICALLY || $reason==DrupalContentSync::IMPORT_MANUALLY ) {
       if( $this->settings[($is_clone ? 'cloned' : 'sync') . '_import']!=$reason ) {
-        return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
+        return FALSE;
       }
     }
 
@@ -103,7 +113,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       if( $entity ) {
         return $this->deleteEntity($entity,$reason);
       }
-      return new SuccessResult();
+      return FALSE;
     }
 
     if ($is_clone || !$entity) {
@@ -122,20 +132,41 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       $entity = $storage->create($base_data);
 
       if (!$entity) {
-        return new ErrorResult(ErrorResult::CODE_ENTITY_API_FAILURE);
+        throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE );
       }
     }
 
     return $this->setEntityValues($request, $entity, $is_clone, $reason,$action);
   }
 
+  /**
+   * @param EntityInterface $entity
+   * @param $reason
+   *
+   * @throws \Drupal\drupal_content_sync\Exception\SyncException
+   *
+   * @return bool
+   */
   protected function deleteEntity($entity,$reason) {
-    $entity->delete();
-    return new SuccessResult();
+    try {
+      $entity->delete();
+    }
+    catch(\Exception $e) {
+      throw new SyncException( SyncException::CODE_ENTITY_API_FAILURE, $e );
+    }
+    return TRUE;
   }
 
   /**
-   * @ToDo: Add description.
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request @see self::import
+   * @param \Drupal\Core\Entity\EntityInterface $entity @see self::import
+   * @param bool $is_clone @see self::import
+   * @param string $reason @see self::import
+   * @param string $action @see self::import
+   *
+   * @throws \Drupal\drupal_content_sync\Exception\SyncException
+   *
+   * @return bool
    */
   protected function setEntityValues(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
     /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
@@ -144,6 +175,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     $bundle = $entity->bundle();
     $field_definitions = $entityFieldManager->getFieldDefinitions($type, $bundle);
 
+    $entity_type  = \Drupal::entityTypeManager()->getDefinition( $request->getEntityType() );
+    $entity->set( $entity_type->getKey('label'), $request->getField('title') );
+
     foreach ($field_definitions as $key => $field) {
       $handler = $this->sync->getFieldHandler($type, $bundle, $key);
 
@@ -151,13 +185,15 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         continue;
       }
 
-      $status = $handler->import($request,$entity,$is_clone,$reason,$action);
-      if( $status->failed() ) {
-        return $status;
-      }
+      $handler->import($request,$entity,$is_clone,$reason,$action);
     }
 
-    $entity->save();
+    try {
+      $entity->save();
+    }
+    catch(\Exception $e) {
+      throw new SyncException( SyncException::CODE_ENTITY_API_FAILURE, $e );
+    }
 
     foreach ($request->getTranslationLanguages() as $language) {
       if ($entity->hasTranslation($language)) {
@@ -173,7 +209,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
 
     $request->changeTranslationLanguage();
 
-    return new SuccessResult();
+    return TRUE;
   }
 
   protected function setSourceUrl(ApiUnifyRequest $request,EntityInterface $entity) {
@@ -193,7 +229,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
     if( $reason==DrupalContentSync::EXPORT_AUTOMATICALLY || $reason==DrupalContentSync::EXPORT_MANUALLY ) {
       if( $this->settings['export']!=$reason ) {
-        return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
+        return FALSE;
       }
     }
 
@@ -209,9 +245,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
 
       foreach ($languages as $language) {
         $request->changeTranslationLanguage($language);
-        if( ($status=$this->export($request,$entity->getTranslation($language),$request,$action))->failed() ) {
-          return $status;
-        }
+        $this->export($request,$entity->getTranslation($language),$request,$action);
       }
 
       $request->changeTranslationLanguage();
@@ -258,14 +292,10 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         continue;
       }
 
-      $status = $handler->export($request,$entity,$reason,$action);
-
-      if($status->failed()){
-        return $status;
-      }
+      $handler->export($request,$entity,$reason,$action);
     }
 
-    return new SuccessResult();
+    return TRUE;
   }
 
 }

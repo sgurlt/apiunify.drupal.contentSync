@@ -60,7 +60,10 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    * @param string $reason See DrupalContentSync::IMPORT_*
    * @param string $action See DrupalContentSync::ACTION_*
    *
-   * @return \Drupal\drupal_content_sync\SyncResult\SyncResult
+   * @throws \Drupal\drupal_content_sync\Exception\SyncException
+   *
+   * @return bool Whether or not the content has been imported. FALSE is a
+   *    desired state, meaning nothing was to do according to config.
    */
   public function import(ApiUnifyRequest $request,$is_clone,$reason,$action);
 
@@ -71,7 +74,10 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    * @param string $reason See DrupalContentSync::EXPORT_*
    * @param string $action See DrupalContentSync::ACTION_*
    *
-   * @return \Drupal\drupal_content_sync\SyncResult\SyncResult
+   * @throws \Drupal\drupal_content_sync\Exception\SyncException
+   *
+   * @return bool Whether or not the content has been exported. FALSE is a
+   *    desired state, meaning nothing was to do according to config.
    */
   public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action);
 

@@ -282,14 +282,23 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
 
-    if ($sync->importEntity(
-      $entity_type_name,
-      $entity_bundle,
-      $data,
-      $is_clone,
-      $reason,
-      $action
-    )) {
+    try {
+      $status = $sync->importEntity(
+        $entity_type_name,
+        $entity_bundle,
+        $data,
+        $is_clone,
+        $reason,
+        $action
+      );
+    }
+    catch(\Exception $e) {
+      return new ResourceResponse(
+        ['message' => t('SyncException @code',['@code'=>$e->errorCode]),'code'=>$e->errorCode], 500
+      );
+    }
+
+    if ($status) {
       return new ModifiedResourceResponse($data, $action == DrupalContentSync::ACTION_DELETE ? 204 : 200);
     }
     else {

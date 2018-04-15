@@ -36,7 +36,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
   public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
     // Deletion doesn't require any action on field basis for static data.
     if ($action == DrupalContentSync::ACTION_DELETE) {
-      return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
+      return FALSE;
     }
 
     $data = $request->getField($this->fieldName);
@@ -66,7 +66,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
       $entity->set($this->fieldName, $result);
     }
 
-    return new SuccessResult();
+    return TRUE;
   }
 
   /**
