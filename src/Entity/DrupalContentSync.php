@@ -127,9 +127,10 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     parent::preSave($storage);
 
     if (!$this->initialize()) {
-      drupal_set_message('The communication with the Drupal Content Sync Server failed.' .
+      $messenger = \Drupal::messenger();
+      $messenger->addWarning(t('The communication with the Drupal Content Sync Server failed.' .
         ' Therefore the synchronization entity could not be saved. For more' .
-        ' information see the error output above.', 'warning');
+        ' information see the error output above.'));
       return;
     }
   }
@@ -149,7 +150,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       }
     }
     catch (RequestException $e) {
-      drupal_set_message('The API Unify server is offline or has some problems. Please, check the server', 'error');
+      $messenger = \Drupal::messenger();
+      $messenger->addError(t('The API Unify server is offline or has some problems. Please, check the server'));
       throw new AccessDeniedHttpException();
     }
   }
@@ -230,11 +232,13 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       $this->createEntityTypes();
     }
     catch (RequestException $e) {
-      drupal_set_message($e->getMessage(), 'warning');
+      $messenger = \Drupal::messenger();
+      $messenger->addWarning($e->getMessage());
       return FALSE;
     }
     catch (\Exception $e) {
-      drupal_set_message($e->getMessage(), 'warning');
+      $messenger = \Drupal::messenger();
+      $messenger->addWarning($e->getMessage());
       return FALSE;
     }
     return TRUE;
@@ -1089,7 +1093,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         ]);
       }
       catch (RequestException $e) {
-        drupal_set_message($e->getMessage(), 'error');
+        $messenger = \Drupal::messenger();
+        $messenger->addError($e->getMessage());
         return;
       }
     }
@@ -1117,7 +1122,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       return TRUE;
     }
     catch (RequestException $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      $messenger = \Drupal::messenger();
+      $messenger->addError($e->getMessage());
       return FALSE;
     }
   }
@@ -1245,7 +1251,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       }
     }
     catch (RequestException $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      $messenger = \Drupal::messenger();
+      $messenger->addError($e->getMessage());
       return FALSE;
     }
 
