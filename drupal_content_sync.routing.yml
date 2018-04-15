@@ -30,13 +30,14 @@ entity.drupal_content_sync.delete_form:
   requirements:
     _permission: 'administer site configuration'
 
-entity.drupal_content_sync.content:
-  path: '/admin/content/drupal_content_synchronization/{drupal_content_sync}'
-  defaults:
-    _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSynchronizationController::content'
-    _title: 'Drupal Content Synchronization'
-  requirements:
-    _permission: 'access drupal content sync content overview'
+# @ToDo: The dashboard for manual content import is currently not working and needs to be refactored.
+#entity.drupal_content_sync.content:
+#  path: '/admin/content/drupal_content_synchronization/{drupal_content_sync}'
+#  defaults:
+#    _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSynchronizationController::content'
+#    _title: 'Drupal Content Synchronization'
+#  requirements:
+#    _permission: 'access drupal content sync content overview'
 
 drupal_content_sync.publish_changes:
   path: '/drupal-content-sync/publish-changes/{sync_id}/{entity_type}/{entity}'
