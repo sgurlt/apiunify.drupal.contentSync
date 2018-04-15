@@ -43,11 +43,8 @@ function drupal_content_sync_install() {
  */
 function drupal_content_sync_uninstall() {
   // Delete Drupal Content Sync User.
-  $content_sync_user_id = \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->get('uid');
-  if (isset($content_sync_user_id )) {
-    $user = User::load($content_sync_user_id );
-    $user->delete();
-  };
+  $user = User::load(DRUPAL_CONTENT_SYNC_USER_ID);
+  $user->delete();
 
   // Delete entry from key value table.
   \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->delete('uid');
