@@ -27,10 +27,10 @@ class DrupalContentSynchronizationController extends ControllerBase {
     ];
 
     foreach ($drupal_content_sync->get('sync_entities') as $type) {
-      if ($type['handler'] == DrupalContentSync::HANDLER_IGNORE) {
+      if ($type['handler'] == DrupalContentSync::HANDLER_IGNORE || $type['handler'] == 'drupal_content_sync_default_field_handler') {
         continue;
       }
-      if ($type['preview'] == 'excluded') {
+      if (isset($type['preview']) && $type['preview'] == 'excluded') {
         continue;
       }
 
