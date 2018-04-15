@@ -13,6 +13,7 @@ use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 
 /**
  * Form handler for the DrupalContentSync add and edit forms.
@@ -49,6 +50,13 @@ class DrupalContentSyncForm extends EntityForm {
   protected $fieldPluginManager;
 
   /**
+   * The Messenger service.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
+
+  /**
    * Constructs an object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManager $entity_type_manager
@@ -57,13 +65,16 @@ class DrupalContentSyncForm extends EntityForm {
    *   The bundle info service.
    * @param \Drupal\Core\Entity\EntityFieldManager $entity_field_manager
    *   The entity field manager.
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   The messenger service.
    */
-  public function __construct(EntityTypeManager $entity_type_manager, EntityTypeBundleInfoInterface $bundle_info_service, EntityFieldManager $entity_field_manager) {
+  public function __construct(EntityTypeManager $entity_type_manager, EntityTypeBundleInfoInterface $bundle_info_service, EntityFieldManager $entity_field_manager, MessengerInterface $messenger) {
     $this->entityTypeManager = $entity_type_manager;
     $this->bundleInfoService = $bundle_info_service;
     $this->entityFieldManager = $entity_field_manager;
     $this->entityPluginManager = \Drupal::service('plugin.manager.dcs_entity_handler');
     $this->fieldPluginManager = \Drupal::service('plugin.manager.dcs_field_handler');
+    $this->messenger = $messenger;
   }
 
   /**
@@ -73,7 +84,8 @@ class DrupalContentSyncForm extends EntityForm {
     return new static(
       $container->get('entity_type.manager'),
       $container->get('entity_type.bundle.info'),
-      $container->get('entity_field.manager')
+      $container->get('entity_field.manager'),
+      $container->get('messenger')
     );
   }
 
@@ -741,7 +753,7 @@ class DrupalContentSyncForm extends EntityForm {
     $status = $config->save();
 
     if ($status) {
-      drupal_set_message($this->t('Saved the %label Drupal Content Synchronization.', [
+      $this->messenger->addMessage($this->t('Saved the %label Drupal Content Synchronization.', [
         '%label' => $config->label(),
       ]));
       $uri = 'internal:/admin/content/drupal_content_synchronization/' . $this->entity->id();
@@ -771,7 +783,7 @@ class DrupalContentSyncForm extends EntityForm {
       }
     }
     else {
-      drupal_set_message($this->t('The %label Drupal Content Synchronization was not saved.', [
+      $this->messenger->addMessage($this->t('The %label Drupal Content Synchronization was not saved.', [
         '%label' => $config->label(),
       ]));
     }

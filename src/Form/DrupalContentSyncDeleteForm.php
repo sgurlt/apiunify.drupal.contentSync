@@ -5,11 +5,29 @@ namespace Drupal\drupal_content_sync\Form;
 use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 
 /**
  * Builds the form to delete an DrupalContentSync.
  */
 class DrupalContentSyncDeleteForm extends EntityConfirmFormBase {
+
+  /**
+   * The Messenger service.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
+
+  /**
+   * DrupalContentSyncPublishChanges constructor.
+   *
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   The messenger service.
+   */
+  public function __construct(MessengerInterface $messenger) {
+    $this->messenger = $messenger;
+  }
 
   /**
    * {@inheritdoc}
@@ -45,7 +63,7 @@ class DrupalContentSyncDeleteForm extends EntityConfirmFormBase {
     }
 
     $this->entity->delete();
-    drupal_set_message($this->t('A synchronization %label has been deleted.', ['%label' => $this->entity->label()]));
+    $this->messenger->addMessage($this->t('A synchronization %label has been deleted.', ['%label' => $this->entity->label()]));
 
     $form_state->setRedirectUrl($this->getCancelUrl());
   }

@@ -34,9 +34,8 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
     $sync   = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
 
     if ($sync && $sync->delete_entities) {
-      drupal_set_message(t('This will delete the %type from all sites using it.', [
-        '%type' => $entity->getEntityTypeId(),
-      ]), 'error');
+      $messenger = \Drupal::messenger();
+      $messenger->addError(t('This will delete the %type from all sites using it.', ['%type' => $entity->getEntityTypeId()]));
     }
   }
 
@@ -56,19 +55,20 @@ function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $a
   $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, $reason);
 
   if ($sync) {
+    $messenger = \Drupal::messenger();
     try {
       $status = $sync->exportEntity($entity, $reason, $action);
 
       if ($status) {
-        drupal_set_message(t('%label has been exported automatically with Drupal Content Sync.', ['%label' => $entity->label()]));
+        $messenger->addMessage(t('%label has been exported automatically with Drupal Content Sync.', ['%label' => $entity->label()]));
       }
     }
     catch (SyncException $e) {
       if ($e->parentException) {
-        drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code). Message: %message', ['%label' => $entity->label(), '%code' => $e->errorCode, '%message' => $e->parentException->getMessage()]), 'warning');
+        $messenger->addWarning(t('Failed to export %label automatically with Drupal Content Sync (%code). Message: %message', ['%label' => $entity->label(), '%code' => $e->errorCode, '%message' => $e->parentException->getMessage()]));
       }
       else {
-        drupal_set_message(t('Failed to export %label automatically with Drupal Content Sync (%code).', ['%label' => $entity->label(), '%code' => $e->errorCode]), 'warning');
+        $messenger->addWarning(t('Failed to export %label automatically with Drupal Content Sync (%code).', ['%label' => $entity->label(), '%code' => $e->errorCode]));
       }
     }
   }
@@ -198,8 +198,8 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
         $form[$key]['#disabled'] = TRUE;
       }
     }
-
-    drupal_set_message(t('The entity cannot be edited because it has been synced.'), 'warning');
+    $messenger = \Drupal::messenger();
+    $messenger->addWarning(t('The entity cannot be edited because it has been synced.'));
   }
 }
 

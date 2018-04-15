@@ -7,11 +7,29 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Drupal\Core\Messenger\MessengerInterface;
 
 /**
  * Publish changes controller.
  */
 class DrupalContentSyncPublishChanges extends ControllerBase {
+
+  /**
+   * The Messenger service.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
+
+  /**
+   * DrupalContentSyncPublishChanges constructor.
+   *
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   The messenger service.
+   */
+  public function __construct(MessengerInterface $messenger) {
+    $this->messenger = $messenger;
+  }
 
   /**
    * Published entity to API Unify.
@@ -24,11 +42,11 @@ class DrupalContentSyncPublishChanges extends ControllerBase {
     );
 
     if ($result) {
-      drupal_set_message('The changes has been successfully pushed.');
+      $this->messenger->addMessage('The changes has been successfully pushed.');
     }
     else {
-      drupal_set_message('An error occured while pushing the changes to the ' .
-        'Drupal Content Sync backend. Please try again later', 'error');
+      $this->messenger->addError('An error occured while pushing the changes to the ' .
+        'Drupal Content Sync backend. Please try again later.');
     }
 
     return new RedirectResponse('/');

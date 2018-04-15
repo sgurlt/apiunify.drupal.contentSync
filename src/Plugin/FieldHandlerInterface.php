@@ -38,7 +38,7 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    * either allow DISABLED or DISABLED and AUTOMATICALLY.
    *
    * @return array
-   * DrupalContentSyncEXPORT_
+   *   DrupalContentSyncEXPORT_
    */
   public function getAllowedExportOptions();
 
@@ -49,7 +49,7 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    * imports. Typically you either allow DISABLED or DISABLED and AUTOMATICALLY.
    *
    * @return array
-   * DrupalContentSyncIMPORT_
+   *   DrupalContentSyncIMPORT_
    */
   public function getAllowedSyncImportOptions();
 
