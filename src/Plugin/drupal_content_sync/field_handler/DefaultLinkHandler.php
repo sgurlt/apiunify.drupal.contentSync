@@ -30,9 +30,12 @@ class DefaultLinkHandler extends FieldHandlerBase {
     return in_array($field->getType(), $allowed) !== FALSE;
   }
 
-  public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
-    // Deletion doesn't require any action on field basis for static data
-    if( $action==DrupalContentSync::ACTION_DELETE ) {
+  /**
+   *
+   */
+  public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
+    // Deletion doesn't require any action on field basis for static data.
+    if ($action == DrupalContentSync::ACTION_DELETE) {
       return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
     }
 
@@ -45,17 +48,17 @@ class DefaultLinkHandler extends FieldHandlerBase {
       $result = [];
 
       foreach ($data as &$link_element) {
-        if( empty($link_element['uri']) ) {
+        if (empty($link_element['uri'])) {
           $reference = $request->loadEmbeddedEntity($link_element);
-          if( $reference ) {
+          if ($reference) {
             $result[] = [
-              'uri' => 'entity:' . $reference->getEntityType() . '/' . $reference->id()
+              'uri' => 'entity:' . $reference->getEntityType() . '/' . $reference->id(),
             ];
           }
         }
         else {
           $result[] = [
-            'uri' => $link_element['uri']
+            'uri' => $link_element['uri'],
           ];
         }
       }
@@ -66,9 +69,12 @@ class DefaultLinkHandler extends FieldHandlerBase {
     return new SuccessResult();
   }
 
-  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
-    // Deletion doesn't require any action on field basis for static data
-    if( $action==DrupalContentSync::ACTION_DELETE ) {
+  /**
+   *
+   */
+  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+    // Deletion doesn't require any action on field basis for static data.
+    if ($action == DrupalContentSync::ACTION_DELETE) {
       return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
     }
 
@@ -99,7 +105,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
           continue;
         }
 
-        if( !$this->sync->supportsEntity($link_entity) ) {
+        if (!$this->sync->supportsEntity($link_entity)) {
           continue;
         }
 
@@ -111,7 +117,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
       }
     }
 
-    $request->setField($this->fieldName,$result);
+    $request->setField($this->fieldName, $result);
 
     return new SuccessResult();
   }
