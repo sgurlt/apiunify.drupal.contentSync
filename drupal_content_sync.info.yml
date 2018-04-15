@@ -3,6 +3,7 @@ type: module
 description: Provides an integration with Drupal Content Sync.
 package: Drupal Content Sync
 core: 8.x
+configure: entity.drupal_content_sync.collection
 dependencies:
   - user
   - rest

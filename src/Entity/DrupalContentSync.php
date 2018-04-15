@@ -11,6 +11,7 @@ use Drupal\Core\Url;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\user\Entity\User;
 
 /**
  * Defines the DrupalContentSync entity.
@@ -967,14 +968,12 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           ],
         ]);
 
-        $user = user_load_by_mail(_drupal_content_sync_get_user_email());
-
-        if (!$user) {
-          throw new \Exception(
-            t("No user found with email: @email. Encrypted data can't be saved",
-              ['@email' => _drupal_content_sync_get_user_email()])
-          );
-        }
+          $user = User::load(DRUPAL_CONTENT_SYNC_USER_ID);
+          if (!$user) {
+            throw new \Exception(
+              t("Drupal Content Sync User not found. Encrypted data can't be saved")
+            );
+          }
 
         $userData = \Drupal::service('user.data');
         $data     = $userData->get('drupal_content_sync', $user->id(), 'sync_data');

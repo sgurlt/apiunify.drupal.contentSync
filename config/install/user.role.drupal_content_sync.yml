@@ -1,6 +1,11 @@
 langcode: en
 status: true
-dependencies: {  }
+dependencies:
+  module:
+    - drupal_content_sync
+  enforced:
+    module:
+      - drupal_content_sync
 id: drupal_content_sync
 label: 'Drupal Content Sync'
 weight: 2

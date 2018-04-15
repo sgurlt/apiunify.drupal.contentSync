@@ -15,6 +15,7 @@ use Drupal\Core\Render\Element;
 use Drupal\Core\Entity\ContentEntityDeleteForm;
 use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 
+define('DRUPAL_CONTENT_SYNC_USER_ID', \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->get('uid'));
 define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
 
 /**
@@ -46,11 +47,6 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
   }
 
   _drupal_content_sync_form_alter_disabled_fields($form, $form_state, $form_id);
-}
-
-function _drupal_content_sync_get_user_email() {
-  // @TODO Make this configurable
-  return 'developer@brightsolutions.de';
 }
 
 function _drupal_content_sync_export_entity(EntityInterface $entity,$reason,$action) {
@@ -95,9 +91,9 @@ function drupal_content_sync_entity_delete(EntityInterface $entity) {
  *
  */
 function drupal_content_sync_user_password_submit(&$form, FormStateInterface $form_state) {
-  $mail = $form_state->getValue('mail');
+  $uid = $form_state->getValue('uid');
 
-  if (_drupal_content_sync_get_user_email() == $mail) {
+  if (DRUPAL_CONTENT_SYNC_USER_ID == $uid) {
     $new_data = [
       'userName' => $form_state->getValue('name'),
       'userPass' => $form_state->getValue('pass'),

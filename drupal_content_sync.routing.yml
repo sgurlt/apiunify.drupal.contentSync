@@ -36,7 +36,7 @@ entity.drupal_content_sync.content:
     _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSynchronizationController::content'
     _title: 'Drupal Content Synchronization'
   requirements:
-    _permission: 'administer content'
+    _permission: 'access drupal content sync content overview'
 
 drupal_content_sync.publish_changes:
   path: '/drupal-content-sync/publish-changes/{sync_id}/{entity_type}/{entity}'
