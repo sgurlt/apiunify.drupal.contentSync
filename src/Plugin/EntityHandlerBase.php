@@ -107,15 +107,19 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   /**
    * Check if the import should be ignored.
    *
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   *   The API Unify Request.
    * @param bool $is_clone
    *   Entity cloned parameter.
    * @param string $reason
    *   The reason why the import should be ignored.
+   * @param string $action
+   *   The action to apply.
    *
    * @return bool
    *   Whether or not to ignore this import request.
    */
-  protected function ignoreImport($is_clone, $reason) {
+  protected function ignoreImport(ApiUnifyRequest $request, $is_clone, $reason, $action) {
     if ($reason == DrupalContentSync::IMPORT_AUTOMATICALLY || $reason == DrupalContentSync::IMPORT_MANUALLY) {
       if ($this->settings[($is_clone ? 'cloned' : 'sync') . '_import'] != $reason) {
         return TRUE;
@@ -272,15 +276,21 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   /**
    * Check if the entity should not be ignored from the export.
    *
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   *   The API Unify Request.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity that could be ignored.
    * @param string $reason
    *   The reason why the entity should be ignored from the export.
+   * @param string $action
+   *   The action to apply.
    *
    * @ToDo: Review.
    *
    * @return bool
    *   Whether or not to ignore this export request.
    */
-  protected function ignoreExport($reason) {
+  protected function ignoreExport(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
     if ($reason == DrupalContentSync::EXPORT_AUTOMATICALLY || $reason == DrupalContentSync::EXPORT_MANUALLY) {
       if ($this->settings['export'] != $reason) {
         return TRUE;
