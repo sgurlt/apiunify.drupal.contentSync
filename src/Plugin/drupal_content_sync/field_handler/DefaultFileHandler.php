@@ -29,7 +29,7 @@ class DefaultFileHandler extends FieldHandlerBase {
   public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
     // Deletion doesn't require any action on field basis for static data
     if( $action==DrupalContentSync::ACTION_DELETE ) {
-      return TRUE;
+      return new SuccessResult();
     }
 
     $data = $request->getField($this->fieldName);
@@ -48,6 +48,8 @@ class DefaultFileHandler extends FieldHandlerBase {
 
       $entity->set($this->fieldName, $file_ids);
     }
+
+    return new SuccessResult();
   }
 
   /**

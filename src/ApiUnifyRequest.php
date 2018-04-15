@@ -3,6 +3,8 @@
 namespace Drupal\drupal_content_sync;
 
 use \Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\SyncResult\ErrorResult;
+use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 
 class ApiUnifyRequest {
   protected $sync;
@@ -13,6 +15,8 @@ class ApiUnifyRequest {
   protected $embedEntities;
   protected $activeLanguage;
   protected $translationFieldValues;
+
+  protected $result;
 
   const ENTITY_TYPE_KEY   = 'type';
   const UUID_KEY          = 'uuid';
@@ -109,7 +113,7 @@ class ApiUnifyRequest {
       return NULL;
     }
 
-    $entity   = \Drupal::entityRepository()->loadEntityByUuid(
+    $entity   = \Drupal::service('entity.repository')->loadEntityByUuid(
       $definition[self::ENTITY_TYPE_KEY],
       $definition[self::UUID_KEY]
     );
@@ -132,6 +136,10 @@ class ApiUnifyRequest {
       return $this->translationFieldValues[$this->activeLanguage][$name];
     }
     return $this->fieldValues[$name];
+  }
+
+  public function getFieldValues() {
+    return $this->fieldValues;
   }
 
   public function setField($name,$value) {
@@ -162,5 +170,35 @@ class ApiUnifyRequest {
   }
   public function setUuid($uuid) {
     $this->uuid = $uuid;
+  }
+
+
+  public function getResult() {
+    return $this->result;
+  }
+  public function setResult($result) {
+    if( $this->result ) {
+      throw new \Exception("The result has already been set.");
+    }
+    $this->result = $result;
+  }
+  public function succeeded() {
+    return $this->result->succeeded();
+  }
+  public function failed() {
+    return $this->result->failed();
+  }
+  public function success($code=self::CODE_SUCCESS) {
+    $this->setResult(
+      new SuccessResult($code)
+    );
+  }
+  public function failure($code,$exception=NULL) {
+    $this->setResult(
+      new ErrorResult(
+        $code,
+        $exception
+      )
+    );
   }
 }

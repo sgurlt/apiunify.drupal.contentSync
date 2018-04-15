@@ -3,10 +3,13 @@
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Utility\Error;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
+use Drupal\drupal_content_sync\SyncResult\ErrorResult;
 use Drupal\drupal_content_sync\SyncResult\SuccessResult;
+use org\bovigo\vfs\vfsStreamWrapperRecordingProxy;
 
 /**
  * Class DefaultEntityHandler, providing a minimalistic implementation for any
@@ -95,12 +98,12 @@ class DefaultFileHandler extends EntityHandlerBase {
       if( $entity ) {
         return $this->deleteEntity($entity,$reason);
       }
-      return TRUE;
+      return new SuccessResult();
     }
 
     $uri  = $request->getField('uri');
     if( !$uri ) {
-      return FALSE;
+      return new ErrorResult(ErrorResult::CODE_INVALID_REQUEST);
     }
     if (!empty($uri[0]['value'])) {
       $uri = $uri[0]['value'];
@@ -108,7 +111,7 @@ class DefaultFileHandler extends EntityHandlerBase {
 
     $content  = $request->getField('apiu_file_content');
     if( !$content ) {
-      return FALSE;
+      return new ErrorResult( ErrorResult::CODE_INVALID_REQUEST );
     }
 
     if( $action==DrupalContentSync::ACTION_CREATE ) {
@@ -124,18 +127,21 @@ class DefaultFileHandler extends EntityHandlerBase {
         $entity->save();
       }
 
-      return TRUE;
+      return new SuccessResult();
     }
     if( $action==DrupalContentSync::ACTION_UPDATE ) {
       $content  = $request->getField('apiu_file_content');
       if( !$content ) {
-        return FALSE;
+        return new ErrorResult( ErrorResult::CODE_INVALID_REQUEST );
       }
 
-      return !!file_save_data(base64_decode($content), $uri,FILE_EXISTS_REPLACE);
+      if( file_save_data(base64_decode($content), $uri,FILE_EXISTS_REPLACE) ) {
+        return new SuccessResult();
+      };
+      return new ErrorResult( ErrorResult::CODE_ENTITY_API_FAILURE );
     }
 
-    return FALSE;
+    return new ErrorResult( ErrorResult::CODE_INVALID_REQUEST );
   }
 
   /**

@@ -95,12 +95,21 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    */
   public function updateEntityTypeDefinition(&$definition);
 
-  public function allowsImport(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action);
+  /**
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request The request
+   *    containing all relevant data and where the result is stored as well.
+   * @param \Drupal\Core\Entity\EntityInterface $entity The entity to import
+   * @param bool $is_clone Whether or not the entity should be clone'd or sync'd
+   * @param string $reason See DrupalContentSync::IMPORT_*
+   * @param string $action See DrupalContentSync::ACTION_*
+   *
+   * @return \Drupal\drupal_content_sync\SyncResult\SyncResult
+   */
   public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action);
 
   /**
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request The request
-   *      object to store all data at that should be exported.
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request The request to
+   *    store all relevant info at.
    * @param \Drupal\Core\Entity\EntityInterface $entity The entity to export
    * @param string $reason See DrupalContentSync::EXPORT_*
    * @param string $action See DrupalContentSync::ACTION_*

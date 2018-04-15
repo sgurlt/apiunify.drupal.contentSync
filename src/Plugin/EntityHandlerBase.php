@@ -5,6 +5,7 @@ namespace Drupal\drupal_content_sync\Plugin;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\SyncResult\ErrorResult;
 use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -33,6 +34,10 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   protected $entityTypeName;
   protected $bundleName;
   protected $settings;
+
+  /**
+   * @var DrupalContentSync
+   */
   protected $sync;
 
   /**
@@ -82,36 +87,31 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   protected function loadEntity($request) {
-    return \Drupal::entityRepository()->loadEntityByUuid($request->getEntityType(), $request->getUuid());
-  }
-
-  public function allowsImport(ApiUnifyRequest $request,$is_clone,$reason,$action) {
-    if( $reason==DrupalContentSync::IMPORT_AUTOMATICALLY || $reason==DrupalContentSync::IMPORT_MANUALLY ) {
-      if( $this->settings[($is_clone ? 'cloned' : 'sync') . '_import']!=$reason ) {
-        return FALSE;
-      }
-    }
-
-    // If any handler is available, we can import this entity
-    // Including for ::EXPORT_AS_DEPENDENCY and ::EXPORT_FORCED
-    return TRUE;
+    return \Drupal::service('entity.repository')->loadEntityByUuid($request->getEntityType(), $request->getUuid());
   }
 
   public function import(ApiUnifyRequest $request,$is_clone,$reason,$action) {
+    if( $reason==DrupalContentSync::IMPORT_AUTOMATICALLY || $reason==DrupalContentSync::IMPORT_MANUALLY ) {
+      if( $this->settings[($is_clone ? 'cloned' : 'sync') . '_import']!=$reason ) {
+        return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
+      }
+    }
+
     $entity = $this->loadEntity($request);
 
     if( $action==DrupalContentSync::ACTION_DELETE ) {
       if( $entity ) {
         return $this->deleteEntity($entity,$reason);
       }
-      return TRUE;
+      return new SuccessResult();
     }
 
     if ($is_clone || !$entity) {
-      $entity_type  = $request->getEntityType();
+      $entity_type  = \Drupal::entityTypeManager()->getDefinition( $request->getEntityType() );
 
       $base_data = [
         $entity_type->getKey('bundle') => $request->getBundle(),
+        $entity_type->getKey('label') => $request->getField('title'),
       ];
 
       if (!$is_clone) {
@@ -122,18 +122,16 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       $entity = $storage->create($base_data);
 
       if (!$entity) {
-        return FALSE;
+        return new ErrorResult(ErrorResult::CODE_ENTITY_API_FAILURE);
       }
     }
 
-    $this->setEntityValues($request, $entity,$is_clone, $request->getFieldValues(), $is_clone,$reason,$action);
-
-    return TRUE;
+    return $this->setEntityValues($request, $entity, $is_clone, $reason,$action);
   }
 
   protected function deleteEntity($entity,$reason) {
     $entity->delete();
-    return TRUE;
+    return new SuccessResult();
   }
 
   /**
@@ -147,17 +145,16 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     $field_definitions = $entityFieldManager->getFieldDefinitions($type, $bundle);
 
     foreach ($field_definitions as $key => $field) {
-      if (empty($config[$type . '-' . $bundle . '-' . $key])) {
+      $handler = $this->sync->getFieldHandler($type, $bundle, $key);
+
+      if( !$handler ) {
         continue;
       }
-
-      if ($config[$type . '-' . $bundle . '-' . $key]['handler'] == DrupalContentSync::HANDLER_IGNORE) {
-        continue;
-      }
-
-      $handler = $this->sync->getFieldHandler();
 
       $status = $handler->import($request,$entity,$is_clone,$reason,$action);
+      if( $status->failed() ) {
+        return $status;
+      }
     }
 
     $entity->save();
@@ -175,6 +172,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     }
 
     $request->changeTranslationLanguage();
+
+    return new SuccessResult();
   }
 
   protected function setSourceUrl(ApiUnifyRequest $request,EntityInterface $entity) {

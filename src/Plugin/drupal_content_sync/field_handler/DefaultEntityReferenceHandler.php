@@ -64,7 +64,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
   public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
     // Deletion doesn't require any action on field basis for static data
     if( $action==DrupalContentSync::ACTION_DELETE ) {
-      return TRUE;
+      return new SuccessResult();
     }
 
     $data = $request->getField($this->fieldName);
@@ -91,6 +91,8 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
 
       $entity->set($this->fieldName, $reference_ids);
     }
+
+    return new SuccessResult();
   }
 
   /**

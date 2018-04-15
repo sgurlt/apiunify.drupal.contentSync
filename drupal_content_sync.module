@@ -173,7 +173,7 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
   $entity = $form_object
     ->getEntity();
 
-  // @TODO Check why this is NULL
+  // @TODO Check why this is NULL in some cases
   if( !$entity ) {
     return;
   }
@@ -184,26 +184,35 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
   //  return;
   //}
 
-  $sync   = DrupalContentSync::getImportSynchronizationForEntityType($entity->getEntityType(), $entity->bundle(),DrupalContentSync::IMPORT_FORCED);
-  if( !$sync ) {
+  // @TODO Save in the meta entity which APIs were used for synchronization
+  // So we can properly restrict access. Currently this will only work
+  // if all APIs apply restrictions or don't apply restrictions.
+  /** @var DrupalContentSync[] $syncs */
+  $syncs    = DrupalContentSync::getImportSynchronizationsForEntityType(NULL,$entity->getEntityType(), $entity->bundle(),DrupalContentSync::IMPORT_FORCED);
+  $restrict = FALSE;
+  foreach( $syncs as $sync ) {
+    $config = $sync->getEntityTypeConfig($entity->getEntityType(), $entity->bundle());
+    if( !empty($config['handler_settings']['restrict_editing']) ) {
+      $restrict = TRUE;
+      break;
+    }
+  }
+
+  if( !$restrict ) {
     return;
   }
 
-  $config = $sync->getEntityTypeConfig($entity->getEntityType(), $entity->bundle());
+  $drupal_content_synched_value = $entity->get('field_drupal_content_synced')->getValue();
+  $field_drupal_content_synce_value = reset($drupal_content_synched_value);
 
-  if( !empty($config['handler_settings']['restrict_editing']) ) {
-    $drupal_content_synched_value = $entity->get('field_drupal_content_synced')->getValue();
-    $field_drupal_content_synce_value = reset($drupal_content_synched_value);
-
-    if (isset($field_drupal_content_synce_value['value']) && '1' === $field_drupal_content_synce_value['value']) {
-      foreach ($form as $key => $form_item) {
-        if (0 === strpos($key, 'field_') || (is_array($form_item) && isset($form_item['#type']) && 'container' === $form_item['#type'])) {
-          $form[$key]['#disabled'] = TRUE;
-        }
+  if (isset($field_drupal_content_synce_value['value']) && '1' === $field_drupal_content_synce_value['value']) {
+    foreach ($form as $key => $form_item) {
+      if (0 === strpos($key, 'field_') || (is_array($form_item) && isset($form_item['#type']) && 'container' === $form_item['#type'])) {
+        $form[$key]['#disabled'] = TRUE;
       }
-
-      drupal_set_message(t('The entity cannot be edited because it has been synced.'), 'warning');
     }
+
+    drupal_set_message(t('The entity cannot be edited because it has been synced.'), 'warning');
   }
 }
 

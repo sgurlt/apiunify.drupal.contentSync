@@ -20,8 +20,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   id = "drupal_content_sync_entity_resource",
  *   label = @Translation("DrupalContentSync Entity Resource"),
  *   uri_paths = {
- *     "canonical" = "/drupal_content_sync_entity_resource/{entity_type}/{entity_bundle}/{entity_uuid}",
- *     "https://www.drupal.org/link-relations/create" = "/drupal_content_sync_entity_resource/{entity_type}/{entity_bundle}"
+ *     "canonical" = "/drupal_content_sync_entity_resource/{api}/{entity_type}/{entity_bundle}/{entity_type_version}/{entity_uuid}",
+ *     "https://www.drupal.org/link-relations/create" = "/drupal_content_sync_entity_resource/{api}/{entity_type}/{entity_bundle}/{entity_type_version}"
  *   }
  * )
  */
@@ -158,7 +158,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @return \Drupal\rest\ResourceResponse
    *   A list of entities of the given type and bundle.
    */
-  public function get($entity_type, $entity_bundle, $entity_uuid) {
+  public function get($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid) {
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
 
     $entity_types_keys = array_keys($entity_types);
@@ -173,7 +173,6 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       if (!empty($entity_uuid)) {
         $query->condition('uuid', $entity_uuid);
       }
-
       if ($entity_type == 'file') {
         $query->condition('status', FILE_STATUS_PERMANENT);
       }
@@ -218,8 +217,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @return Response
    *   A list of entities of the given type and bundle.
    */
-  public function patch($entity_type_name, $entity_bundle, $entity_uuid, $data) {
-    return $this->handleIncomingEntity($entity_type_name, $entity_bundle, $data, DrupalContentSync::ACTION_UPDATE);
+  public function patch($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid, $data) {
+    return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, $data, DrupalContentSync::ACTION_UPDATE);
   }
 
   /**
@@ -237,8 +236,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @return \Drupal\rest\ResourceResponse
    *   A list of entities of the given type and bundle.
    */
-  public function delete($entity_type_name, $entity_bundle, $entity_uuid) {
-    return $this->handleIncomingEntity($entity_type_name, $entity_bundle, NULL, DrupalContentSync::ACTION_DELETE);
+  public function delete($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid) {
+    return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, NULL, DrupalContentSync::ACTION_DELETE);
   }
 
   /**
@@ -256,14 +255,14 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @return Response
    *   A list of entities of the given type and bundle.
    */
-  public function post($entity_type_name, $entity_bundle, $data) {
-    return $this->handleIncomingEntity($entity_type_name, $entity_bundle, $data, DrupalContentSync::ACTION_CREATE);
+  public function post($api, $entity_type, $entity_bundle, $entity_type_version, $data) {
+    return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, $data, DrupalContentSync::ACTION_CREATE);
   }
 
   /**
    * @ToDo: Add description.
    */
-  private function handleIncomingEntity($entity_type_name, $entity_bundle, $data, $action) {
+  private function handleIncomingEntity($api, $entity_type_name, $entity_bundle, $entity_type_version, $data, $action) {
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
 
     if (empty($entity_types[$entity_type_name])) {
@@ -276,7 +275,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     $is_clone       = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
     $reason         = $is_dependency?DrupalContentSync::IMPORT_AS_DEPENDENCY:DrupalContentSync::IMPORT_AUTOMATICALLY;
 
-    $sync = DrupalContentSync::getImportSynchronizationForEntity($entity_type_name, $entity_bundle, $reason, $is_clone);
+    $sync = DrupalContentSync::getImportSynchronizationForApiAndEntityType($api, $entity_type_name, $entity_bundle, $reason, $is_clone);
     if (empty($sync)) {
       return new ResourceResponse(
         ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)], self::CODE_NOT_FOUND

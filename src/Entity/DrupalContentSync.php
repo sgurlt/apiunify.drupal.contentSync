@@ -231,6 +231,10 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       drupal_set_message($e->getMessage(), 'warning');
       return FALSE;
     }
+    catch (\Exception $e) {
+      drupal_set_message($e->getMessage(), 'warning');
+      return FALSE;
+    }
     return TRUE;
   }
 
@@ -292,11 +296,12 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    * @ToDo: Add description.
    */
-  public static function getInternalUrl($entity_type_name, $bundle_name, $version, $entity_uuid = NULL) {
+  public static function getInternalUrl($api_id, $entity_type_name, $bundle_name, $version, $entity_uuid = NULL) {
     global $base_url;
 
-    $url = sprintf('%s/drupal_content_sync_entity_resource/%s/',
+    $url = sprintf('%s/drupal_content_sync_entity_resource/%s/%s/%s/%s',
       $base_url,
+      $api_id,
       $entity_type_name,
       $bundle_name,
       $version
@@ -311,29 +316,29 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    * @ToDo: Add description.
    */
-  public static function getInternalCreateItemUrl($entity_type_name, $bundle_name, $version) {
-    return self::getInternalUrl($entity_type_name, $bundle_name, $version) . '&is_clone=[is_clone]';
+  public static function getInternalCreateItemUrl($api_id, $entity_type_name, $bundle_name, $version) {
+    return self::getInternalUrl($api_id, $entity_type_name, $bundle_name, $version) . '&is_clone=[is_clone]';
   }
 
   /**
    * @ToDo: Add description.
    */
-  public static function getInternalUpdateItemUrl($entity_type_name, $bundle_name, $version) {
-    return self::getInternalUrl($entity_type_name, $bundle_name, $version, '[id]');
+  public static function getInternalUpdateItemUrl($api_id, $entity_type_name, $bundle_name, $version) {
+    return self::getInternalUrl($api_id, $entity_type_name, $bundle_name, $version, '[id]');
   }
 
   /**
    * @ToDo: Add description.
    */
-  public static function getInternalDeleteItemUrl($entity_type_name, $bundle_name, $version) {
-    return self::getInternalUrl($entity_type_name, $bundle_name, $version, '[id]');
+  public static function getInternalDeleteItemUrl($api_id, $entity_type_name, $bundle_name, $version) {
+    return self::getInternalUrl($api_id, $entity_type_name, $bundle_name, $version, '[id]');
   }
 
   /**
    * @ToDo: Add description.
    */
-  public static function getInternalReadListUrl($entity_type_name, $bundle_name, $version) {
-    return self::getInternalUrl($entity_type_name, $bundle_name, $version, self::READ_LIST_ENTITY_ID);
+  public static function getInternalReadListUrl($api_id, $entity_type_name, $bundle_name, $version) {
+    return self::getInternalUrl($api_id, $entity_type_name, $bundle_name, $version, self::READ_LIST_ENTITY_ID);
   }
 
   public static function getExportSynchronizationForEntity($entity,$reason) {
@@ -394,10 +399,27 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     return self::$all=$configurations;
   }
 
-  public static function getImportSynchronizationForEntityType($entity_type_name,$bundle_name,$reason,$is_clone=FALSE) {
+  public static function getImportSynchronizationsForEntityType($entity_type_name,$bundle_name,$reason,$is_clone=FALSE) {
+    $drupal_content_syncs = self::getAll();
+
+    $result = [];
+
+    foreach ($drupal_content_syncs as $sync) {
+      if($sync->importsEntity($entity_type_name,$bundle_name,$reason,$is_clone)) {
+        $result[] = $sync;
+      }
+    }
+
+    return $result;
+  }
+
+  public static function getImportSynchronizationForApiAndEntityType($api,$entity_type_name,$bundle_name,$reason,$is_clone=FALSE) {
     $drupal_content_syncs = self::getAll();
 
     foreach ($drupal_content_syncs as $sync) {
+      if( $api && $sync->api!=$api ) {
+        continue;
+      }
       if($sync->importsEntity($entity_type_name,$bundle_name,$reason,$is_clone)) {
         return $sync;
       }
@@ -462,13 +484,17 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $config   = $this->getEntityTypeConfig($entity_type_name,$entity_bundle);
     $handler  = $this->getEntityTypeHandler($config);
 
-    // Handler chose to deliberately ignore this entity (e.g. a node that
-    // wasn't published yet)
-    if( !$handler->allowsImport($request,$is_clone,$reason,$action) ) {
-      return TRUE;
+    try {
+      $result = $handler->import($request, $is_clone, $reason, $action);
+    }
+    catch(\Exception $e ) {
+      return new ErrorResult(ErrorResult::CODE_UNEXPECTED_EXCEPTION,$e);
     }
 
-    $result   = $handler->import($request,$is_clone,$reason,$action);
+    // Don't save meta entity if entity wasn't imported anyway
+    if( $result->failed() || $result->code==SuccessResult::CODE_HANDLER_IGNORED ) {
+      return $result;
+    }
 
     // @TODO Save meta information
     //if( $result ) {
@@ -677,6 +703,11 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     return $result;
   }
 
+  /**
+   * @param $config
+   *
+   * @return \Drupal\drupal_content_sync\Plugin\EntityHandlerInterface
+   */
   public function getEntityTypeHandler($config) {
     $entityPluginManager = \Drupal::service('plugin.manager.dcs_entity_handler');
 
@@ -693,6 +724,13 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     return $handler;
   }
 
+  /**
+   * @param $entity_type_name
+   * @param $bundle_name
+   * @param $field_name
+   *
+   * @return \Drupal\drupal_content_sync\Plugin\FieldHandlerInterface
+   */
   public function getFieldHandler($entity_type_name,$bundle_name,$field_name) {
     $fieldPluginManager = \Drupal::service('plugin.manager.dcs_field_handler');
 
@@ -960,13 +998,13 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
           $crud_operations = [
             'create_item' => [
-              'url' => self::getInternalCreateItemUrl($entity_type_name, $bundle_name, $version),
+              'url' => self::getInternalCreateItemUrl($api, $entity_type_name, $bundle_name, $version),
             ],
             'update_item' => [
-              'url' => self::getInternalUpdateItemUrl($entity_type_name, $bundle_name, $version),
+              'url' => self::getInternalUpdateItemUrl($api, $entity_type_name, $bundle_name, $version),
             ],
             'delete_item' => [
-              'url' => self::getInternalDeleteItemUrl($entity_type_name, $bundle_name, $version),
+              'url' => self::getInternalDeleteItemUrl($api, $entity_type_name, $bundle_name, $version),
             ],
           ];
           $connection_options = [
@@ -980,7 +1018,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
           ];
 
           if ($type['export'] == self::EXPORT_AUTOMATICALLY) {
-            $crud_operations['read_list']['url'] = self::getInternalReadListUrl($entity_type_name, $bundle_name, $version);
+            $crud_operations['read_list']['url'] = self::getInternalReadListUrl($api, $entity_type_name, $bundle_name, $version);
           }
 
           $local_connection_id = self::getExternalConnectionId($api, $site_id, $entity_type_name, $bundle_name, $version);

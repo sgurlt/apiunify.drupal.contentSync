@@ -53,7 +53,15 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    */
   public function updateEntityTypeDefinition(&$definition);
 
-  public function allowsImport(ApiUnifyRequest $request,$is_clone,$reason,$action);
+  /**
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request The request
+   *    containing all relevant data and where the result is stored as well.
+   * @param bool $is_clone Whether or not the entity should be clone'd or sync'd
+   * @param string $reason See DrupalContentSync::IMPORT_*
+   * @param string $action See DrupalContentSync::ACTION_*
+   *
+   * @return \Drupal\drupal_content_sync\SyncResult\SyncResult
+   */
   public function import(ApiUnifyRequest $request,$is_clone,$reason,$action);
 
   /**
