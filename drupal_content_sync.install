@@ -39,11 +39,13 @@ function drupal_content_sync_install() {
   $user = User::create();
   $user->setUsername($data['userName']);
   $user->setPassword($data['userPass']);
-  $user->setEmail(_drupal_content_sync_get_user_email());
   $user->enforceIsNew();
   $user->activate();
   $user->addRole('drupal_content_sync');
   $user->save();
+
+  // Store UID in key value table.
+  \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->set('uid',$user->id());
 
   $data     = drupal_content_sync_encrypt_values($data);
   $userData = \Drupal::service('user.data');
@@ -66,9 +68,13 @@ function drupal_content_sync_uninstall() {
   $config->getEditable('system.action.user_add_role_action.drupal_content_sync')->delete();
   $config->getEditable('system.action.user_remove_role_action.drupal_content_sync')->delete();
 
-  /** @var \Drupal\user\Entity\User $user */
-  $user = user_load_by_mail(_drupal_content_sync_get_user_email());
-  if ($user) {
+  // Delete Drupal Content Sync User.
+  $content_sync_user_id = \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->get('uid');
+  if (isset($content_sync_user_id )) {
+    $user = User::load($content_sync_user_id );
     $user->delete();
-  }
+  };
+
+  // Delete entry from key value table.
+  \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->delete('uid');
 }
