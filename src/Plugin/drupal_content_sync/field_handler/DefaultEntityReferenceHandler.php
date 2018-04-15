@@ -104,12 +104,12 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       return FALSE;
     }
 
-    $entityFieldManager = Drupal::service('entity_field.manager');
-    $field_definitions  = $entityFieldManager->getFieldDefinitions($entity->getEntityType(), $entity->bundle());
+    $entityFieldManager = \Drupal::service('entity_field.manager');
+    $field_definitions  = $entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
     $field_definition   = $field_definitions[$this->fieldName];
     $entityTypeManager  = \Drupal::entityTypeManager();
 
-    $data   = $entity->get($this->fieldName);
+    $data   = $entity->get($this->fieldName)->getValue();
     $result = [];
 
     foreach ($data as $key => $value) {

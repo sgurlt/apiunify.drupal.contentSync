@@ -79,6 +79,9 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   const ACTION_UPDATE           = 'update';
   const ACTION_DELETE           = 'delete';
 
+  const DEPENDENCY_CONNECTION_ID  = 'drupal-[api.name]-[instance.id]-[entity_type.name_space]-[entity_type.name]-[entity_type.version]';
+  const POOL_DEPENDENCY_CONNECTION_ID  = 'drupal-[api.name]-'.self::POOL_SITE_ID.'-[entity_type.name_space]-[entity_type.name]-[entity_type.version]';
+
   /**
    * The DrupalContentSync ID.
    *
@@ -571,7 +574,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       if (!empty($body['embed_entities'])) {
         foreach ($body['embed_entities'] as $data) {
           try {
-            $embed_entity = $entity_repository->loadEntityByUuid($data['entity_type'], $data['uuid']);
+            $embed_entity = $entity_repository->loadEntityByUuid($data[ApiUnifyRequest::ENTITY_TYPE_KEY], $data[ApiUnifyRequest::UUID_KEY]);
           }
           catch(\Exception $e) {
             throw new SyncException(SyncException::CODE_UNEXPECTED_EXCEPTION,$e);
@@ -581,7 +584,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             continue;
           }
 
-          $this->exportEntity($embed_entity,$reason,$action==self::ACTION_UPDATE);
+          $this->exportEntity($embed_entity,self::EXPORT_AS_DEPENDENCY,self::ACTION_CREATE);
         }
       }
     }
@@ -768,314 +771,312 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       $bundle_name      = $type['bundle_name'];
       $version          = $type['version'];
 
-      if ($type['handler'] != self::HANDLER_IGNORE) {
-        $handler = $this->getEntityTypeHandler($type);
+      if ($type['handler'] == self::HANDLER_IGNORE) {
+        continue;
+      }
+      $handler = $this->getEntityTypeHandler($type);
 
-        $entityFieldManager = \Drupal::service('entity_field.manager');
-        /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
-        $fields = $entityFieldManager->getFieldDefinitions($entity_type_name, $bundle_name);
+      $entityFieldManager = \Drupal::service('entity_field.manager');
+      /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
+      $fields = $entityFieldManager->getFieldDefinitions($entity_type_name, $bundle_name);
 
-        $entity_type_id = self::getExternalEntityTypeId($api, $entity_type_name, $bundle_name, $version);
-        $entity_type = [
-          'id' => $entity_type_id,
-          'name_space' => $entity_type_name,
-          'name' => $bundle_name,
-          'version' => $version,
-          'base_class' => "api-unify/services/drupal/v0.1/models/base.model",
-          'custom' => TRUE,
-          'new_properties' => [
-            'source' => [
-              'type' => 'reference',
-              'default_value' => NULL,
-              'connection_identifiers' => [
-                [
-                  'properties' => [
-                    'id' => 'source_connection_id',
-                  ],
+      $entity_type_id = self::getExternalEntityTypeId($api, $entity_type_name, $bundle_name, $version);
+      $entity_type = [
+        'id' => $entity_type_id,
+        'name_space' => $entity_type_name,
+        'name' => $bundle_name,
+        'version' => $version,
+        'base_class' => "api-unify/services/drupal/v0.1/models/base.model",
+        'custom' => TRUE,
+        'new_properties' => [
+          'source' => [
+            'type' => 'reference',
+            'default_value' => NULL,
+            'connection_identifiers' => [
+              [
+                'properties' => [
+                  'id' => 'source_connection_id',
                 ],
               ],
-              'model_identifiers' => [
-                [
-                  'properties' => [
-                    'id' => 'source_id',
-                  ],
+            ],
+            'model_identifiers' => [
+              [
+                'properties' => [
+                  'id' => 'source_id',
                 ],
               ],
-              'multiple' => FALSE,
             ],
-            'source_id' => [
-              'type' => 'id',
-              'default_value' => NULL,
-            ],
-            'source_connection_id' => [
-              'type' => 'id',
-              'default_value' => NULL,
-            ],
-            'preview' => [
-              'type' => 'string',
-              'default_value' => NULL,
-            ],
-            'url' => [
-              'type' => 'string',
-              'default_value' => NULL,
-            ],
-            'apiu_translation' => [
-              'type' => 'object',
-              'default_value' => NULL,
-            ],
-            'metadata' => [
-              'type' => 'object',
-              'default_value' => NULL,
-            ],
-            'embed_entities' => [
-              'type' => 'object',
-              'default_value' => NULL,
-              'multiple' => TRUE,
-            ],
-            'title' => [
-              'type' => 'string',
-              'default_value' => NULL,
-            ],
-            'created' => [
-              'type' => 'int',
-              'default_value' => NULL,
-            ],
-            'changed' => [
-              'type' => 'int',
-              'default_value' => NULL,
-            ],
-            'uuid' => [
-              'type' => 'string',
-              'default_value' => NULL,
-            ],
+            'multiple' => FALSE,
           ],
-          'new_property_lists' => [
-            'list' => [
-              '_resource_url' => 'value',
-              '_resource_connection_id' => 'value',
-              'id' => 'value',
-            ],
-            'reference' => [
-              '_resource_url' => 'value',
-              '_resource_connection_id' => 'value',
-              'id' => 'value',
-            ],
-            'details' => [
-              '_resource_url' => 'value',
-              '_resource_connection_id' => 'value',
-              'id' => 'value',
-              'source' => 'reference',
-              'apiu_translation' => 'value',
-              'metadata' => 'value',
-              'embed_entities' => 'value',
-              'title' => 'value',
-              'created' => 'value',
-              'changed' => 'value',
-              'uuid' => 'value',
-            ],
-            'database' => [
-              'id' => 'value',
-              'source_id' => 'value',
-              'source_connection_id' => 'value',
-              'preview' => 'value',
-              'url' => 'value',
-              'apiu_translation' => 'value',
-              'metadata' => 'value',
-              'embed_entities' => 'value',
-              'title' => 'value',
-              'created' => 'value',
-              'changed' => 'value',
-              'uuid' => 'value',
-            ],
-            'modifiable' => [
-              'title' => 'value',
-              'preview' => 'value',
-              'url' => 'value',
-              'apiu_translation' => 'value',
-              'metadata' => 'value',
-              'embed_entities' => 'value',
-            ],
-            'required' => [
-              'uuid' => 'value',
-            ],
+          'source_id' => [
+            'type' => 'id',
+            'default_value' => NULL,
           ],
-          'api_id' => $this->{'api'} . '-'.self::CUSTOM_API_VERSION,
-        ];
-
-        $handler->updateEntityTypeDefinition($entity_type);
-
-        foreach ($fields as $key => $field) {
-          if (!isset($entity_types[$id . '-' . $key]) || $entity_types[$id . '-' . $key]['handler'] == self::HANDLER_IGNORE) {
-            continue;
-          }
-
-          $field_handler = $this->getFieldHandler($entity_type_name,$bundle_name,$key);
-
-          $entity_type['new_properties'][$key] = [
+          'source_connection_id' => [
+            'type' => 'id',
+            'default_value' => NULL,
+          ],
+          'preview' => [
+            'type' => 'string',
+            'default_value' => NULL,
+          ],
+          'url' => [
+            'type' => 'string',
+            'default_value' => NULL,
+          ],
+          'apiu_translation' => [
+            'type' => 'object',
+            'default_value' => NULL,
+          ],
+          'metadata' => [
+            'type' => 'object',
+            'default_value' => NULL,
+          ],
+          'embed_entities' => [
             'type' => 'object',
             'default_value' => NULL,
             'multiple' => TRUE,
-          ];
+          ],
+          'title' => [
+            'type' => 'string',
+            'default_value' => NULL,
+          ],
+          'created' => [
+            'type' => 'int',
+            'default_value' => NULL,
+          ],
+          'changed' => [
+            'type' => 'int',
+            'default_value' => NULL,
+          ],
+          'uuid' => [
+            'type' => 'string',
+            'default_value' => NULL,
+          ],
+        ],
+        'new_property_lists' => [
+          'list' => [
+            '_resource_url' => 'value',
+            '_resource_connection_id' => 'value',
+            'id' => 'value',
+          ],
+          'reference' => [
+            '_resource_url' => 'value',
+            '_resource_connection_id' => 'value',
+            'id' => 'value',
+          ],
+          'details' => [
+            '_resource_url' => 'value',
+            '_resource_connection_id' => 'value',
+            'id' => 'value',
+            'source' => 'reference',
+            'apiu_translation' => 'value',
+            'metadata' => 'value',
+            'embed_entities' => 'value',
+            'title' => 'value',
+            'created' => 'value',
+            'changed' => 'value',
+            'uuid' => 'value',
+          ],
+          'database' => [
+            'id' => 'value',
+            'source_id' => 'value',
+            'source_connection_id' => 'value',
+            'preview' => 'value',
+            'url' => 'value',
+            'apiu_translation' => 'value',
+            'metadata' => 'value',
+            'embed_entities' => 'value',
+            'title' => 'value',
+            'created' => 'value',
+            'changed' => 'value',
+            'uuid' => 'value',
+          ],
+          'modifiable' => [
+            'title' => 'value',
+            'preview' => 'value',
+            'url' => 'value',
+            'apiu_translation' => 'value',
+            'metadata' => 'value',
+            'embed_entities' => 'value',
+          ],
+          'required' => [
+            'uuid' => 'value',
+          ],
+        ],
+        'api_id' => $this->{'api'} . '-'.self::CUSTOM_API_VERSION,
+      ];
 
-          $field_handler->updateEntityTypeDefinition($entity_type);
+      $handler->updateEntityTypeDefinition($entity_type);
+
+      foreach ($fields as $key => $field) {
+        if (!isset($entity_types[$id . '-' . $key]) || $entity_types[$id . '-' . $key]['handler'] == self::HANDLER_IGNORE) {
+          continue;
         }
 
-        try {
-          $this->prepareDataCleaning($url);
+        $field_handler = $this->getFieldHandler($entity_type_name,$bundle_name,$key);
 
-          // Create the entity type.
-          $this->sendEntityRequest($url . '/api_unify-api_unify-entity_type-0_1', [
-            'json' => $entity_type,
-          ]);
+        $entity_type['new_properties'][$key] = [
+          'type' => 'object',
+          'default_value' => NULL,
+          'multiple' => TRUE,
+        ];
 
-          $pool_connection_id = self::getExternalConnectionId($api, self::POOL_SITE_ID, $entity_type_name, $bundle_name, $version);
-          // Create the pool connection entity for this entity type.
-          $this->sendEntityRequest($url . '/api_unify-api_unify-connection-0_1', [
-            'json' => [
-              'id' => $pool_connection_id,
-              'name' => 'Drupal pool connection for ' . $entity_type_name . '-' . $bundle_name . '-' . $version,
-              'hash' => self::getExternalConnectionPath($api, self::POOL_SITE_ID, $entity_type_name, $bundle_name, $version),
-              'usage' => 'EXTERNAL',
-              'status' => 'READY',
-              'entity_type_id' => $entity_type_id,
-            ],
-          ]);
+        $field_handler->updateEntityTypeDefinition($entity_type);
+      }
 
-          // Create a synchronization from the pool to the preview connection.
-          $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
-            'json' => [
-              'id' => $pool_connection_id . '--to--preview',
-              'name' => 'Synchronization Pool ' . $entity_type_name . '-' . $bundle_name . ' -> Preview',
-              'options' => [
-                'create_entities' => TRUE,
-                'update_entities' => TRUE,
-                'delete_entities' => TRUE,
-                'clone_entities' => FALSE,
-                'update_none_when_loading' => TRUE,
-                'exclude_reference_properties' => [
-                  'pSource',
-                ],
+      try {
+        $this->prepareDataCleaning($url);
+
+        // Create the entity type.
+        $this->sendEntityRequest($url . '/api_unify-api_unify-entity_type-0_1', [
+          'json' => $entity_type,
+        ]);
+
+        $pool_connection_id = self::getExternalConnectionId($api, self::POOL_SITE_ID, $entity_type_name, $bundle_name, $version);
+        // Create the pool connection entity for this entity type.
+        $this->sendEntityRequest($url . '/api_unify-api_unify-connection-0_1', [
+          'json' => [
+            'id' => $pool_connection_id,
+            'name' => 'Drupal pool connection for ' . $entity_type_name . '-' . $bundle_name . '-' . $version,
+            'hash' => self::getExternalConnectionPath($api, self::POOL_SITE_ID, $entity_type_name, $bundle_name, $version),
+            'usage' => 'EXTERNAL',
+            'status' => 'READY',
+            'entity_type_id' => $entity_type_id,
+          ],
+        ]);
+
+        // Create a synchronization from the pool to the preview connection.
+        $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
+          'json' => [
+            'id' => $pool_connection_id . '--to--preview',
+            'name' => 'Synchronization Pool ' . $entity_type_name . '-' . $bundle_name . ' -> Preview',
+            'options' => [
+              'create_entities' => TRUE,
+              'update_entities' => TRUE,
+              'delete_entities' => TRUE,
+              'clone_entities' => FALSE,
+              'update_none_when_loading' => TRUE,
+              'exclude_reference_properties' => [
+                'pSource',
               ],
-              'status' => 'READY',
-              'source_connection_id' => $pool_connection_id,
-              'destination_connection_id' => self::PREVIEW_CONNECTION_ID,
             ],
-          ]);
+            'status' => 'READY',
+            'source_connection_id' => $pool_connection_id,
+            'destination_connection_id' => self::PREVIEW_CONNECTION_ID,
+          ],
+        ]);
 
-          $user = user_load_by_mail(_drupal_content_sync_get_user_email());
+        $user = user_load_by_mail(_drupal_content_sync_get_user_email());
 
-          if (!$user) {
-            throw new \Exception(
-              t("No user found with email: @email. Encrypted data can't be saved",
-                ['@email' => _drupal_content_sync_get_user_email()])
-            );
-          }
-
-          $userData = \Drupal::service('user.data');
-          $data     = $userData->get('drupal_content_sync', $user->id(), 'sync_data');
-
-          if (!$data) {
-            throw new \Exception(t("No credentials for sync user found."));
-          }
-
-          $encryption_profile = EncryptionProfile::load(DRUPAL_CONTENT_SYNC_PROFILE_NAME);
-
-          foreach ($data as $key => $value) {
-            $data[$key] = \Drupal::service('encryption')
-              ->decrypt($value, $encryption_profile);
-          }
-
-          $crud_operations = [
-            'create_item' => [
-              'url' => self::getInternalCreateItemUrl($api, $entity_type_name, $bundle_name, $version),
-            ],
-            'update_item' => [
-              'url' => self::getInternalUpdateItemUrl($api, $entity_type_name, $bundle_name, $version),
-            ],
-            'delete_item' => [
-              'url' => self::getInternalDeleteItemUrl($api, $entity_type_name, $bundle_name, $version),
-            ],
-          ];
-          $connection_options = [
-            'authentication' => [
-              'type' => 'drupal8_services',
-              'username' => $data['userName'],
-              'password' => $data['userPass'],
-              'base_url' => $base_url,
-            ],
-            'crud' => &$crud_operations,
-          ];
-
-          if ($type['export'] == self::EXPORT_AUTOMATICALLY) {
-            $crud_operations['read_list']['url'] = self::getInternalReadListUrl($api, $entity_type_name, $bundle_name, $version);
-          }
-
-          $local_connection_id = self::getExternalConnectionId($api, $site_id, $entity_type_name, $bundle_name, $version);
-          // Create the instance connection entity for this entity type.
-          $this->sendEntityRequest($url . '/api_unify-api_unify-connection-0_1', [
-            'json' => [
-              'id' => $local_connection_id,
-              'name' => 'Drupal connection on ' . $site_id . ' for ' . $entity_type_name . '-' . $bundle_name . '-' . $version,
-              'hash' => self::getExternalConnectionPath($api, $site_id, $entity_type_name, $bundle_name, $version),
-              'usage' => 'EXTERNAL',
-              'status' => 'READY',
-              'entity_type_id' => $entity_type_id,
-              'instance_id' => $site_id,
-              'options' => $connection_options,
-            ],
-          ]);
-          $localConnections[] = $local_connection_id;
-
-          // Create a synchronization from the pool to the local connection.
-          $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
-            'json' => [
-              'id' => $local_connection_id . '--to--drupal',
-              'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from Pool -> ' . $site_id,
-              'options' => [
-                'create_entities' => $type['sync_import'] == 'automatically' || $type['cloned_import'] == 'automatically',
-                'update_entities' => TRUE,
-                'delete_entities' => boolval($type['delete_entity']),
-                'clone_entities' => $type['cloned_import'] == 'automatically',
-                'update_none_when_loading' => TRUE,
-                'exclude_reference_properties' => [
-                  'pSource',
-                ],
-              ],
-              'status' => 'READY',
-              'source_connection_id' => $pool_connection_id,
-              'destination_connection_id' => $local_connection_id,
-            ],
-          ]);
-
-          if ($type['export'] != self::EXPORT_DISABLED) {
-            $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
-              'json' => [
-                'id' => $local_connection_id . '--to--pool',
-                'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from ' . $site_id . ' -> Pool',
-                'options' => [
-                  'create_entities' => TRUE,
-                  'update_entities' => TRUE,
-                  'delete_entities' => TRUE,
-                  'clone_entities' => FALSE,
-                  'update_none_when_loading' => TRUE,
-                  'exclude_reference_properties' => [
-                    'pSource',
-                  ],
-                ],
-                'status' => 'READY',
-                'source_connection_id' => $local_connection_id,
-                'destination_connection_id' => $pool_connection_id,
-              ],
-            ]);
-          }
-
-          break;
-
+        if (!$user) {
+          throw new \Exception(
+            t("No user found with email: @email. Encrypted data can't be saved",
+              ['@email' => _drupal_content_sync_get_user_email()])
+          );
         }
-        catch (RequestException $e) {
-          drupal_set_message($e->getMessage(), 'error');
-          return;
+
+        $userData = \Drupal::service('user.data');
+        $data     = $userData->get('drupal_content_sync', $user->id(), 'sync_data');
+
+        if (!$data) {
+          throw new \Exception(t("No credentials for sync user found."));
         }
+
+        $encryption_profile = EncryptionProfile::load(DRUPAL_CONTENT_SYNC_PROFILE_NAME);
+
+        foreach ($data as $key => $value) {
+          $data[$key] = \Drupal::service('encryption')
+            ->decrypt($value, $encryption_profile);
+        }
+
+        $crud_operations = [
+          'create_item' => [
+            'url' => self::getInternalCreateItemUrl($api, $entity_type_name, $bundle_name, $version),
+          ],
+          'update_item' => [
+            'url' => self::getInternalUpdateItemUrl($api, $entity_type_name, $bundle_name, $version),
+          ],
+          'delete_item' => [
+            'url' => self::getInternalDeleteItemUrl($api, $entity_type_name, $bundle_name, $version),
+          ],
+        ];
+        $connection_options = [
+          'authentication' => [
+            'type' => 'drupal8_services',
+            'username' => $data['userName'],
+            'password' => $data['userPass'],
+            'base_url' => $base_url,
+          ],
+          'crud' => &$crud_operations,
+        ];
+
+        if ($type['export'] == self::EXPORT_AUTOMATICALLY) {
+          $crud_operations['read_list']['url'] = self::getInternalReadListUrl($api, $entity_type_name, $bundle_name, $version);
+        }
+
+        $local_connection_id = self::getExternalConnectionId($api, $site_id, $entity_type_name, $bundle_name, $version);
+        // Create the instance connection entity for this entity type.
+        $this->sendEntityRequest($url . '/api_unify-api_unify-connection-0_1', [
+          'json' => [
+            'id' => $local_connection_id,
+            'name' => 'Drupal connection on ' . $site_id . ' for ' . $entity_type_name . '-' . $bundle_name . '-' . $version,
+            'hash' => self::getExternalConnectionPath($api, $site_id, $entity_type_name, $bundle_name, $version),
+            'usage' => 'EXTERNAL',
+            'status' => 'READY',
+            'entity_type_id' => $entity_type_id,
+            'instance_id' => $site_id,
+            'options' => $connection_options,
+          ],
+        ]);
+        $localConnections[] = $local_connection_id;
+
+        // Create a synchronization from the pool to the local connection.
+        $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
+          'json' => [
+            'id' => $local_connection_id . '--to--drupal',
+            'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from Pool -> ' . $site_id,
+            'options' => [
+              'dependency_connection_id'  => self::DEPENDENCY_CONNECTION_ID,
+              'create_entities' => $type['sync_import'] == 'automatically' || $type['cloned_import'] == 'automatically',
+              'update_entities' => TRUE,
+              'delete_entities' => boolval($type['delete_entity']),
+              'clone_entities' => $type['cloned_import'] == 'automatically',
+              'update_none_when_loading' => TRUE,
+              'exclude_reference_properties' => [
+                'pSource',
+              ],
+            ],
+            'status' => 'READY',
+            'source_connection_id' => $pool_connection_id,
+            'destination_connection_id' => $local_connection_id,
+          ],
+        ]);
+
+        $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
+          'json' => [
+            'id' => $local_connection_id . '--to--pool',
+            'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from ' . $site_id . ' -> Pool',
+            'options' => [
+              'dependency_connection_id'  => self::POOL_DEPENDENCY_CONNECTION_ID,
+              'create_entities' => TRUE,
+              'update_entities' => TRUE,
+              'delete_entities' => TRUE,
+              'clone_entities' => FALSE,
+              'update_none_when_loading' => TRUE,
+              'exclude_reference_properties' => [
+                'pSource',
+              ],
+            ],
+            'status' => 'READY',
+            'source_connection_id' => $local_connection_id,
+            'destination_connection_id' => $pool_connection_id,
+          ],
+        ]);
+      }
+      catch (RequestException $e) {
+        drupal_set_message($e->getMessage(), 'error');
+        return;
       }
     }
     $this->cleanUnifyData();
@@ -1089,31 +1090,23 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @return bool
    */
   protected function sendEntityRequest($url, $arguments) {
-    $result = FALSE;
+    $entityId = $arguments['json']['id'];
+    $method   = $this->checkEntityExists($url, $entityId) ? 'patch' : 'post';
 
-    if (!empty($arguments['json']['id'])) {
-      $entityId = $arguments['json']['id'];
-      $method   = $this->checkEntityExists($url, $entityId) ? 'patch' : 'post';
-
-      if ('patch' == $method) {
-        $url .= '/' . $arguments['json']['id'];
-      }
-
-      $url .= (strpos($url, '?') === FALSE ? '?' : '&') . 'async=yes';
-
-      try {
-        $this->client->{$method}($url, $arguments);
-        $result = TRUE;
-      }
-      catch (RequestException $e) {
-        drupal_set_message($e->getMessage(), 'error');
-      }
-    }
-    else {
-      drupal_set_message("Entity doesn't have id. Please check.");
+    if ('patch' == $method) {
+      $url .= '/' . $arguments['json']['id'];
     }
 
-    return $result;
+    //$url .= (strpos($url, '?') === FALSE ? '?' : '&') . 'async=yes';
+
+    try {
+      $this->client->{$method}($url, $arguments);
+      return TRUE;
+    }
+    catch (RequestException $e) {
+      drupal_set_message($e->getMessage(), 'error');
+      return FALSE;
+    }
   }
 
   /**

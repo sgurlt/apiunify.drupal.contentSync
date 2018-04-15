@@ -6,6 +6,11 @@ use \Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\SyncResult\ErrorResult;
 use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 
+/**
+ * Class ApiUnifyRequest
+ *
+ * @TODO Add logger interface and log warnings / exceptions with it
+ */
 class ApiUnifyRequest {
   protected $sync;
   protected $entityType;
@@ -18,11 +23,13 @@ class ApiUnifyRequest {
 
   protected $result;
 
-  const ENTITY_TYPE_KEY   = 'type';
-  const UUID_KEY          = 'uuid';
-  const BUNDLE_KEY        = 'bundle';
-  const VERSION_KEY       = 'version';
-  const CONNECTION_ID_KEY = 'connection_id';
+  const ENTITY_TYPE_KEY           = 'type';
+  const API_KEY                   = 'api';
+  const UUID_KEY                  = 'uuid';
+  const BUNDLE_KEY                = 'bundle';
+  const VERSION_KEY               = 'version';
+  const SOURCE_CONNECTION_ID_KEY  = 'connection_id';
+  const POOL_CONNECTION_ID_KEY    = 'next_connection_id';
 
   public function __construct($sync,$entity_type,$bundle,$data=NULL) {
     $this->sync           = $sync;
@@ -72,13 +79,21 @@ class ApiUnifyRequest {
     $version  = DrupalContentSync::getEntityTypeVersion($entity_type,$bundle);
 
     return array_merge([
+      self::API_KEY           => $this->sync->api,
       self::ENTITY_TYPE_KEY   => $entity_type,
       self::UUID_KEY          => $uuid,
       self::BUNDLE_KEY        => $bundle,
       self::VERSION_KEY       => $version,
-      self::CONNECTION_ID_KEY => DrupalContentSync::getExternalConnectionId(
+      self::SOURCE_CONNECTION_ID_KEY => DrupalContentSync::getExternalConnectionId(
         $this->sync->api,
         $this->sync->site_id,
+        $entity_type,
+        $bundle,
+        $version
+      ),
+      self::POOL_CONNECTION_ID_KEY => DrupalContentSync::getExternalConnectionId(
+        $this->sync->api,
+        DrupalContentSync::POOL_SITE_ID,
         $entity_type,
         $bundle,
         $version
@@ -96,7 +111,7 @@ class ApiUnifyRequest {
     // @TODO For menu items, use $entity_type=$bundle=$menu_item->getBaseId() and $menu_uuid = $menu_item->getDerivativeId();
 
     return $this->embedEntityDefinition(
-      $entity->getEntityType(),
+      $entity->getEntityTypeId(),
       $entity->bundle(),
       $entity->uuid(),
       $details
@@ -126,7 +141,6 @@ class ApiUnifyRequest {
       'embed_entities'    => $this->embedEntities,
       'uuid'              => $this->uuid,
       'id'                => $this->uuid,
-      'bundle'            => $this->bundle,
       'apiu_translation'  => $this->translationFieldValues,
     ] );
   }
@@ -170,35 +184,5 @@ class ApiUnifyRequest {
   }
   public function setUuid($uuid) {
     $this->uuid = $uuid;
-  }
-
-
-  public function getResult() {
-    return $this->result;
-  }
-  public function setResult($result) {
-    if( $this->result ) {
-      throw new \Exception("The result has already been set.");
-    }
-    $this->result = $result;
-  }
-  public function succeeded() {
-    return $this->result->succeeded();
-  }
-  public function failed() {
-    return $this->result->failed();
-  }
-  public function success($code=self::CODE_SUCCESS) {
-    $this->setResult(
-      new SuccessResult($code)
-    );
-  }
-  public function failure($code,$exception=NULL) {
-    $this->setResult(
-      new ErrorResult(
-        $code,
-        $exception
-      )
-    );
   }
 }
