@@ -2,6 +2,9 @@
 
 namespace Drupal\drupal_content_sync\Exception;
 
+/**
+ *
+ */
 class SyncException extends \Exception {
   public $errorCode;
   public $parentException;
@@ -11,10 +14,14 @@ class SyncException extends \Exception {
   const CODE_EXPORT_REQUEST_FAILED  = 'EXPORT_REQUEST_FAILED';
   const CODE_INVALID_IMPORT_REQUEST = 'INVALID_REQUEST';
 
-  public function __construct($errorCode,$parentException=NULL) {
+  /**
+   *
+   */
+  public function __construct($errorCode, $parentException = NULL) {
     parent::__construct($errorCode);
 
-    $this->errorCode        = $errorCode;
-    $this->parentException  = $parentException;
+    $this->errorCode       = $errorCode;
+    $this->parentException = $parentException;
   }
+
 }

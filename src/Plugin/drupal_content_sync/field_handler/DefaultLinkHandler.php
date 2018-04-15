@@ -9,8 +9,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 
 /**
- * Class DefaultFieldHandler, providing a minimalistic implementation for any
- * field type.
+ * Providing a minimalistic implementation for any field type.
  *
  * @FieldHandler(
  *   id = "drupal_content_sync_default_link_handler",
@@ -94,7 +93,6 @@ class DefaultLinkHandler extends FieldHandlerBase {
       }
       else {
         // @TODO Add option "auto export / import" just as reference fields do
-
         $link_entity_type = $found[1];
         $link_entity_id   = $found[2];
         $entity_manager   = \Drupal::entityTypeManager();

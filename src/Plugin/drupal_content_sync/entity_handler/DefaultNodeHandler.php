@@ -6,7 +6,6 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
-use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 
 /**
  * Class DefaultEntityHandler, providing a minimalistic implementation for any
@@ -108,23 +107,23 @@ class DefaultNodeHandler extends EntityHandlerBase {
   /**
    * @inheritdoc
    */
-  public function ignoreImport(ApiUnifyRequest $request,$is_clone,$reason,$action) {
-    if( empty($request->getField('status')) && $this->settings['handler_settings'][($is_clone ? 'cloned' : 'sync').'_import_published_only'] ) {
+  public function ignoreImport(ApiUnifyRequest $request, $is_clone, $reason, $action) {
+    if (empty($request->getField('status')) && $this->settings['handler_settings'][($is_clone ? 'cloned' : 'sync') . '_import_published_only']) {
       return TRUE;
     }
 
-    return parent::ignoreImport($request,$is_clone,$reason,$action);
+    return parent::ignoreImport($request, $is_clone, $reason, $action);
   }
 
   /**
    * @inheritdoc
    */
-  public function ignoreExport(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
-    if( !$entity->isPublished() && $this->settings['handler_settings']['export_published_only'] ) {
+  public function ignoreExport(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+    if (!$entity->isPublished() && $this->settings['handler_settings']['export_published_only']) {
       return TRUE;
     }
 
-    return parent::ignoreExport($request,$entity,$request,$action);
+    return parent::ignoreExport($request, $entity, $request, $action);
   }
 
 }

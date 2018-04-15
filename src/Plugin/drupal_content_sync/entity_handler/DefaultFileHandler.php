@@ -3,14 +3,10 @@
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Utility\Error;
 use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
-use Drupal\drupal_content_sync\SyncResult\ErrorResult;
-use Drupal\drupal_content_sync\SyncResult\SuccessResult;
-use org\bovigo\vfs\vfsStreamWrapperRecordingProxy;
 
 /**
  * Class DefaultEntityHandler, providing a minimalistic implementation for any
@@ -95,37 +91,37 @@ class DefaultFileHandler extends EntityHandlerBase {
   /**
    * @inheritdoc
    */
-  public function import(ApiUnifyRequest $request,$is_clone,$reason,$action) {
+  public function import(ApiUnifyRequest $request, $is_clone, $reason, $action) {
     $entity = $this->loadEntity($request);
 
-    if( $action==DrupalContentSync::ACTION_DELETE ) {
-      if( $entity ) {
-        return $this->deleteEntity($entity,$reason);
+    if ($action == DrupalContentSync::ACTION_DELETE) {
+      if ($entity) {
+        return $this->deleteEntity($entity, $reason);
       }
       return FALSE;
     }
 
-    $uri  = $request->getField('uri');
-    if( !$uri ) {
-      throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST );
+    $uri = $request->getField('uri');
+    if (!$uri) {
+      throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST);
     }
     if (!empty($uri[0]['value'])) {
       $uri = $uri[0]['value'];
     }
 
-    $content  = $request->getField('apiu_file_content');
-    if( !$content ) {
-      throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST );
+    $content = $request->getField('apiu_file_content');
+    if (!$content) {
+      throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST);
     }
 
-    if( $action==DrupalContentSync::ACTION_CREATE ) {
+    if ($action == DrupalContentSync::ACTION_CREATE) {
       $directory = \Drupal::service('file_system')->dirname($uri);
       $was_prepared = file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
 
       if ($was_prepared) {
         $entity = file_save_data(base64_decode($content), $uri);
         $entity->setPermanent();
-        if( !$is_clone ) {
+        if (!$is_clone) {
           $entity->set('uuid', $request->getUuid());
         }
         $entity->save();
@@ -133,42 +129,41 @@ class DefaultFileHandler extends EntityHandlerBase {
 
       return TRUE;
     }
-    if( $action==DrupalContentSync::ACTION_UPDATE ) {
-      $content  = $request->getField('apiu_file_content');
-      if( !$content ) {
-        throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST );
+    if ($action == DrupalContentSync::ACTION_UPDATE) {
+      $content = $request->getField('apiu_file_content');
+      if (!$content) {
+        throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST);
       }
 
-      if( file_save_data(base64_decode($content), $uri,FILE_EXISTS_REPLACE) ) {
+      if (file_save_data(base64_decode($content), $uri, FILE_EXISTS_REPLACE)) {
         return TRUE;
       };
-      throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE );
+      throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE);
     }
 
-    throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST );
+    throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST);
   }
 
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
-    if( !parent::export($request,$entity,$request,$action) ) {
+  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+    if (!parent::export($request, $entity, $request, $action)) {
       return FALSE;
     }
 
-    // Base Info
+    // Base Info.
     $uri = $entity->getFileUri();
-    $request->setField('apiu_file_content', base64_encode( file_get_contents($uri)) );
-    $request->setField('uri', $uri );
-    $request->setField('title', $entity->getFilename() );
+    $request->setField('apiu_file_content', base64_encode(file_get_contents($uri)));
+    $request->setField('uri', $uri);
+    $request->setField('title', $entity->getFilename());
 
-    // Preview
-    $request->setField('preview', '<img style="max-height: 200px" src="' . file_create_url($uri) . '"/>' );
+    // Preview.
+    $request->setField('preview', '<img style="max-height: 200px" src="' . file_create_url($uri) . '"/>');
 
-    // No Translations, No Menu items compared to EntityHandlerBase
-
-    // Source URL
-    $this->setSourceUrl($request,$entity);
+    // No Translations, No Menu items compared to EntityHandlerBase.
+    // Source URL.
+    $this->setSourceUrl($request, $entity);
 
     return TRUE;
   }

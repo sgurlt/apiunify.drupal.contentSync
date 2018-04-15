@@ -17,7 +17,10 @@ use Drupal\Core\Plugin\DefaultPluginManager;
 class FieldHandlerPluginManager extends DefaultPluginManager {
 
   /**
-   * Constructs a new \Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager object.
+   * Constructor.
+   *
+   * Constructs a new
+   * \Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager object.
    *
    * @param \Traversable $namespaces
    *   An object that implements \Traversable which contains the root paths

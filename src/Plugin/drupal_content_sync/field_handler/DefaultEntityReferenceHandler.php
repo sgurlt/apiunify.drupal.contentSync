@@ -6,11 +6,9 @@ use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 
 /**
- * Class DefaultFieldHandler, providing a minimalistic implementation for any
- * field type.
+ * Providing a minimalistic implementation for any field type.
  *
  * @FieldHandler(
  *   id = "drupal_content_sync_default_entity_reference_handler",
@@ -61,16 +59,19 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     ];
   }
 
-  public function import(ApiUnifyRequest $request,EntityInterface $entity,$is_clone,$reason,$action) {
-    // Deletion doesn't require any action on field basis for static data
-    if( $action==DrupalContentSync::ACTION_DELETE ) {
+  /**
+   *
+   */
+  public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
+    // Deletion doesn't require any action on field basis for static data.
+    if ($action == DrupalContentSync::ACTION_DELETE) {
       return FALSE;
     }
 
     $data = $request->getField($this->fieldName);
 
-    if( empty($data) ) {
-      $entity->set($this->fieldName,NULL);
+    if (empty($data)) {
+      $entity->set($this->fieldName, NULL);
     }
     else {
       $reference_ids = [];
@@ -98,9 +99,9 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
-    // Deletion doesn't require any action on field basis for static data
-    if( $action==DrupalContentSync::ACTION_DELETE ) {
+  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+    // Deletion doesn't require any action on field basis for static data.
+    if ($action == DrupalContentSync::ACTION_DELETE) {
       return FALSE;
     }
 
@@ -112,7 +113,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     $data   = $entity->get($this->fieldName)->getValue();
     $result = [];
 
-    foreach ($data as $key => $value) {
+    foreach ($data as $value) {
       if (empty($value['target_id'])) {
         continue;
       }
@@ -133,7 +134,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       }
     }
 
-    $request->setField($this->fieldName,$result);
+    $request->setField($this->fieldName, $result);
 
     return TRUE;
   }

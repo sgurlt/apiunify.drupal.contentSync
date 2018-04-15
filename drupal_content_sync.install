@@ -30,7 +30,7 @@ function drupal_content_sync_install() {
   $user->save();
 
   // Store UID in key value table.
-  \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->set('uid',$user->id());
+  \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->set('uid', $user->id());
 
   $data     = drupal_content_sync_encrypt_values($data);
   $userData = \Drupal::service('user.data');

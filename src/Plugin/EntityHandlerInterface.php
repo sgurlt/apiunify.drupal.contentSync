@@ -54,31 +54,39 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
   public function updateEntityTypeDefinition(&$definition);
 
   /**
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request The request
-   *    containing all relevant data and where the result is stored as well.
-   * @param bool $is_clone Whether or not the entity should be clone'd or sync'd
-   * @param string $reason See DrupalContentSync::IMPORT_*
-   * @param string $action See DrupalContentSync::ACTION_*
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   *   The request
+   *   containing all relevant data and where the result is stored as well.
+   * @param bool $is_clone
+   *   Whether or not the entity should be clone'd or sync'd.
+   * @param string $reason
+   *   See DrupalContentSync::IMPORT_*.
+   * @param string $action
+   *   See DrupalContentSync::ACTION_*.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
    * @return bool Whether or not the content has been imported. FALSE is a
-   *    desired state, meaning nothing was to do according to config.
+   *   desired state, meaning nothing was to do according to config.
    */
-  public function import(ApiUnifyRequest $request,$is_clone,$reason,$action);
+  public function import(ApiUnifyRequest $request, $is_clone, $reason, $action);
 
   /**
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request The request to
-   *    store all relevant info at.
-   * @param \Drupal\Core\Entity\EntityInterface $entity The entity to export
-   * @param string $reason See DrupalContentSync::EXPORT_*
-   * @param string $action See DrupalContentSync::ACTION_*
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   *   The request to
+   *   store all relevant info at.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to export.
+   * @param string $reason
+   *   See DrupalContentSync::EXPORT_*.
+   * @param string $action
+   *   See DrupalContentSync::ACTION_*.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
    * @return bool Whether or not the content has been exported. FALSE is a
-   *    desired state, meaning nothing was to do according to config.
+   *   desired state, meaning nothing was to do according to config.
    */
-  public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action);
+  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action);
 
 }

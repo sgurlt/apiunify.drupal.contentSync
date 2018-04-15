@@ -86,6 +86,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   An entity type manager instance.
    * @param \Drupal\Core\Render\Renderer $render_manager
    *   A rendered instance.
+   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
+   *   The entity repository interface.
    */
   public function __construct(
     array $configuration,
@@ -148,17 +150,15 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *
    * @param string $entity_type
    *   The name of an entity type.
-   *
    * @param string $entity_bundle
    *   The name of an entity bundle.
-   *
    * @param string $entity_uuid
    *   The uuid of an entity.
    *
    * @return \Drupal\rest\ResourceResponse
    *   A list of entities of the given type and bundle.
    */
-  public function get($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid) {
+  public function get($entity_type, $entity_bundle, $entity_uuid) {
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
 
     $entity_types_keys = array_keys($entity_types);
@@ -202,60 +202,61 @@ class DrupalContentSyncEntityResource extends ResourceBase {
   /**
    * Responds to entity PATCH requests.
    *
+   * @param string $api
+   *   Describe $api @ToDo.
    * @param string $entity_type
    *   The name of an entity type.
-   *
    * @param string $entity_bundle
    *   The name of an entity bundle.
-   *
-   * @param string $entity_uuid
-   *   The uuid of an entity.
-   *
+   * @param string $entity_type_version
+   *   Describe $entity_type_version @ToDo.
    * @param array $data
    *   The data to be stored in the entity.
    *
    * @return Response
    *   A list of entities of the given type and bundle.
    */
-  public function patch($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid, $data) {
+  public function patch($api, $entity_type, $entity_bundle, $entity_type_version, array $data) {
     return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, $data, DrupalContentSync::ACTION_UPDATE);
   }
 
   /**
    * Responds to entity DELETE requests.
    *
+   * @param string $api
+   *   Describe $api @ToDo.
    * @param string $entity_type
    *   The name of an entity type.
-   *
    * @param string $entity_bundle
    *   The name of an entity bundle.
-   *
-   * @param string $entity_uuid
-   *   The uuid of an entity.
+   * @param string $entity_type_version
+   *   Describe $entity_type_version @ToDo.
    *
    * @return \Drupal\rest\ResourceResponse
    *   A list of entities of the given type and bundle.
    */
-  public function delete($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid) {
+  public function delete($api, $entity_type, $entity_bundle, $entity_type_version) {
     return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, NULL, DrupalContentSync::ACTION_DELETE);
   }
 
   /**
    * Responds to entity POST requests.
    *
-   * @param string $entity_type_name
-   *   The name of an entity type.
-   *
+   * @param string $api
+   *   Describe $api @ToDo.
+   * @param string $entity_type
+   *   Describe $entity_type @ToDo.
    * @param string $entity_bundle
    *   The name of an entity bundle.
-   *
+   * @param string $entity_type_version
+   *   Describe $entity_type_version @ToDo.
    * @param array $data
    *   The data to be stored in the entity.
    *
    * @return Response
    *   A list of entities of the given type and bundle.
    */
-  public function post($api, $entity_type, $entity_bundle, $entity_type_version, $data) {
+  public function post($api, $entity_type, $entity_bundle, $entity_type_version, array $data) {
     return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, $data, DrupalContentSync::ACTION_CREATE);
   }
 
@@ -292,9 +293,16 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         $action
       );
     }
-    catch(\Exception $e) {
+    catch (\Exception $e) {
       return new ResourceResponse(
-        ['message' => t('SyncException @code',['@code'=>$e->errorCode]),'code'=>$e->errorCode], 500
+        [
+          'message' => t('SyncException @code',
+            [
+              '@code' => $e->errorCode,
+            ]
+          ),
+          'code' => $e->errorCode,
+        ], 500
       );
     }
 

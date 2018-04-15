@@ -5,8 +5,7 @@ namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 
 /**
- * Class DefaultFieldHandler, providing a minimalistic implementation for any
- * field type.
+ * Providing a minimalistic implementation for any field type.
  *
  * @FieldHandler(
  *   id = "drupal_content_sync_default_bricks_handler",
