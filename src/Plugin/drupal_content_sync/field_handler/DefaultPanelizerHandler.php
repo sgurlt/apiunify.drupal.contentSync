@@ -3,6 +3,7 @@
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
+use Drupal\Core\Field\FieldDefinitionInterface;
 
 /**
  * Providing a minimalistic implementation for any field type.
@@ -18,9 +19,9 @@ use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 class DefaultPanelizerHandler extends FieldHandlerBase {
 
   /**
-   * @ToDo: Add description.
+   * {@inheritdoc}
    */
-  public static function supports($entity_type, $bundle, $field_name, $field) {
+  public static function supports($entity_type, $bundle, $field_name, FieldDefinitionInterface $field) {
     // @TODO Implement handler.
     return FALSE;
 

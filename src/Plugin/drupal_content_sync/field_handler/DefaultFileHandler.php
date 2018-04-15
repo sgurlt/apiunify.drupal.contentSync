@@ -7,6 +7,7 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\SyncResult\SuccessResult;
+use Drupal\Core\Field\FieldDefinitionInterface;
 
 /**
  * Providing a minimalistic implementation for any field type.
@@ -22,9 +23,9 @@ use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 class DefaultFileHandler extends FieldHandlerBase {
 
   /**
-   *
+   * {@inheritdoc}
    */
-  public static function supports($entity_type, $bundle, $field_name, $field) {
+  public static function supports($entity_type, $bundle, $field_name, FieldDefinitionInterface $field) {
     $allowed = ["image", "file_uri", "file"];
     return in_array($field->getType(), $allowed) !== FALSE;
   }
