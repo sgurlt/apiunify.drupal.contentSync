@@ -444,25 +444,6 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   /**
-   * Responds to entity POST requests.
-   *
-   * @param string $entity_type_name
-   *   The name of an entity type.
-   * @param string $entity_bundle
-   *   The name of an entity bundle.
-   * @param array $data
-   *   The data to be stored in the entity.
-   *
-   * @return bool
-   *   A list of entities of the given type and bundle.
-   */
-  protected function isSyncAllowed($entity_type_name, $entity_bundle, $data) {
-    $hook_args = [$entity_type_name, $entity_bundle, $data];
-    $is_allowed = \Drupal::moduleHandler()->invokeAll('drupal_content_sync_is_sync_allowed', $hook_args);
-    return !in_array(FALSE, $is_allowed, TRUE);
-  }
-
-  /**
    * @param string $entity_type_name
    * @param string $entity_bundle
    * @param array $data
@@ -475,10 +456,6 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @return bool
    */
   public function importEntity($entity_type_name, $entity_bundle, $data, $is_clone, $reason, $action=self::ACTION_CREATE) {
-    if (!$this->isSyncAllowed($entity_type_name, $entity_bundle, $data)) {
-      return FALSE;
-    }
-
     // @TODO Save state in custom entity for each entity
     //$meta = ***load_meta_info***($entity_type_name,$data['uuid']);
     //if($meta && $action==self::ACTION_CREATE) {

@@ -98,13 +98,29 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   * @param bool $is_clone
+   * @param string $reason
+   * @param string $action
+   *
+   * @return bool Whether or not to ignore this import request.
+   */
+  protected function ignoreImport(ApiUnifyRequest $request,$is_clone,$reason,$action) {
+    if( $reason==DrupalContentSync::IMPORT_AUTOMATICALLY || $reason==DrupalContentSync::IMPORT_MANUALLY ) {
+      if( $this->settings[($is_clone ? 'cloned' : 'sync') . '_import']!=$reason ) {
+        return TRUE;
+      }
+    }
+
+    return FALSE;
+  }
+
+  /**
    * @inheritdoc
    */
   public function import(ApiUnifyRequest $request,$is_clone,$reason,$action) {
-    if( $reason==DrupalContentSync::IMPORT_AUTOMATICALLY || $reason==DrupalContentSync::IMPORT_MANUALLY ) {
-      if( $this->settings[($is_clone ? 'cloned' : 'sync') . '_import']!=$reason ) {
-        return FALSE;
-      }
+    if( $this->ignoreImport($request,$is_clone,$reason,$action) ) {
+      return FALSE;
     }
 
     $entity = $this->loadEntity($request);
@@ -224,13 +240,29 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   * @param EntityInterface $entity
+   * @param string $reason
+   * @param string $action
+   *
+   * @return bool Whether or not to ignore this export request.
+   */
+  protected function ignoreExport(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
+    if( $reason==DrupalContentSync::EXPORT_AUTOMATICALLY || $reason==DrupalContentSync::EXPORT_MANUALLY ) {
+      if( $this->settings['export']!=$reason ) {
+        return TRUE;
+      }
+    }
+
+    return FALSE;
+  }
+
+  /**
    * @inheritdoc
    */
   public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
-    if( $reason==DrupalContentSync::EXPORT_AUTOMATICALLY || $reason==DrupalContentSync::EXPORT_MANUALLY ) {
-      if( $this->settings['export']!=$reason ) {
-        return FALSE;
-      }
+    if( $this->ignoreExport($request,$entity,$reason,$action) ) {
+      return FALSE;
     }
 
     // Base info
