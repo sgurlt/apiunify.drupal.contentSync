@@ -35,6 +35,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   protected $settings;
 
   /**
+   * A sync instance.
+   *
    * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync
    */
   protected $sync;
@@ -73,36 +75,47 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
-   * @ToDo: Add description.
+   * Update the entity type definition.
+   *
+   * @ToDo: To be done.
    */
   public function updateEntityTypeDefinition(&$definition) {
   }
 
   /**
-   * @ToDo: Add description.
+   * Get the handler settings for the entity type.
+   *
+   * @ToDo: To be done.
    */
   public function getHandlerSettings() {
     return [];
   }
 
   /**
+   * Load the requested entity by its UUID.
+   *
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   *   The request.
    *
    * @return \Drupal\Core\Entity\EntityInterface
+   *   Returns the loaded entity.
    */
-  protected function loadEntity($request) {
+  protected function loadEntity(ApiUnifyRequest $request) {
     return \Drupal::service('entity.repository')->loadEntityByUuid($request->getEntityType(), $request->getUuid());
   }
 
   /**
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
-   * @param bool $is_clone
-   * @param string $reason
-   * @param string $action
+   * Check if the import should be ignored.
    *
-   * @return bool Whether or not to ignore this import request.
+   * @param bool $is_clone
+   *   Entity cloned parameter.
+   * @param string $reason
+   *   The reason why the import should be ignored.
+   *
+   * @return bool
+   *   Whether or not to ignore this import request.
    */
-  protected function ignoreImport(ApiUnifyRequest $request, $is_clone, $reason, $action) {
+  protected function ignoreImport($is_clone, $reason) {
     if ($reason == DrupalContentSync::IMPORT_AUTOMATICALLY || $reason == DrupalContentSync::IMPORT_MANUALLY) {
       if ($this->settings[($is_clone ? 'cloned' : 'sync') . '_import'] != $reason) {
         return TRUE;
@@ -113,6 +126,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
+   * Import the remote entity.
+   *
    * @inheritdoc
    */
   public function import(ApiUnifyRequest $request, $is_clone, $reason, $action) {
@@ -153,14 +168,19 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
+   * Delete a entity.
+   *
    * @param \Drupal\Core\Entity\EntityInterface $entity
-   * @param $reason
+   *   The entity to delete.
+   *
+   * @ToDo: Why do we need a separate method for that?
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
    * @return bool
+   *   Returns TRUE or FALSE for the deletion process.
    */
-  protected function deleteEntity($entity, $reason) {
+  protected function deleteEntity(EntityInterface $entity) {
     try {
       $entity->delete();
     }
@@ -171,20 +191,25 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
+   * Set the values for the imported entity.
+   *
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
-   * @see self::import
+   *   The api unify request.
    * @param \Drupal\Core\Entity\EntityInterface $entity
-   * @see self::import
+   *   The entity the values show be set for.
    * @param bool $is_clone
-   * @see self::import
+   *   The clone parameter of the imported entity.
    * @param string $reason
-   * @see self::import
+   *   The reason why the values should be set.
    * @param string $action
-   * @see self::import
+   *   Add description.
+   *
+   * @ToDo: Review doc comment and add description for $action.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
    * @return bool
+   *   Returns TRUE when the values are set.
    */
   protected function setEntityValues(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
     /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
@@ -231,7 +256,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
-   *
+   * Set the source Url.
    */
   protected function setSourceUrl(ApiUnifyRequest $request, EntityInterface $entity) {
     if ($entity->hasLinkTemplate('canonical')) {
@@ -245,14 +270,17 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
-   * @param \Drupal\Core\Entity\EntityInterface $entity
-   * @param string $reason
-   * @param string $action
+   * Check if the entity should not be ignored from the export.
    *
-   * @return bool Whether or not to ignore this export request.
+   * @param string $reason
+   *   The reason why the entity should be ignored from the export.
+   *
+   * @ToDo: Review.
+   *
+   * @return bool
+   *   Whether or not to ignore this export request.
    */
-  protected function ignoreExport(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+  protected function ignoreExport($reason) {
     if ($reason == DrupalContentSync::EXPORT_AUTOMATICALLY || $reason == DrupalContentSync::EXPORT_MANUALLY) {
       if ($this->settings['export'] != $reason) {
         return TRUE;
@@ -263,6 +291,10 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
+   * The export method.
+   *
+   * @ToDo: Add detailed description.
+   *
    * @inheritdoc
    */
   public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
