@@ -6,27 +6,12 @@
  */
 
 use Drupal\user\Entity\User;
-use Drupal\Core\Config\FileStorage;
 
 /**
  * Implements hook_install()
  * Creates the Drupal Content Sync user and provides him with needed permissions.
  */
 function drupal_content_sync_install() {
-  $config_path    = drupal_get_path('module', 'drupal_content_sync') . '/config/install';
-  $source         = new FileStorage($config_path);
-  $config_storage = \Drupal::service('config.storage');
-
-  $configsNames = [
-    'key.key.drupal_content_sync',
-    'encrypt.profile.drupal_content_sync',
-    'user.role.drupal_content_sync',
-  ];
-
-  foreach ($configsNames as $name) {
-    $config_storage->write($name, $source->read($name));
-  }
-
   $username = 'Drupal Content Sync';
 
   \Drupal::moduleHandler()->alter('drupal_content_sync_username', $username);
@@ -57,17 +42,6 @@ function drupal_content_sync_install() {
  * Implements hook_uninstall().
  */
 function drupal_content_sync_uninstall() {
-  // Delete module configurations.
-  // @ToDo: Is there a better way to do that?
-  $config = \Drupal::configFactory();
-  $config->getEditable('encrypt.profile.drupal_content_sync')->delete();
-  $config->getEditable('key.key.drupal_content_sync')->delete();
-  $config->getEditable('rest.resource.drupal_content_sync_preview_resource')->delete();
-  $config->getEditable('rest.resource.drupal_content_sync_resource')->delete();
-  $config->getEditable('user.role.drupal_content_sync')->delete();
-  $config->getEditable('system.action.user_add_role_action.drupal_content_sync')->delete();
-  $config->getEditable('system.action.user_remove_role_action.drupal_content_sync')->delete();
-
   // Delete Drupal Content Sync User.
   $content_sync_user_id = \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->get('uid');
   if (isset($content_sync_user_id )) {
