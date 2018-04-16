@@ -203,21 +203,20 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * Responds to entity PATCH requests.
    *
    * @param string $api
-   *   Describe $api @ToDo.
+   *   The used content sync api.
    * @param string $entity_type
    *   The name of an entity type.
    * @param string $entity_bundle
    *   The name of an entity bundle.
-   * @param string $entity_uuid
+   * @param string $entity_type_version
    *   The uuid of an entity.
-   * @param string $entity_uuid
    * @param array $data
    *   The data to be stored in the entity.
    *
    * @return Response
    *   A list of entities of the given type and bundle.
    */
-  public function patch($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid, array $data) {
+  public function patch($api, $entity_type, $entity_bundle, $entity_type_version, array $data) {
     return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, $data, DrupalContentSync::ACTION_UPDATE);
   }
 
@@ -225,19 +224,20 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * Responds to entity DELETE requests.
    *
    * @param string $api
-   *   Describe $api @ToDo.
+   *   The used content sync api.
    * @param string $entity_type
    *   The name of an entity type.
    * @param string $entity_bundle
    *   The name of an entity bundle.
-   * @param string $entity_uuid
+   * @param string $entity_type_version
+   *   The version of the entity type.
    * @param string $entity_uuid
    *   The uuid of an entity.
    *
    * @return \Drupal\rest\ResourceResponse
    *   A list of entities of the given type and bundle.
    */
-  public function delete($api, $entity_type, $entity_bundle, $entity_type_version) {
+  public function delete($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid) {
     return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, ['uuid' => $entity_uuid], DrupalContentSync::ACTION_DELETE);
   }
 
@@ -245,13 +245,13 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * Responds to entity POST requests.
    *
    * @param string $api
-   *   Describe $api @ToDo.
+   *   The used content sync api.
    * @param string $entity_type
-   *   Describe $entity_type @ToDo.
+   *   The posted entity type.
    * @param string $entity_bundle
    *   The name of an entity bundle.
    * @param string $entity_type_version
-   *   Describe $entity_type_version @ToDo.
+   *   The version of the entity type.
    * @param array $data
    *   The data to be stored in the entity.
    *
