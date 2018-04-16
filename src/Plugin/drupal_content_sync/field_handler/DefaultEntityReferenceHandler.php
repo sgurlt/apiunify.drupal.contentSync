@@ -26,7 +26,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
    * @ToDo: Add description.
    */
   public static function supports($entity_type, $bundle, $field_name, $field) {
-    if ($field->getType() != "entity_reference") {
+    if (!in_array($field->getType(), ['entity_reference', 'entity_reference_revisions'])) {
       return FALSE;
     }
 

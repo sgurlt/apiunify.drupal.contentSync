@@ -7,6 +7,7 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\SyncResult\SuccessResult;
+use Drupal\file\Entity\File;
 
 /**
  * Class DefaultFieldHandler, providing a minimalistic implementation for any
@@ -58,14 +59,21 @@ class DefaultFileHandler extends FieldHandlerBase {
   public function export(ApiUnifyRequest $request,EntityInterface $entity,$reason,$action) {
     // Deletion doesn't require any action on field basis for static data
     if( $action==DrupalContentSync::ACTION_DELETE ) {
-      return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
+      return FALSE;
     }
 
-    $data   = $entity->get($this->fieldName);
+    $data   = $entity->get($this->fieldName)->getValue();
     $result = [];
 
     foreach ($data as $key => $value) {
-      $file = File::load($value['target_id']);
+      if( isset($value['target_id']) ) {
+        $file = File::load($value['target_id']);
+      }
+      // "uri" field type
+      else {
+        $files  = \Drupal::entityTypeManager()->getStorage('file')->loadByProperties(['uri' => $value['value']]);
+        $file   = empty($files) ? NULL : $files[0];
+      }
       if ($file) {
         $result[] = $request->embedEntity($file);
       }
@@ -73,7 +81,7 @@ class DefaultFileHandler extends FieldHandlerBase {
 
     $request->setField($this->fieldName,$result);
 
-    return new SuccessResult();
+    return TRUE;
   }
 
 }

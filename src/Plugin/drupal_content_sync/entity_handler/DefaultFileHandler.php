@@ -10,6 +10,7 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\SyncResult\ErrorResult;
 use Drupal\drupal_content_sync\SyncResult\SuccessResult;
+use Drupal\file\Entity\File;
 use org\bovigo\vfs\vfsStreamWrapperRecordingProxy;
 
 /**
@@ -106,7 +107,7 @@ class DefaultFileHandler extends EntityHandlerBase {
     }
 
     $uri  = $request->getField('uri');
-    if( !$uri ) {
+    if( empty($uri) ) {
       throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST );
     }
     if (!empty($uri[0]['value'])) {
@@ -119,6 +120,16 @@ class DefaultFileHandler extends EntityHandlerBase {
     }
 
     if( $action==DrupalContentSync::ACTION_CREATE ) {
+      if( !$is_clone ) {
+        $file = File::load($request->getUuid());
+        if( $file ) {
+          if( file_save_data(base64_decode($content), $file->getFileUri(),FILE_EXISTS_REPLACE) ) {
+            return TRUE;
+          }
+          throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE );
+        }
+      }
+
       $directory = \Drupal::service('file_system')->dirname($uri);
       $was_prepared = file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
 
@@ -141,7 +152,7 @@ class DefaultFileHandler extends EntityHandlerBase {
 
       if( file_save_data(base64_decode($content), $uri,FILE_EXISTS_REPLACE) ) {
         return TRUE;
-      };
+      }
       throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE );
     }
 
@@ -159,7 +170,7 @@ class DefaultFileHandler extends EntityHandlerBase {
     // Base Info
     $uri = $entity->getFileUri();
     $request->setField('apiu_file_content', base64_encode( file_get_contents($uri)) );
-    $request->setField('uri', $uri );
+    $request->setField('uri', [['value'=>$uri]] );
     $request->setField('title', $entity->getFilename() );
 
     // Preview
