@@ -6,6 +6,7 @@ use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\MessengerInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Builds the form to delete an DrupalContentSync.
@@ -20,13 +21,22 @@ class DrupalContentSyncDeleteForm extends EntityConfirmFormBase {
   protected $messenger;
 
   /**
-   * DrupalContentSyncPublishChanges constructor.
+   * DrupalContentSyncDeleteForm constructor.
    *
    * @param \Drupal\Core\Messenger\MessengerInterface $messenger
    *   The messenger service.
    */
   public function __construct(MessengerInterface $messenger) {
     $this->messenger = $messenger;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('messenger')
+    );
   }
 
   /**

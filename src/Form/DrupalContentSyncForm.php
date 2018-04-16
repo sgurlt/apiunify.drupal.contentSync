@@ -14,6 +14,7 @@ use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Messenger\MessengerInterface;
+use Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager;
 
 /**
  * Form handler for the DrupalContentSync add and edit forms.
@@ -45,8 +46,11 @@ class DrupalContentSyncForm extends EntityForm {
    */
   protected $entityFieldManager;
 
-
+  /**
+   * @var \Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager
+   */
   protected $entityPluginManager;
+
   protected $fieldPluginManager;
 
   /**
@@ -65,14 +69,16 @@ class DrupalContentSyncForm extends EntityForm {
    *   The bundle info service.
    * @param \Drupal\Core\Entity\EntityFieldManager $entity_field_manager
    *   The entity field manager.
+   * @param \Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager $entity_plugin_manager
+   *   The entity field manager.
    * @param \Drupal\Core\Messenger\MessengerInterface $messenger
    *   The messenger service.
    */
-  public function __construct(EntityTypeManager $entity_type_manager, EntityTypeBundleInfoInterface $bundle_info_service, EntityFieldManager $entity_field_manager, MessengerInterface $messenger) {
+  public function __construct(EntityTypeManager $entity_type_manager, EntityTypeBundleInfoInterface $bundle_info_service, EntityFieldManager $entity_field_manager,EntityHandlerPluginManager $entity_plugin_manager, MessengerInterface $messenger) {
     $this->entityTypeManager = $entity_type_manager;
     $this->bundleInfoService = $bundle_info_service;
     $this->entityFieldManager = $entity_field_manager;
-    $this->entityPluginManager = \Drupal::service('plugin.manager.dcs_entity_handler');
+    $this->entityPluginManager = $entity_plugin_manager;
     $this->fieldPluginManager = \Drupal::service('plugin.manager.dcs_field_handler');
     $this->messenger = $messenger;
   }
@@ -85,6 +91,7 @@ class DrupalContentSyncForm extends EntityForm {
       $container->get('entity_type.manager'),
       $container->get('entity_type.bundle.info'),
       $container->get('entity_field.manager'),
+      $container->get('plugin.manager.dcs_entity_handler'),
       $container->get('messenger')
     );
   }
