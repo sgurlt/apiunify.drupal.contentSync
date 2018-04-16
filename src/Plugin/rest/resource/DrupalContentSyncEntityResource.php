@@ -238,7 +238,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   A list of entities of the given type and bundle.
    */
   public function delete($api, $entity_type, $entity_bundle, $entity_type_version) {
-    return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, ['uuid'=>$entity_uuid], DrupalContentSync::ACTION_DELETE);
+    return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, ['uuid' => $entity_uuid], DrupalContentSync::ACTION_DELETE);
   }
 
   /**

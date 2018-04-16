@@ -15,6 +15,9 @@ use Drupal\menu_link_content\Entity\MenuLinkContent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager;
+use Drupal\drupal_content_sync\Plugin\Type\FieldHandlerPluginManager;
+use Drupal\Core\Config\ConfigFactory;
+use GuzzleHttp\Client;
 
 /**
  * Form handler for the DrupalContentSync add and edit forms.
@@ -51,6 +54,9 @@ class DrupalContentSyncForm extends EntityForm {
    */
   protected $entityPluginManager;
 
+  /**
+   * @var \Drupal\drupal_content_sync\Plugin\Type\FieldHandlerPluginManager
+   */
   protected $fieldPluginManager;
 
   /**
@@ -59,6 +65,20 @@ class DrupalContentSyncForm extends EntityForm {
    * @var \Drupal\Core\Messenger\MessengerInterface
    */
   protected $messenger;
+
+  /**
+   * The config factory to load configuration.
+   *
+   * @var \Drupal\Core\Config\ConfigFactory
+   */
+  protected $configFactory;
+
+  /**
+   * The http client to connect to API Unify.
+   *
+   * @var \GuzzleHttp\Client
+   */
+  protected $httpClient;
 
   /**
    * Constructs an object.
@@ -70,17 +90,32 @@ class DrupalContentSyncForm extends EntityForm {
    * @param \Drupal\Core\Entity\EntityFieldManager $entity_field_manager
    *   The entity field manager.
    * @param \Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager $entity_plugin_manager
-   *   The entity field manager.
+   *   The drupal content sync entity manager.
+   * @param \Drupal\drupal_content_sync\Plugin\Type\FieldHandlerPluginManager $field_plugin_manager
+   *   The drupal content sync field plugin manager.
    * @param \Drupal\Core\Messenger\MessengerInterface $messenger
    *   The messenger service.
+   * @param \Drupal\Core\Config\ConfigFactory $config_factory
+   *   The messenger service.
+   * @param \GuzzleHttp\Client $http_client
+   *   The http client to connect to API Unify.
    */
-  public function __construct(EntityTypeManager $entity_type_manager, EntityTypeBundleInfoInterface $bundle_info_service, EntityFieldManager $entity_field_manager,EntityHandlerPluginManager $entity_plugin_manager, MessengerInterface $messenger) {
+  public function __construct(EntityTypeManager $entity_type_manager,
+                              EntityTypeBundleInfoInterface $bundle_info_service,
+                              EntityFieldManager $entity_field_manager,
+                              EntityHandlerPluginManager $entity_plugin_manager,
+                              FieldHandlerPluginManager $field_plugin_manager,
+                              MessengerInterface $messenger,
+                              ConfigFactory $config_factory,
+                              Client $http_client) {
     $this->entityTypeManager = $entity_type_manager;
     $this->bundleInfoService = $bundle_info_service;
     $this->entityFieldManager = $entity_field_manager;
     $this->entityPluginManager = $entity_plugin_manager;
-    $this->fieldPluginManager = \Drupal::service('plugin.manager.dcs_field_handler');
+    $this->fieldPluginManager = $field_plugin_manager;
     $this->messenger = $messenger;
+    $this->configFactory = $config_factory;
+    $this->httpClient = $http_client;
   }
 
   /**
@@ -92,7 +127,10 @@ class DrupalContentSyncForm extends EntityForm {
       $container->get('entity_type.bundle.info'),
       $container->get('entity_field.manager'),
       $container->get('plugin.manager.dcs_entity_handler'),
-      $container->get('messenger')
+      $container->get('plugin.manager.dcs_field_handler'),
+      $container->get('messenger'),
+      $container->get('config.factory'),
+      $container->get('http_client')
     );
   }
 
@@ -414,7 +452,7 @@ class DrupalContentSyncForm extends EntityForm {
         $entity_table[$type_key . '-' . $entity_bundle_name] = $entity_bundle_row;
 
         if ($handler_id != 'ignore') {
-          $entityFieldManager = \Drupal::service('entity_field.manager');
+          $entityFieldManager = $this->entityFieldManager;
           $fields = $entityFieldManager->getFieldDefinitions($type_key, $entity_bundle_name);
           foreach ($fields as $key => $field) {
             $field_id = $type_key . '-' . $entity_bundle_name . '-' . $key;
@@ -453,8 +491,7 @@ class DrupalContentSyncForm extends EntityForm {
               '#title_display' => 'invisible',
             ];
 
-            $entity_type_entity = \Drupal::entityTypeManager()
-              ->getStorage($type_key)->getEntityType();
+            $entity_type_entity = $this->entityTypeManager->getStorage($type_key)->getEntityType();
             $forbidden_fields = array_merge([
               // These basic fields are already taken care of, so we ignore them
               // here.
@@ -637,9 +674,7 @@ class DrupalContentSyncForm extends EntityForm {
     if (!isset($config[$config_name]) || empty($config[$config_name])) {
       // Is this site a master site? It is a subsite by default.
       $environment = 'subsite';
-      if (\Drupal::config('config_split.config_split.drupal_content_sync_master')
-        ->get('status')
-      ) {
+      if ($this->configFactory->get('config_split.config_split.drupal_content_sync_master')->get('status')) {
         $environment = 'master';
       }
       $config_name = 'drupal_content_sync.sync.' . $environment;
@@ -648,8 +683,7 @@ class DrupalContentSyncForm extends EntityForm {
     foreach ($fields as $field_key) {
       if ($this->configIsOverridden($field_key, $config_name)) {
         $form[$field_key]['#disabled'] = 'disabled';
-        $form[$field_key]['#value'] = \Drupal::config($config_name)
-          ->get($field_key);
+        $form[$field_key]['#value'] = $this->configFactory->get($config_name)->get($field_key);
         unset($form[$field_key]['#default_value']);
       }
     }
@@ -675,7 +709,7 @@ class DrupalContentSyncForm extends EntityForm {
     }
 
     $url    = $form_state->getValue('url');
-    $client = \Drupal::httpClient();
+    $client = $this->httpClient;
     try {
       $response = $client->get($url . '/status');
       if ($response->getStatusCode() != 200) {
@@ -778,8 +812,7 @@ class DrupalContentSyncForm extends EntityForm {
         menu_cache_clear_all();
       }
       else {
-        $links = \Drupal::entityTypeManager()->getStorage('menu_link_content')
-          ->loadByProperties(['link__uri' => $uri]);
+        $links = $this->entityTypeManager->getStorage('menu_link_content')->loadByProperties(['link__uri' => $uri]);
 
         if ($link = reset($links)) {
           $link->set('title', $this->entity->label());
