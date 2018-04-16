@@ -219,6 +219,11 @@ function drupal_content_sync_theme() {
     'template' => 'drupal_content_sync_content_dashboard',
   ];
 
+  $theme['drupal_content_sync_introduction'] = [
+    'variables' => [],
+    'template' => 'drupal_content_sync_introduction',
+  ];
+
   return $theme;
 }
 

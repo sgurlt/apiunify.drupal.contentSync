@@ -1,6 +1,6 @@
 entity.drupal_content_sync:
-  title: 'Drupal Content Synchronizations'
-  route_name: entity.drupal_content_sync.collection
+  title: 'Drupal Content Sync'
+  route_name: entity.drupal_content_sync.introduction
   parent: system.admin_config_services
-  description: 'Synchronizations configuration'
+  description: 'Synchronizations description'
   weight: 100

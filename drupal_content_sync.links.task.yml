@@ -1,0 +1,9 @@
+entity.drupal_content_sync.introduction:
+  title: Introduction
+  route_name: entity.drupal_content_sync.introduction
+  base_route: entity.drupal_content_sync.introduction
+
+entity.drupal_content_sync.collection:
+  title: Configuration
+  route_name: entity.drupal_content_sync.collection
+  base_route: entity.drupal_content_sync.introduction
