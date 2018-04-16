@@ -70,7 +70,7 @@ class ApiUnifyRequest {
    *
    */
   public function getTranslationLanguages() {
-    return array_keys($this->translationFieldValues);
+    return empty($this->translationFieldValues) ? [] : array_keys($this->translationFieldValues);
   }
 
   /**
@@ -176,9 +176,13 @@ class ApiUnifyRequest {
    */
   public function getField($name) {
     if ($this->activeLanguage) {
-      return $this->translationFieldValues[$this->activeLanguage][$name];
+      $source = &$this->translationFieldValues[$this->activeLanguage];
     }
-    return $this->fieldValues[$name];
+    else {
+      $source = &$this->fieldValues;
+    }
+
+    return isset($source[$name]) ? $source[$name] : NULL;
   }
 
   /**

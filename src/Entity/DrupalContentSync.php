@@ -319,7 +319,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     if ($entity_uuid) {
       $url .= '/' . $entity_uuid;
     }
-    $url .= '?_format=json';
+    $url .= '?_format=json&is_dependency=[is_dependency]';
     return $url;
   }
 
