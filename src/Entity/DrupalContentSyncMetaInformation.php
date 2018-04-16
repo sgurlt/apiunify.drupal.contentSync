@@ -82,10 +82,8 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    *
    * @param string $entity_type
    *   The type of the entity.
-   *
    * @param int $entity_id
    *   The ID of the entity.
-   *
    * @param int $entity_uuid
    *   The UUID of the entity.
    *
@@ -252,7 +250,7 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    *
    * @return string
    */
-  public function getSourceURL() {
+  public function getSourceUrl() {
     return $this->get('source_url')->value;
   }
 

@@ -672,11 +672,11 @@ class DrupalContentSyncForm extends EntityForm {
     try {
       $response = $client->get($url . '/status');
       if ($response->getStatusCode() != 200) {
-        $form_state->setErrorByName('url', $this->t('The backend didn\'t respond with 200 OK. Please ask your technical contact person for support.'));
+        $form_state->setErrorByName('url', $this->t('The backend did not respond with 200 OK. Please ask your technical contact person for support.'));
       }
     }
     catch (\Exception $e) {
-      $form_state->setErrorByName('url', $this->t('The backend didn\'t respond with 200 OK. Please ask your technical contact person for support. The error messages is @message', ['@message' => $e->getMessage()]));
+      $form_state->setErrorByName('url', $this->t('The backend did not respond with 200 OK. Please ask your technical contact person for support. The error messages is @message', ['@message' => $e->getMessage()]));
     }
   }
 
