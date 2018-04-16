@@ -211,13 +211,14 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @param string $entity_uuid
    *   The uuid of an entity.
    *
+   * @param string $entity_uuid
    * @param array $data
    *   The data to be stored in the entity.
    *
    * @return Response
    *   A list of entities of the given type and bundle.
    */
-  public function patch($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid, $data) {
+  public function patch($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid, array $data) {
     return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, $data, DrupalContentSync::ACTION_UPDATE);
   }
 
@@ -229,6 +230,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *
    * @param string $entity_bundle
    *   The name of an entity bundle.
+   * @param string $entity_uuid
    *
    * @param string $entity_uuid
    *   The uuid of an entity.
@@ -237,7 +239,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   A list of entities of the given type and bundle.
    */
   public function delete($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid) {
-    return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, NULL, DrupalContentSync::ACTION_DELETE);
+    return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, ['uuid'=>$entity_uuid], DrupalContentSync::ACTION_DELETE);
   }
 
   /**
