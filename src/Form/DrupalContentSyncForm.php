@@ -97,15 +97,15 @@ class DrupalContentSyncForm extends EntityForm {
    */
   public function updateSyncHandler($form, FormStateInterface $form_state) {
     // $trigger  = $form_state->getTriggeringElement();
-    //    $trigger  = explode('[',str_replace(']','',$trigger['#name']));
-    //    $id       = $trigger[1];
-    //    $value    = $form_state->getValue(['sync_entities',$id,'handler']);
-    //    list($entity_type,$bundle,$field) = explode('-',$id);
-    //    if(empty($field)) {
+    // $trigger  = explode('[',str_replace(']','',$trigger['#name']));
+    // $id       = $trigger[1];
+    // $value    = $form_state->getValue(['sync_entities',$id,'handler']);
+    // list($entity_type,$bundle,$field) = explode('-',$id);
+    // if(empty($field)) {
     //
-    //    }
-    //    $trigger  = $form_state->getTriggeringElement();
-    //    $trigger['#ajax']['wrapper'] = 'row-file-file';.
+    // }
+    // $trigger  = $form_state->getTriggeringElement();
+    // $trigger['#ajax']['wrapper'] = 'row-file-file';.
     return $form['sync_entities'];
   }
 
@@ -172,7 +172,7 @@ class DrupalContentSyncForm extends EntityForm {
 
     $form['site_id'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Site identifier '),
+      '#title' => $this->t('Site identifier'),
       '#maxlength' => 255,
       '#default_value' => isset($sync_entity->{'site_id'}) ? $sync_entity->{'site_id'} : '',
       '#description' => $this->t("This identifier will be used to identify the origin of entities on other sites and is used as a machine name for identification. Once connected, you cannot change this identifier anylonger. Typicall you want to use the fully qualified domain name of this website as an identifier."),
@@ -222,7 +222,7 @@ class DrupalContentSyncForm extends EntityForm {
       $entity_table[$type_key]['title'] = [
         '#markup' => '<h2>' . str_replace('_', ' ', ucfirst($type_key)) . '</h2>',
         '#wrapper_attributes' => [
-          'colspan' => sizeof($entity_table['#header']),
+          'colspan' => count($entity_table['#header']),
         ],
       ];
 
@@ -625,7 +625,8 @@ class DrupalContentSyncForm extends EntityForm {
     global $config;
     $config_name = 'drupal_content_sync.drupal_content_sync.' . $form['id']['#default_value'];
 
-    // If the default overrides aren't used check if a master / subsite setting is used.
+    // If the default overrides aren't used check if a
+    // master / subsite setting is used.
     if (!isset($config[$config_name]) || empty($config[$config_name])) {
       // Is this site a master site? It is a subsite by default.
       $environment = 'subsite';
@@ -687,9 +688,10 @@ class DrupalContentSyncForm extends EntityForm {
    *
    * @todo take care of overriding by modules and languages
    *
-   * @param $config_key
-   * @param $environment
-   *   Either subsite or master
+   * @param string $config_key
+   *   The configuration key.
+   * @param string $config_name
+   *   The configuration name.
    *
    * @return bool
    */
@@ -792,7 +794,10 @@ class DrupalContentSyncForm extends EntityForm {
   }
 
   /**
-   * A helper function to check whether an DrupalContentSync configuration entity exists.
+   * Check if the entity exists.
+   *
+   * A helper function to check whether an
+   * DrupalContentSync configuration entity exists.
    *
    * @param int $id
    *   An ID of sync.

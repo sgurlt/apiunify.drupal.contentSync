@@ -8,8 +8,10 @@
 use Drupal\user\Entity\User;
 
 /**
- * Implements hook_install()
- * Creates the Drupal Content Sync user and provides him with needed permissions.
+ * Implements hook_install().
+ *
+ * Creates the Drupal Content Sync user and provides
+ * him with needed permissions.
  */
 function drupal_content_sync_install() {
   $username = 'Drupal Content Sync';

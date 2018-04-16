@@ -65,10 +65,17 @@ function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $a
     }
     catch (SyncException $e) {
       if ($e->parentException) {
-        $messenger->addWarning(t('Failed to export %label automatically with Drupal Content Sync (%code). Message: %message', ['%label' => $entity->label(), '%code' => $e->errorCode, '%message' => $e->parentException->getMessage()]));
+        $messenger->addWarning(t('Failed to export %label automatically with Drupal Content Sync (%code). Message: %message', [
+          '%label' => $entity->label(),
+          '%code' => $e->errorCode,
+          '%message' => $e->parentException->getMessage(),
+        ]));
       }
       else {
-        $messenger->addWarning(t('Failed to export %label automatically with Drupal Content Sync (%code).', ['%label' => $entity->label(), '%code' => $e->errorCode]));
+        $messenger->addWarning(t('Failed to export %label automatically with Drupal Content Sync (%code).', [
+          '%label' => $entity->label(),
+          '%code' => $e->errorCode,
+        ]));
       }
     }
   }
@@ -169,7 +176,7 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
   // @TODO: Disable editing only if meta says entity is NOT CLONED
   // $meta = ***load_meta_info***($entity);
   // if( !$meta || $meta->isCloned() ) {
-  //  return;
+  // return;
   // }
   // @TODO Save in the meta entity which APIs were used for synchronization
   // So we can properly restrict access. Currently this will only work
@@ -205,8 +212,6 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
 
 /**
  * Implements hook_theme().
- *
- * @return array
  */
 function drupal_content_sync_theme() {
   $theme['drupal_content_sync_content_dashboard'] = [
@@ -258,7 +263,6 @@ function drupal_content_sync_get_publish_changes_operations(EntityInterface $ent
  */
 function drupal_content_sync_form_menu_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   // @TODO Refactor => usage?
-
   $links = [];
   if (!empty($form['links']['links'])) {
     $links = Element::children($form['links']['links']);
