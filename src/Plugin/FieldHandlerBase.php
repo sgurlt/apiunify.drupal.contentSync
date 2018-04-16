@@ -112,6 +112,8 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
    * Advanced entity type definition settings for the Node.js backend. You
    * can usually ignore these.
    *
+   * @ToDo: $defintion type differs from the interface which one is correct?
+   *
    * @param array $definition
    */
   public function updateEntityTypeDefinition(&$definition) {

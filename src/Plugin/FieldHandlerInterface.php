@@ -98,8 +98,9 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
-   * @return bool Whether or not the content has been imported. FALSE is a
-   *   desired state, meaning nothing was to do according to config.
+   * @return bool
+   *   Whether or not the content has been imported. FALSE is a desired state,
+   *   meaning nothing was to do according to config.
    */
   public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action);
 
@@ -116,8 +117,9 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
-   * @return bool Whether or not the content has been exported. FALSE is a
-   *   desired state, meaning nothing was to do according to config.
+   * @return bool
+   *   Whether or not the content has been exported. FALSE is a desired state,
+   *   meaning nothing was to do according to config.
    */
   public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action);
 

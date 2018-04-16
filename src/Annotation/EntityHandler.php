@@ -7,7 +7,8 @@ use Drupal\Component\Annotation\Plugin;
 /**
  * Defines a EntityHandler annotation object.
  *
- * They handle how entity synchronizations are configured and how they eventually behave on import and export.
+ * They handle how entity synchronizations are configured and how
+ * they eventually behave on import and export.
  *
  * Additional annotation keys for handlers can be defined in
  * hook_dcs_entity_handler_info_alter().
@@ -31,9 +32,9 @@ class EntityHandler extends Plugin {
   /**
    * The human-readable name of the handler type.
    *
-   * @ingroup plugin_translatable
-   *
    * @var \Drupal\Core\Annotation\Translation
+   *
+   * @ingroup plugin_translatable
    */
   public $label;
 
@@ -47,8 +48,10 @@ class EntityHandler extends Plugin {
   public $class;
 
   /**
-   * An integer to determine the weight of this handler relative to other handlers
-   * in the Field UI when selecting a handler for a given field.
+   * The weight.
+   *
+   * An integer to determine the weight of this handler relative to other
+   * handlers in the Field UI when selecting a handler for a given field.
    *
    * @var intoptional
    */

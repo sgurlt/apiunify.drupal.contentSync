@@ -11,6 +11,7 @@ use Drupal\Core\Url;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Drupal\user\Entity\User;
+use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Defines the DrupalContentSync entity.
@@ -120,17 +121,17 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *
    * @param \Drupal\Core\Entity\EntityStorageInterface $storage
    *   The entity storage object.
-   * @param bool $update
-   *   TRUE if the entity has been updated, or FALSE if it has been inserted.
    */
   public function preSave(EntityStorageInterface $storage) {
     parent::preSave($storage);
 
     if (!$this->initialize()) {
       $messenger = \Drupal::messenger();
-      $messenger->addWarning(t('The communication with the Drupal Content Sync Server failed.' .
+      $warning = 'The communication with the Drupal Content Sync Server failed.' .
         ' Therefore the synchronization entity could not be saved. For more' .
-        ' information see the error output above.'));
+        ' information see the error output above.';
+
+      $messenger->addWarning(t($warning));
       return;
     }
   }
@@ -142,7 +143,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     parent::preDelete($storage, $entities);
 
     try {
-      foreach ($entities as $name => $entity) {
+      foreach ($entities as $entity) {
         $entity->client = \Drupal::httpClient();
 
         $entity->prepareDataCleaning($entity->url);
@@ -175,7 +176,10 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   /**
-   * Method do create all Drupal Content Sync entities which are needed for a snychronization.
+   * Initialize.
+   *
+   * Method do create all Drupal Content Sync
+   * entities which are needed for a synchronization.
    *
    * @return bool
    */
@@ -367,14 +371,15 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    */
   public function exportsEntity($entity, $reason) {
     // @TODO For menu items, use $menu_item->getBaseId()
-
     $config = $this->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
     if (empty($config) || $config['handler'] == self::HANDLER_IGNORE) {
       return FALSE;
     }
 
-    // If any handler is available, we can export this entity
-    if($reason==self::EXPORT_AS_DEPENDENCY || $reason==self::EXPORT_FORCED) {
+    /**
+     * If any handler is available, we can export this entity.
+     */
+    if ($reason == self::EXPORT_AS_DEPENDENCY || $reason == self::EXPORT_FORCED) {
       return TRUE;
     }
 
@@ -384,7 +389,10 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   public static $all = NULL;
 
   /**
-   * Load all drupal_content_sync entities and add overrides from global $config.
+   * Load all entities.
+   *
+   * Load all drupal_content_sync entities and
+   * add overrides from global $config.
    *
    * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
    */
@@ -481,15 +489,15 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *
    * @return bool
    */
-  public function importEntity($entity_type_name, $entity_bundle, $data, $is_clone, $reason, $action = self::ACTION_CREATE) {
+  public function importEntity($entity_type_name, $entity_bundle, array $data, $is_clone, $reason, $action = self::ACTION_CREATE) {
     // @TODO Save state in custom entity for each entity
     // $meta = ***load_meta_info***($entity_type_name,$data['uuid']);
     // if($meta && $action==self::ACTION_CREATE) {
-    //  $action = self::ACTION_UPDATE;
+    // $action = self::ACTION_UPDATE;
     // }
     // @TODO If the entity was deleted, we ignore it
     // if( $meta && $meta->isDeleted() && $reason!=self::IMPORT_FORCED ) {
-    //  return TRUE;
+    // return TRUE;
     // }}
     $request = new ApiUnifyRequest($this, $entity_type_name, $entity_bundle, $data);
 
@@ -526,9 +534,10 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
-   * @return bool Whether or not the export could be gotten.
+   * @return bool
+   *   Whether or not the export could be gotten.
    */
-  public function getSerializedEntity(&$result, $entity, $reason, $action = self::ACTION_UPDATE) {
+  public function getSerializedEntity(array &$result, EntityInterface $entity, $reason, $action = self::ACTION_UPDATE) {
     $entity_type   = $entity->getEntityTypeId();
     $entity_bundle = $entity->bundle();
     $entity_uuid   = $entity->uuid();
@@ -558,7 +567,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *
    * @return bool Whether or not the entity has actually been exported.
    */
-  public function exportEntity($entity, $reason, $action = self::ACTION_UPDATE) {
+  public function exportEntity(EntityInterface $entity, $reason, $action = self::ACTION_UPDATE) {
     if (method_exists($entity, 'getUntranslated')) {
       $entity = $entity->getUntranslated();
     }
@@ -1247,6 +1256,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   protected function cleanUnifyData() {
     try {
       foreach ($this->toBeDeleted as $id => $url) {
+
+        // @ToDo.
         // $responce = $this->client->delete($url . '/' . $id);.
       }
     }

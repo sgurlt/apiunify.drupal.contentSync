@@ -7,7 +7,8 @@ use Drupal\Component\Annotation\Plugin;
 /**
  * Defines a FieldHandler annotation object.
  *
- * They handle how field synchronizations are configured and how they eventually behave on import and export.
+ * They handle how field synchronizations are configured and how they
+ * eventually behave on import and export.
  *
  * Additional annotation keys for handlers can be defined in
  * hook_dcs_entity_handler_info_alter().
@@ -31,18 +32,18 @@ class FieldHandler extends Plugin {
   /**
    * The human-readable name of the handler type.
    *
-   * @ingroup plugin_translatable
-   *
    * @var \Drupal\Core\Annotation\Translation
+   *
+   * @ingroup plugin_translatable
    */
   public $label;
 
   /**
    * A short description of the handler type.
    *
-   * @ingroup plugin_translatable
-   *
    * @var \Drupal\Core\Annotation\Translation
+   *
+   * @ingroup plugin_translatable
    */
   public $description;
 
@@ -56,8 +57,10 @@ class FieldHandler extends Plugin {
   public $class;
 
   /**
-   * An integer to determine the weight of this handler relative to other handlers
-   * in the Field UI when selecting a handler for a given field.
+   * The weight.
+   *
+   * An integer to determine the weight of this handler relative to other
+   * handlersin the Field UI when selecting a handler for a given field.
    *
    * @var intoptional
    */
