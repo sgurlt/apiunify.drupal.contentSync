@@ -2,6 +2,7 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
+use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;

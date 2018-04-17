@@ -274,7 +274,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
 
-    $is_dependency = isset($_GET['is_dependency']) && $_GET['is_dependency'] == 'true';
+    $is_dependency = TRUE;//isset($_GET['is_dependency']) && $_GET['is_dependency'] == 'true';
     $is_clone      = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
     $reason        = $is_dependency ? DrupalContentSync::IMPORT_AS_DEPENDENCY : DrupalContentSync::IMPORT_AUTOMATICALLY;
 
