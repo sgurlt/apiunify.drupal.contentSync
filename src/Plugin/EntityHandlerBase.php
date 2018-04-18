@@ -219,7 +219,10 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     $field_definitions = $entityFieldManager->getFieldDefinitions($type, $bundle);
 
     $entity_type = \Drupal::entityTypeManager()->getDefinition($request->getEntityType());
-    $entity->set($entity_type->getKey('label'), $request->getField('title'));
+    $label        = $entity_type->getKey('label');
+    if( $label ) {
+      $entity->set($label, $request->getField('title'));
+    }
 
     foreach ($field_definitions as $key => $field) {
       $handler = $this->sync->getFieldHandler($type, $bundle, $key);
