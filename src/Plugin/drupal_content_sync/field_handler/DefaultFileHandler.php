@@ -8,6 +8,7 @@ use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\file\Entity\File;
 
 /**
  * Providing a minimalistic implementation for any field type.
@@ -65,7 +66,7 @@ class DefaultFileHandler extends FieldHandlerBase {
   public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
     // Deletion doesn't require any action on field basis for static data.
     if ($action == DrupalContentSync::ACTION_DELETE) {
-      return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
+      return FALSE;
     }
 
     $data   = $entity->get($this->fieldName);
@@ -80,7 +81,7 @@ class DefaultFileHandler extends FieldHandlerBase {
 
     $request->setField($this->fieldName, $result);
 
-    return new SuccessResult();
+    return TRUE;
   }
 
 }

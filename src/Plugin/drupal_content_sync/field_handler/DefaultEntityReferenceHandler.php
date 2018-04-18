@@ -26,7 +26,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
    * {@inheritdoc}
    */
   public static function supports($entity_type, $bundle, $field_name, FieldDefinitionInterface $field) {
-    if ($field->getType() != "entity_reference") {
+    if (!in_array($field->getType(), ["entity_reference","entity_reference_revisions"])) {
       return FALSE;
     }
 
@@ -46,17 +46,17 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       'export_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Export referenced entities',
-        '#default_value' => $this->settings['handler_settings']['export_referenced_entities'] === 0 ? 0 : 1,
+        '#default_value' => !empty($this->settings['handler_settings']['export_referenced_entities']) && $this->settings['handler_settings']['export_referenced_entities'] === 0 ? 0 : 1,
       ],
       'sync_import_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Import referenced entities (sync)',
-        '#default_value' => $this->settings['handler_settings']['sync_import_referenced_entities'] === 0 ? 0 : 1,
+        '#default_value' => !empty($this->settings['handler_settings']['sync_import_referenced_entities']) && $this->settings['handler_settings']['sync_import_referenced_entities'] === 0 ? 0 : 1,
       ],
       'cloned_import_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Import referenced entities (clone)',
-        '#default_value' => $this->settings['handler_settings']['cloned_import_referenced_entities'] === 0 ? 0 : 1,
+        '#default_value' => !empty($this->settings['handler_settings']['cloned_import_referenced_entities']) && $this->settings['handler_settings']['cloned_import_referenced_entities'] === 0 ? 0 : 1,
       ],
     ];
   }

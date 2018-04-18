@@ -177,8 +177,6 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity to delete.
    *
-   * @ToDo: Why do we need a separate method for that?
-   *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
    * @return bool
@@ -204,11 +202,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    * @param bool $is_clone
    *   The clone parameter of the imported entity.
    * @param string $reason
-   *   The reason why the values should be set.
+   *   The reason why the values should be set. @see DrupalContentSync::REASON_*
    * @param string $action
-   *   Add description.
-   *
-   * @ToDo: Review doc comment and add description for $action.
+   *   @see DrupalContentSync::IMPORT_*
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *

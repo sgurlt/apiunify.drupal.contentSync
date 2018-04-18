@@ -216,7 +216,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @return Response
    *   A list of entities of the given type and bundle.
    */
-  public function patch($api, $entity_type, $entity_bundle, $entity_type_version, array $data) {
+  public function patch($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid, array $data) {
     return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, $data, DrupalContentSync::ACTION_UPDATE);
   }
 

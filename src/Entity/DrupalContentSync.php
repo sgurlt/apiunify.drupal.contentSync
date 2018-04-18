@@ -589,7 +589,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $entity_repository = \Drupal::service('entity.repository');
 
     if ($action != self::ACTION_DELETE) {
-      $body   = NULL;
+      $body   = [];
       $status = $this->getSerializedEntity($body, $entity, $reason, $action);
 
       // Handler chose to deliberately ignore this entity,
