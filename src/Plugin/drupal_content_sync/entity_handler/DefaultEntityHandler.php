@@ -29,40 +29,6 @@ class DefaultEntityHandler extends EntityHandlerBase {
   /**
    * @ToDo: Add description.
    */
-  public function getAllowedExportOptions() {
-    return [
-      DrupalContentSync::EXPORT_DISABLED,
-      DrupalContentSync::EXPORT_AUTOMATICALLY,
-      // Not manually as that requires UI and is not available for all entity
-      // types. Advanced handlers will provide this.
-    ];
-  }
-
-  /**
-   * @ToDo: Add description.
-   */
-  public function getAllowedSyncImportOptions() {
-    return [
-      DrupalContentSync::IMPORT_DISABLED,
-      DrupalContentSync::IMPORT_AUTOMATICALLY,
-      DrupalContentSync::IMPORT_MANUALLY,
-    ];
-  }
-
-  /**
-   * @ToDo: Add description.
-   */
-  public function getAllowedClonedImportOptions() {
-    return [
-      DrupalContentSync::IMPORT_DISABLED,
-      DrupalContentSync::IMPORT_AUTOMATICALLY,
-      DrupalContentSync::IMPORT_MANUALLY,
-    ];
-  }
-
-  /**
-   * @ToDo: Add description.
-   */
   public function getAllowedPreviewOptions() {
     return [
       'table' => 'Table',

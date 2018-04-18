@@ -31,12 +31,7 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
   /**
    * @ToDo: Add description.
    */
-  public function getAllowedSyncImportOptions();
-
-  /**
-   * @ToDo: Add description.
-   */
-  public function getAllowedClonedImportOptions();
+  public function getAllowedImportOptions();
 
   /**
    * @ToDo: Add description.

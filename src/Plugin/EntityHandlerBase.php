@@ -75,6 +75,31 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
+   * @ToDo: Add description.
+   */
+  public function getAllowedExportOptions() {
+    return [
+      DrupalContentSync::EXPORT_DISABLED,
+      DrupalContentSync::EXPORT_AUTOMATICALLY,
+      DrupalContentSync::EXPORT_AS_DEPENDENCY,
+      // Not manually as that requires UI and is not available for all entity
+      // types. Advanced handlers will provide this.
+    ];
+  }
+
+  /**
+   * @ToDo: Add description.
+   */
+  public function getAllowedImportOptions() {
+    return [
+      DrupalContentSync::IMPORT_DISABLED,
+      DrupalContentSync::IMPORT_AUTOMATICALLY,
+      DrupalContentSync::IMPORT_AS_DEPENDENCY,
+      DrupalContentSync::IMPORT_MANUALLY,
+    ];
+  }
+
+  /**
    * Update the entity type definition.
    *
    * @ToDo: To be done.
@@ -121,7 +146,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    */
   protected function ignoreImport(ApiUnifyRequest $request, $is_clone, $reason, $action) {
     if ($reason == DrupalContentSync::IMPORT_AUTOMATICALLY || $reason == DrupalContentSync::IMPORT_MANUALLY) {
-      if ($this->settings[($is_clone ? 'cloned' : 'sync') . '_import'] != $reason) {
+      if ($this->settings['import'] != $reason) {
         return TRUE;
       }
     }

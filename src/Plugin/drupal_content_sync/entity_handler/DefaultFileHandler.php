@@ -37,6 +37,7 @@ class DefaultFileHandler extends EntityHandlerBase {
     return [
       DrupalContentSync::EXPORT_DISABLED,
       DrupalContentSync::EXPORT_AUTOMATICALLY,
+      DrupalContentSync::EXPORT_AS_DEPENDENCY,
       DrupalContentSync::EXPORT_MANUALLY,
     ];
   }
@@ -44,21 +45,11 @@ class DefaultFileHandler extends EntityHandlerBase {
   /**
    * @ToDo: Add description.
    */
-  public function getAllowedSyncImportOptions() {
+  public function getAllowedImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
       DrupalContentSync::IMPORT_AUTOMATICALLY,
-      DrupalContentSync::IMPORT_MANUALLY,
-    ];
-  }
-
-  /**
-   * @ToDo: Add description.
-   */
-  public function getAllowedClonedImportOptions() {
-    return [
-      DrupalContentSync::IMPORT_DISABLED,
-      DrupalContentSync::IMPORT_AUTOMATICALLY,
+      DrupalContentSync::IMPORT_AS_DEPENDENCY,
       DrupalContentSync::IMPORT_MANUALLY,
     ];
   }

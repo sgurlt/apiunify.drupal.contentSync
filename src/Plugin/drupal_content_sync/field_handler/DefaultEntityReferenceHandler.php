@@ -48,16 +48,6 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
         '#title' => 'Export referenced entities',
         '#default_value' => !empty($this->settings['handler_settings']['export_referenced_entities']) && $this->settings['handler_settings']['export_referenced_entities'] === 0 ? 0 : 1,
       ],
-      'sync_import_referenced_entities' => [
-        '#type' => 'checkbox',
-        '#title' => 'Import referenced entities (sync)',
-        '#default_value' => !empty($this->settings['handler_settings']['sync_import_referenced_entities']) && $this->settings['handler_settings']['sync_import_referenced_entities'] === 0 ? 0 : 1,
-      ],
-      'cloned_import_referenced_entities' => [
-        '#type' => 'checkbox',
-        '#title' => 'Import referenced entities (clone)',
-        '#default_value' => !empty($this->settings['handler_settings']['cloned_import_referenced_entities']) && $this->settings['handler_settings']['cloned_import_referenced_entities'] === 0 ? 0 : 1,
-      ],
     ];
   }
 
@@ -115,6 +105,8 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     $data   = $entity->get($this->fieldName)->getValue();
     $result = [];
 
+    $export_referenced_entities = empty($this->settings['handler_settings']['export_referenced_entities']);
+
     foreach ($data as $value) {
       if (empty($value['target_id'])) {
         continue;
@@ -132,7 +124,16 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
         ->load($target_id);
 
       if ($reference && $reference->uuid() != $request->getUuid()) {
-        $result[] = $request->embedEntity($reference);
+        if( $export_referenced_entities ) {
+          $result[] = $request->embedEntity($reference);
+        }
+        else {
+          $result[] = $request->embedEntityDefinition(
+            $reference->getEntityTypeId(),
+            $reference->bundle(),
+            $reference->uuid()
+          );
+        }
       }
     }
 

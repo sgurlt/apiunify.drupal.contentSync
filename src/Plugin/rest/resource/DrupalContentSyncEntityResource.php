@@ -180,17 +180,22 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       $entity_ids = array_values($query->execute());
 
       $entities = array_values(\Drupal::entityTypeManager()->getStorage($entity_type)->loadMultiple($entity_ids));
+      $items    = [];
 
-      foreach ($entities as &$entity) {
+      foreach ($entities as $entity) {
         $sync   = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
-        $entity = $sync->getSerializedEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
+        $result = [];
+        $status = $sync->getSerializedEntity($result, $entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
+        if( $status ) {
+          $items[]  = $result;
+        }
       }
 
       if (!empty($entity_uuid)) {
-        $entities = $entities[0];
+        $items = $items[0];
       }
 
-      return new ModifiedResourceResponse($entities);
+      return new ModifiedResourceResponse($items);
     }
 
     return new ResourceResponse(
@@ -274,11 +279,13 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
 
-    $is_dependency = TRUE;//isset($_GET['is_dependency']) && $_GET['is_dependency'] == 'true';
+    $is_dependency = isset($_GET['is_dependency']) && $_GET['is_dependency'] == 'true';
     $is_clone      = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
-    $reason        = $is_dependency ? DrupalContentSync::IMPORT_AS_DEPENDENCY : DrupalContentSync::IMPORT_AUTOMATICALLY;
+    $is_manual     = isset($_GET['is_manual']) && $_GET['is_manual'] == 'true';
+    $reason        = $is_dependency ? DrupalContentSync::IMPORT_AS_DEPENDENCY :
+      ($is_manual ? DrupalContentSync::IMPORT_MANUALLY : DrupalContentSync::IMPORT_AUTOMATICALLY);
 
-    $sync = DrupalContentSync::getImportSynchronizationForApiAndEntityType($api, $entity_type_name, $entity_bundle, $reason, $is_clone);
+    $sync = DrupalContentSync::getImportSynchronizationForApiAndEntityType($api, $entity_type_name, $entity_bundle, $reason, $action, $is_clone);
     if (empty($sync)) {
       return new ResourceResponse(
         ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)], self::CODE_NOT_FOUND
@@ -308,12 +315,14 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
 
-    if ($status) {
+    if( $status ) {
       return new ModifiedResourceResponse($data, $action == DrupalContentSync::ACTION_DELETE ? 204 : 200);
     }
     else {
       return new ResourceResponse(
-        ['message' => t(self::FILE_INPUT_DATA_IS_INVALID)], self::CODE_INVALID_DATA
+        [
+          'message' => t('Entity is not configured to be imported yet.'),
+        ], 404
       );
     }
   }

@@ -51,17 +51,7 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    * @return array
    *   DrupalContentSyncIMPORT_
    */
-  public function getAllowedSyncImportOptions();
-
-  /**
-   * Get allowed allowed cloned import options.
-   *
-   * Get a list of all allowed import options for this field for cloned
-   * imports. Typically you either allow DISABLED or DISABLED and AUTOMATICALLY.
-   *
-   * @return mixed
-   */
-  public function getAllowedClonedImportOptions();
+  public function getAllowedImportOptions();
 
   /**
    * Get the handler settings.

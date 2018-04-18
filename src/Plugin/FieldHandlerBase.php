@@ -83,17 +83,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   /**
    * @ToDo: Add description.
    */
-  public function getAllowedSyncImportOptions() {
-    return [
-      DrupalContentSync::IMPORT_DISABLED,
-      DrupalContentSync::IMPORT_AUTOMATICALLY,
-    ];
-  }
-
-  /**
-   * @ToDo: Add description.
-   */
-  public function getAllowedClonedImportOptions() {
+  public function getAllowedImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
       DrupalContentSync::IMPORT_AUTOMATICALLY,
@@ -143,10 +133,8 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
       return FALSE;
     }
 
-    if ($reason == DrupalContentSync::IMPORT_AUTOMATICALLY || $reason == DrupalContentSync::IMPORT_MANUALLY) {
-      if ($this->settings[($is_clone ? 'cloned' : 'sync') . '_import'] != $reason) {
-        return FALSE;
-      }
+    if ($this->settings['import'] != DrupalContentSync::IMPORT_AUTOMATICALLY) {
+      return FALSE;
     }
 
     $data = $request->getField($this->fieldName);
@@ -165,10 +153,8 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
    * @inheritdoc
    */
   public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
-    if ($reason == DrupalContentSync::EXPORT_AUTOMATICALLY || $reason == DrupalContentSync::EXPORT_MANUALLY) {
-      if ($this->settings['export'] != $reason) {
-        return FALSE;
-      }
+    if ($this->settings['export'] != DrupalContentSync::EXPORT_AUTOMATICALLY) {
+      return FALSE;
     }
 
     // Deletion doesn't require any action on field basis for static data.

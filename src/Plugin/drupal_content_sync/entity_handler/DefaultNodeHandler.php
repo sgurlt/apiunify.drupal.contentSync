@@ -35,6 +35,7 @@ class DefaultNodeHandler extends EntityHandlerBase {
     return [
       DrupalContentSync::EXPORT_DISABLED,
       DrupalContentSync::EXPORT_AUTOMATICALLY,
+      DrupalContentSync::EXPORT_AS_DEPENDENCY,
       DrupalContentSync::EXPORT_MANUALLY,
     ];
   }
@@ -42,21 +43,11 @@ class DefaultNodeHandler extends EntityHandlerBase {
   /**
    * @ToDo: Add description.
    */
-  public function getAllowedSyncImportOptions() {
+  public function getAllowedImportOptions() {
     return [
       DrupalContentSync::IMPORT_DISABLED,
       DrupalContentSync::IMPORT_AUTOMATICALLY,
-      DrupalContentSync::IMPORT_MANUALLY,
-    ];
-  }
-
-  /**
-   * @ToDo: Add description.
-   */
-  public function getAllowedClonedImportOptions() {
-    return [
-      DrupalContentSync::IMPORT_DISABLED,
-      DrupalContentSync::IMPORT_AUTOMATICALLY,
+      DrupalContentSync::IMPORT_AS_DEPENDENCY,
       DrupalContentSync::IMPORT_MANUALLY,
     ];
   }
@@ -76,29 +67,14 @@ class DefaultNodeHandler extends EntityHandlerBase {
    */
   public function getHandlerSettings() {
     return [
-      'export_published_only' => [
+      'ignore_unpublished' => [
         '#type' => 'checkbox',
-        '#title' => 'Export published only',
-        '#default_value' => $this->settings['handler_settings']['export_published_only'] === 0 ? 0 : 1,
-      ],
-      'sync_import_published_only' => [
-        '#type' => 'checkbox',
-        '#title' => 'Import published only (sync)',
-        '#default_value' => $this->settings['handler_settings']['sync_import_published_only'] === 0 ? 0 : 1,
-      ],
-      'cloned_import_published_only' => [
-        '#type' => 'checkbox',
-        '#title' => 'Import published only (clone)',
-        '#default_value' => $this->settings['handler_settings']['cloned_import_published_only'] === 0 ? 0 : 1,
-      ],
-      'sync_menu_items' => [
-        '#type' => 'checkbox',
-        '#title' => 'Sync menu items',
-        '#default_value' => isset($this->settings['handler_settings']['sync_menu_items']) ? $this->settings['handler_settings']['sync_menu_items'] == 1 : 0,
+        '#title' => 'Ignore unpublished content',
+        '#default_value' => $this->settings['handler_settings']['ignore_unpublished'] === 0 ? 0 : 1,
       ],
       'restrict_editing' => [
         '#type' => 'checkbox',
-        '#title' => 'Restrict editing of synchronized content',
+        '#title' => 'Restrict editing of imported content',
         '#default_value' => isset($this->settings['handler_settings']['restrict_editing']) ? $this->settings['handler_settings']['restrict_editing'] == 1 : 0,
       ],
     ];
@@ -108,7 +84,7 @@ class DefaultNodeHandler extends EntityHandlerBase {
    * @inheritdoc
    */
   public function ignoreImport(ApiUnifyRequest $request, $is_clone, $reason, $action) {
-    if (empty($request->getField('status')) && $this->settings['handler_settings'][($is_clone ? 'cloned' : 'sync') . '_import_published_only']) {
+    if (empty($request->getField('status')) && $this->settings['handler_settings']['ignore_unpublished']) {
       return TRUE;
     }
 
@@ -119,7 +95,7 @@ class DefaultNodeHandler extends EntityHandlerBase {
    * @inheritdoc
    */
   public function ignoreExport(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
-    if (!$entity->isPublished() && $this->settings['handler_settings']['export_published_only']) {
+    if (!$entity->isPublished() && $this->settings['handler_settings']['ignore_unpublished']) {
       return TRUE;
     }
 

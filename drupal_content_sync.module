@@ -31,7 +31,7 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
       return;
     }
     $entity = $form_object->getEntity();
-    $sync   = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
+    $sync   = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_DELETE);
 
     if ($sync && $sync->delete_entities) {
       $messenger = \Drupal::messenger();
@@ -52,7 +52,7 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
  *
  */
 function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $action) {
-  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, $reason);
+  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, $reason, $action);
 
   if ($sync) {
     $messenger = \Drupal::messenger();
@@ -182,7 +182,7 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
   // So we can properly restrict access. Currently this will only work
   // if all APIs apply restrictions or don't apply restrictions.
   /** @var \Drupal\drupal_content_sync\Entity\DrupalContentSync[] $syncs */
-  $syncs    = DrupalContentSync::getImportSynchronizationsForEntityType(NULL, $entity->getEntityType(), $entity->bundle(), DrupalContentSync::IMPORT_FORCED);
+  $syncs    = DrupalContentSync::getImportSynchronizationsForEntityType(NULL, $entity->getEntityType(), $entity->bundle(), DrupalContentSync::IMPORT_FORCED, DrupalContentSync::ACTION_UPDATE);
   $restrict = FALSE;
   foreach ($syncs as $sync) {
     $config = $sync->getEntityTypeConfig($entity->getEntityType(), $entity->bundle());

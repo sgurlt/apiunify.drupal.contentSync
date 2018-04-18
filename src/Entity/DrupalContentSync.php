@@ -319,7 +319,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     if ($entity_uuid) {
       $url .= '/' . $entity_uuid;
     }
-    $url .= '?_format=json&is_dependency=[is_dependency]';
+    $url .= '?_format=json&is_dependency=[is_dependency]&is_manual=[is_manual]';
     return $url;
   }
 
@@ -354,11 +354,11 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    *
    */
-  public static function getExportSynchronizationForEntity($entity, $reason) {
+  public static function getExportSynchronizationForEntity($entity, $reason, $action=self::ACTION_CREATE) {
     $drupal_content_syncs = self::getAll();
 
     foreach ($drupal_content_syncs as $sync) {
-      if ($sync->exportsEntity($entity, $reason)) {
+      if ($sync->exportsEntity($entity, $reason, $action)) {
         return $sync;
       }
     }
@@ -369,17 +369,21 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    *
    */
-  public function exportsEntity($entity, $reason) {
+  public function exportsEntity($entity, $reason, $action=self::ACTION_CREATE) {
     // @TODO For menu items, use $menu_item->getBaseId()
     $config = $this->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
     if (empty($config) || $config['handler'] == self::HANDLER_IGNORE) {
       return FALSE;
     }
 
+    if( $action==self::ACTION_DELETE && !$config['delete_entity']) {
+      return FALSE;
+    }
+
     /**
      * If any handler is available, we can export this entity.
      */
-    if ($reason == self::EXPORT_AS_DEPENDENCY || $reason == self::EXPORT_FORCED) {
+    if ($reason == self::EXPORT_FORCED || $config['export']==self::EXPORT_AUTOMATICALLY) {
       return TRUE;
     }
 
@@ -423,13 +427,13 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    *
    */
-  public static function getImportSynchronizationsForEntityType($entity_type_name, $bundle_name, $reason, $is_clone = FALSE) {
+  public static function getImportSynchronizationsForEntityType($entity_type_name, $bundle_name, $reason, $action=self::ACTION_CREATE, $is_clone = FALSE) {
     $drupal_content_syncs = self::getAll();
 
     $result = [];
 
     foreach ($drupal_content_syncs as $sync) {
-      if ($sync->importsEntity($entity_type_name, $bundle_name, $reason, $is_clone)) {
+      if ($sync->importsEntity($entity_type_name, $bundle_name, $reason, $action, $is_clone)) {
         $result[] = $sync;
       }
     }
@@ -440,14 +444,14 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    *
    */
-  public static function getImportSynchronizationForApiAndEntityType($api, $entity_type_name, $bundle_name, $reason, $is_clone = FALSE) {
+  public static function getImportSynchronizationForApiAndEntityType($api, $entity_type_name, $bundle_name, $reason, $action=self::ACTION_CREATE, $is_clone = FALSE) {
     $drupal_content_syncs = self::getAll();
 
     foreach ($drupal_content_syncs as $sync) {
       if ($api && $sync->api != $api) {
         continue;
       }
-      if ($sync->importsEntity($entity_type_name, $bundle_name, $reason, $is_clone)) {
+      if ($sync->importsEntity($entity_type_name, $bundle_name, $reason, $action, $is_clone)) {
         return $sync;
       }
     }
@@ -458,16 +462,22 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    *
    */
-  public function importsEntity($entity_type_name, $bundle_name, $reason, $is_clone = FALSE) {
+  public function importsEntity($entity_type_name, $bundle_name, $reason, $action=self::ACTION_CREATE, $is_clone = FALSE) {
     $config = $this->getEntityTypeConfig($entity_type_name, $bundle_name);
     if (empty($config) || $config['handler'] == self::HANDLER_IGNORE) {
       return FALSE;
     }
+    if( $config['import_clone']!=$is_clone ) {
+      return FALSE;
+    }
+    if( $action==self::ACTION_DELETE && !$config['delete_entity'] )  {
+      return FALSE;
+    }
     // If any handler is available, we can import this entity.
-    if ($reason == self::IMPORT_AS_DEPENDENCY || $reason == self::IMPORT_FORCED) {
+    if ($reason == self::IMPORT_FORCED || $config['import']==self::IMPORT_AUTOMATICALLY) {
       return TRUE;
     }
-    return $config[($is_clone ? 'cloned' : 'sync') . '_import'] == $reason;
+    return $config['import'] == $reason;
   }
 
   /**
@@ -505,6 +515,16 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $handler = $this->getEntityTypeHandler($config);
 
     $result = $handler->import($request, $is_clone, $reason, $action);
+
+    \Drupal::logger('drupal_content_sync')->info('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone', [
+      '@reason' => $reason,
+      '@action' => $action,
+      '@entity_type'  => $entity_type_name,
+      '@bundle' => $entity_bundle,
+      '@uuid' => $data['uuid'],
+      '@not' => $result?'':'NO',
+      '@clone'=>$is_clone?'as clone':'',
+    ]);
 
     // Don't save meta entity if entity wasn't imported anyway.
     if (!$result) {
@@ -549,6 +569,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $request->setUuid($entity_uuid);
 
     $status = $handler->export($request, $entity, $reason, $action);
+
     if (!$status) {
       return FALSE;
     }
@@ -558,6 +579,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     return TRUE;
   }
 
+  protected $exported;
   /**
    * @param \Drupal\Core\Entity\EntityInterface $entity
    * @param string $reason
@@ -588,32 +610,52 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     /** @var \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository */
     $entity_repository = \Drupal::service('entity.repository');
 
+    $proceed = TRUE;
+
+    if( !$this->exported ) {
+      $this->exported = [];
+    }
+    if( isset($this->exported[$action][$entity_type][$entity_bundle][$entity_uuid]) ) {
+      return TRUE;
+    }
+    $this->exported[$action][$entity_type][$entity_bundle][$entity_uuid]  = TRUE;
+
     if ($action != self::ACTION_DELETE) {
-      $body   = [];
-      $status = $this->getSerializedEntity($body, $entity, $reason, $action);
+      $body     = [];
+      $proceed  = $this->getSerializedEntity($body, $entity, $reason, $action);
 
-      // Handler chose to deliberately ignore this entity,
-      // e.g. a node that wasn't published yet and is not exported unpublished.
-      if (!$status) {
-        return FALSE;
-      }
+      if ($proceed) {
+        if (!empty($body['embed_entities'])) {
+          foreach ($body['embed_entities'] as $data) {
+            try {
+              $embed_entity = $entity_repository->loadEntityByUuid($data[ApiUnifyRequest::ENTITY_TYPE_KEY], $data[ApiUnifyRequest::UUID_KEY]);
+            } catch (\Exception $e) {
+              throw new SyncException(SyncException::CODE_UNEXPECTED_EXCEPTION, $e);
+            }
 
-      if (!empty($body['embed_entities'])) {
-        foreach ($body['embed_entities'] as $data) {
-          try {
-            $embed_entity = $entity_repository->loadEntityByUuid($data[ApiUnifyRequest::ENTITY_TYPE_KEY], $data[ApiUnifyRequest::UUID_KEY]);
+            if (!$this->supportsEntity($embed_entity)) {
+              continue;
+            }
+
+            $this->exportEntity($embed_entity, self::EXPORT_AS_DEPENDENCY, self::ACTION_CREATE);
           }
-          catch (\Exception $e) {
-            throw new SyncException(SyncException::CODE_UNEXPECTED_EXCEPTION, $e);
-          }
-
-          if (!$this->supportsEntity($embed_entity)) {
-            continue;
-          }
-
-          $this->exportEntity($embed_entity, self::EXPORT_AS_DEPENDENCY, self::ACTION_CREATE);
         }
       }
+    }
+
+    \Drupal::logger('drupal_content_sync')->info('@not EXPORT @action @entity_type:@bundle @uuid @reason', [
+      '@reason' => $reason,
+      '@action' => $action,
+      '@entity_type'  => $entity_type,
+      '@bundle' => $entity_bundle,
+      '@uuid' => $entity_uuid,
+      '@not' => $proceed?'':'NO',
+    ]);
+
+    // Handler chose to deliberately ignore this entity,
+    // e.g. a node that wasn't published yet and is not exported unpublished.
+    if( !$proceed ) {
+      return FALSE;
     }
 
     $url = $this->getExternalUrl($entity_type, $entity_bundle, $action == self::ACTION_CREATE ? NULL : $entity_uuid);
@@ -1065,10 +1107,11 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from Pool -> ' . $site_id,
             'options' => [
               'dependency_connection_id'  => self::DEPENDENCY_CONNECTION_ID,
-              'create_entities' => $type['sync_import'] == 'automatically' || $type['cloned_import'] == 'automatically',
-              'update_entities' => TRUE,
-              'delete_entities' => boolval($type['delete_entity']),
-              'clone_entities' => $type['cloned_import'] == 'automatically',
+              'create_entities' => $type['import']!=DrupalContentSync::IMPORT_DISABLED,
+              'update_entities' => $type['import']!=DrupalContentSync::IMPORT_DISABLED && !$type['import_clone'],
+              'delete_entities' => $type['import']!=DrupalContentSync::IMPORT_DISABLED && boolval($type['delete_entity']),
+              'clone_entities'  => boolval($type['import_clone']),
+              'dependent_entities_only'  => $type['import']==DrupalContentSync::IMPORT_AS_DEPENDENCY,
               'update_none_when_loading' => TRUE,
               'exclude_reference_properties' => [
                 'pSource',
@@ -1086,10 +1129,18 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
             'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from ' . $site_id . ' -> Pool',
             'options' => [
               'dependency_connection_id'  => self::POOL_DEPENDENCY_CONNECTION_ID,
-              'create_entities' => TRUE,
-              'update_entities' => TRUE,
-              'delete_entities' => TRUE,
-              'clone_entities' => FALSE,
+              // As entities will only be sent to API Unify if the sync config
+              // allows it, the synchronization entity doesn't need to filter
+              // any further
+              //'create_entities' => TRUE,
+              //'update_entities' => TRUE,
+              //'delete_entities' => TRUE,
+              //'clone_entities'  => FALSE,
+              //'dependent_entities_only'  => FALSE,
+              'create_entities' => $type['export']!=DrupalContentSync::EXPORT_DISABLED,
+              'update_entities' => $type['export']!=DrupalContentSync::EXPORT_DISABLED,
+              'delete_entities' => $type['export']!=DrupalContentSync::EXPORT_DISABLED && boolval($type['delete_entity']),
+              'dependent_entities_only'  => $type['export']==DrupalContentSync::EXPORT_AS_DEPENDENCY,
               'update_none_when_loading' => TRUE,
               'exclude_reference_properties' => [
                 'pSource',
