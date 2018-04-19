@@ -48,6 +48,8 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    */
   public function updateEntityTypeDefinition(&$definition);
 
+  public function getForbiddenFields();
+
   /**
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
    *   The request

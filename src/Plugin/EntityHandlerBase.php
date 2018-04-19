@@ -324,6 +324,21 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     return FALSE;
   }
 
+  public function getForbiddenFields() {
+    $entity_type_entity = \Drupal::service('entity_type.manager')
+      ->getStorage($this->entityTypeName)
+      ->getEntityType();
+    return [
+      // These basic fields are already taken care of, so we ignore them
+      // here.
+      $entity_type_entity->getKey('id'),
+      $entity_type_entity->getKey('revision'),
+      $entity_type_entity->getKey('bundle'),
+      $entity_type_entity->getKey('uuid'),
+      $entity_type_entity->getKey('label'),
+    ];
+  }
+
   /**
    * The export method.
    *

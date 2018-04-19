@@ -516,7 +516,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
     $result = $handler->import($request, $is_clone, $reason, $action);
 
-    \Drupal::logger('drupal_content_sync')->info('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone', [
+    \Drupal::logger('drupal_content_sync')->info('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
       '@reason' => $reason,
       '@action' => $action,
       '@entity_type'  => $entity_type_name,
@@ -524,6 +524,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       '@uuid' => $data['uuid'],
       '@not' => $result?'':'NO',
       '@clone'=>$is_clone?'as clone':'',
+      '@message'=>$result?t('The entity has been imported.'):t('The entity handler denied to import this entity.'),
     ]);
 
     // Don't save meta entity if entity wasn't imported anyway.
@@ -643,13 +644,14 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       }
     }
 
-    \Drupal::logger('drupal_content_sync')->info('@not EXPORT @action @entity_type:@bundle @uuid @reason', [
+    \Drupal::logger('drupal_content_sync')->info('@not EXPORT @action @entity_type:@bundle @uuid @reason: @message', [
       '@reason' => $reason,
       '@action' => $action,
       '@entity_type'  => $entity_type,
       '@bundle' => $entity_bundle,
       '@uuid' => $entity_uuid,
       '@not' => $proceed?'':'NO',
+      '@message'=>$proceed?t('The entity has been exported.'):t('The entity handler denied to export this entity.'),
     ]);
 
     // Handler chose to deliberately ignore this entity,

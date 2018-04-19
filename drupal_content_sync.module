@@ -64,11 +64,14 @@ function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $a
       }
     }
     catch (SyncException $e) {
-      if ($e->parentException) {
+      $message  = $e->parentException ? $e->parentException->getMessage() : (
+        $e->errorCode==$e->getMessage() ? '' : $e->getMessage()
+      );
+      if ($message) {
         $messenger->addWarning(t('Failed to export %label automatically with Drupal Content Sync (%code). Message: %message', [
           '%label' => $entity->label(),
           '%code' => $e->errorCode,
-          '%message' => $e->parentException->getMessage(),
+          '%message' => $message,
         ]));
       }
       else {

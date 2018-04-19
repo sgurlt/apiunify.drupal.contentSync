@@ -33,6 +33,11 @@ class DrupalContentSyncEntityResource extends ResourceBase {
   const TYPE_HAS_NOT_BEEN_FOUND = 'The entity type has not been found.';
 
   /**
+   * @const TYPE_HAS_INCOMPATIBLE_VERSION
+   */
+  const TYPE_HAS_INCOMPATIBLE_VERSION = 'The entity type has an incompatible version.';
+
+  /**
    * @const CODE_NOT_FOUND
    */
   const CODE_NOT_FOUND = 404;
@@ -287,8 +292,41 @@ class DrupalContentSyncEntityResource extends ResourceBase {
 
     $sync = DrupalContentSync::getImportSynchronizationForApiAndEntityType($api, $entity_type_name, $entity_bundle, $reason, $action, $is_clone);
     if (empty($sync)) {
+      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
+        '@reason' => $reason,
+        '@action' => $action,
+        '@entity_type'  => $entity_type_name,
+        '@bundle' => $entity_bundle,
+        '@uuid' => $data['uuid'],
+        '@not' => 'NO',
+        '@clone'=>$is_clone?'as clone':'',
+        '@message'=>t('No synchronization config matches this request (dependency: @dependency, manual: @manual).',[
+          '@dependency'=>$is_dependency?'YES':'NO',
+          '@manual'=>$is_manual?'YES':'NO',
+        ]),
+      ]);
       return new ResourceResponse(
         ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)], self::CODE_NOT_FOUND
+      );
+    }
+
+    $local_version = DrupalContentSync::getEntityTypeVersion($entity_type_name,$entity_bundle);
+    if( $entity_type_version!=$local_version ) {
+      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
+        '@reason' => $reason,
+        '@action' => $action,
+        '@entity_type'  => $entity_type_name,
+        '@bundle' => $entity_bundle,
+        '@uuid' => $data['uuid'],
+        '@not' => 'NO',
+        '@clone'=>$is_clone?'as clone':'',
+        '@message'=>t('The requested entity type version @requested doesn\'t match the local entity type version @local.',[
+          '@requested'=>$entity_type_version,
+          '@local'=>$local_version,
+        ]),
+      ]);
+      return new ResourceResponse(
+        ['message' => t(self::TYPE_HAS_INCOMPATIBLE_VERSION)], self::CODE_NOT_FOUND
       );
     }
 
@@ -303,6 +341,37 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
     catch (\Exception $e) {
+      $message  = $e->parentException ? $e->parentException->getMessage() : (
+        $e->errorCode==$e->getMessage() ? '' : $e->getMessage()
+      );
+      if( $e->errorCode ) {
+        if( $message ) {
+          $message  = t('Internal error @code: @message',[
+            '@code'=>$e->errorCode,
+            '@message'=>$message,
+          ]);
+        }
+        else {
+          $message  = t('Internal error @code',[
+            '@code'=>$e->errorCode,
+          ]);
+        }
+      }
+      else {
+        $message  = $e->getMessage();
+      }
+
+      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
+        '@reason' => $reason,
+        '@action' => $action,
+        '@entity_type'  => $entity_type_name,
+        '@bundle' => $entity_bundle,
+        '@uuid' => $data['uuid'],
+        '@not' => 'NO',
+        '@clone'=>$is_clone?'as clone':'',
+        '@message'=>$message,
+      ]);
+
       return new ResourceResponse(
         [
           'message' => t('SyncException @code',

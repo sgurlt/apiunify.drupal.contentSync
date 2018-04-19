@@ -3,6 +3,7 @@
 namespace Drupal\drupal_content_sync;
 
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Exception\SyncException;
 
 /**
  * Class ApiUnifyRequest.
@@ -120,6 +121,22 @@ class ApiUnifyRequest {
    *
    */
   public function embedEntityDefinition($entity_type, $bundle, $uuid, $details = NULL) {
+    // Prevent circle references without middle man
+    if( $entity_type==$this->entityType && $uuid==$this->uuid ) {
+      throw new SyncException(
+        SyncException::CODE_INTERNAL_ERROR,
+        null,
+        "Can't circle-reference own entity (".$entity_type." ".$uuid.")."
+      );
+    }
+
+    // Already included? Just return the definition then
+    foreach( $this->embedEntities as $definition ) {
+      if( $definition[self::ENTITY_TYPE_KEY]==$entity_type && $definition[self::UUID_KEY]==$uuid ) {
+        return $definition;
+      }
+    }
+
     return $this->embedEntities[] = $this->getEmbedEntityDefinition(
       $entity_type, $bundle, $uuid, $details
     );

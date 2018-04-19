@@ -450,6 +450,25 @@ class DrupalContentSyncForm extends EntityForm {
         $entity_table[$type_key . '-' . $entity_bundle_name] = $entity_bundle_row;
 
         if ($handler_id != 'ignore') {
+          $forbidden_fields = array_merge($handler->getForbiddenFields(),
+            // These are standard fields defined by the DrupalContentSync
+            // Entity type that entities may not override (otherwise
+            // these fields will collide with DCS functionality)
+            [
+              'source',
+              'source_id',
+              'source_connection_id',
+              'preview',
+              'url',
+              'apiu_translation',
+              'metadata',
+              'embed_entities',
+              'title',
+              'created',
+              'changed',
+              'uuid',
+            ]);
+
           $entityFieldManager = $this->entityFieldManager;
           $fields = $entityFieldManager->getFieldDefinitions($type_key, $entity_bundle_name);
           foreach ($fields as $key => $field) {
@@ -488,34 +507,6 @@ class DrupalContentSyncForm extends EntityForm {
               '#size' => 24,
               '#title_display' => 'invisible',
             ];
-
-            $entity_type_entity = $this->entityTypeManager->getStorage($type_key)->getEntityType();
-            $forbidden_fields = array_merge([
-              // These basic fields are already taken care of, so we ignore them
-              // here.
-              $entity_type_entity->getKey('id'),
-              $entity_type_entity->getKey('revision'),
-              $entity_type_entity->getKey('bundle'),
-              $entity_type_entity->getKey('uuid'),
-              $entity_type_entity->getKey('label'),
-            ],
-              // These are standard fields defined by the DrupalContentSync
-              // Entity type that entities may not override (otherwise
-              // these fields will collide with DCS functionality)
-              [
-                'source',
-                'source_id',
-                'source_connection_id',
-                'preview',
-                'url',
-                'apiu_translation',
-                'metadata',
-                'embed_entities',
-                'title',
-                'created',
-                'changed',
-                'uuid',
-              ]);
 
             if (in_array($key, $forbidden_fields) !== FALSE) {
               $handler_id = 'ignore';

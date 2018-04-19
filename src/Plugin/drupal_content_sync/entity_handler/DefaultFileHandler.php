@@ -80,6 +80,17 @@ class DefaultFileHandler extends EntityHandlerBase {
     $definition['new_property_lists']['required']['apiu_file_content'] = 'value';
   }
 
+  public function getForbiddenFields() {
+    return array_merge(
+      parent::getForbiddenFields(),
+      [
+        'uri',
+        'filemime',
+        'filesize',
+      ]
+    );
+  }
+
   /**
    * @inheritdoc
    */

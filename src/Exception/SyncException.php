@@ -13,12 +13,13 @@ class SyncException extends \Exception {
   const CODE_UNEXPECTED_EXCEPTION   = 'UNEXPECTED_EXCEPTION';
   const CODE_EXPORT_REQUEST_FAILED  = 'EXPORT_REQUEST_FAILED';
   const CODE_INVALID_IMPORT_REQUEST = 'INVALID_REQUEST';
+  const CODE_INTERNAL_ERROR         = 'INTERNAL_ERROR';
 
   /**
    *
    */
-  public function __construct($errorCode, $parentException = NULL) {
-    parent::__construct($errorCode);
+  public function __construct($errorCode, $parentException = NULL, $message = NULL) {
+    parent::__construct($message ? $message : $errorCode );
 
     $this->errorCode       = $errorCode;
     $this->parentException = $parentException;
