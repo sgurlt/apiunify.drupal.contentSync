@@ -10,8 +10,7 @@ use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\file\Entity\File;
 
 /**
- * Class DefaultEntityHandler, providing a minimalistic implementation for any
- * entity type.
+ * Class DefaultFileHandler, providing proper file handling capabilities.
  *
  * @EntityHandler(
  *   id = "drupal_content_sync_default_file_handler",
@@ -24,14 +23,14 @@ use Drupal\file\Entity\File;
 class DefaultFileHandler extends EntityHandlerBase {
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public static function supports($entity_type, $bundle) {
     return $entity_type == 'file';
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function getAllowedExportOptions() {
     return [
@@ -43,7 +42,7 @@ class DefaultFileHandler extends EntityHandlerBase {
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function getAllowedImportOptions() {
     return [
@@ -55,7 +54,7 @@ class DefaultFileHandler extends EntityHandlerBase {
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function getAllowedPreviewOptions() {
     return [
@@ -65,7 +64,7 @@ class DefaultFileHandler extends EntityHandlerBase {
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function updateEntityTypeDefinition(&$definition) {
     parent::updateEntityTypeDefinition($definition);

@@ -20,14 +20,14 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 class DefaultEntityHandler extends EntityHandlerBase {
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public static function supports($entity_type, $bundle) {
     return $entity_type != 'user';
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function getAllowedPreviewOptions() {
     return [

@@ -11,7 +11,7 @@ use Drupal\Core\Plugin\PluginBase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Common base class for entity handler plugins.
+ * Common base class for field handler plugins.
  *
  * @see \Drupal\drupal_content_sync\Annotation\EntityHandler
  * @see \Drupal\drupal_content_sync\Plugin\FieldHandlerInterface
@@ -24,15 +24,40 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   /**
    * A logger instance.
    *
-   * @var \Psr\Log\LoggerInterface
+   * @var \Psr\Log\LoggerInterface $logger
    */
   protected $logger;
 
+  /**
+   * @var string $entityTypeName The entity type of the entity to be processed.
+   */
   protected $entityTypeName;
+
+  /**
+   * @var string $bundleName The bundle of the entity to be processed.
+   */
   protected $bundleName;
+
+  /**
+   * @var string $fieldName The name of the field this handler processes.
+   */
   protected $fieldName;
+
+  /**
+   * @var \Drupal\Core\Field\FieldDefinitionInterface $fieldDefinition
+   */
   protected $fieldDefinition;
+
+  /**
+   * @var array $settings
+   *   Additional settings as provided by
+   *   {@see FieldHandlerInterface::getHandlerSettings}.
+   */
   protected $settings;
+
+  /**
+   * @var DrupalContentSync $sync The synchronization this handler belongs to.
+   */
   protected $sync;
 
   /**
@@ -40,6 +65,8 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
    *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
+   *   Must contain entity_type_name, bundle_name, field_name, field_definition,
+   *   settings and sync (see above).
    * @param string $plugin_id
    *   The plugin_id for the plugin instance.
    * @param mixed $plugin_definition
@@ -71,7 +98,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function getAllowedExportOptions() {
     return [
@@ -81,7 +108,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function getAllowedImportOptions() {
     return [
@@ -91,7 +118,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function getHandlerSettings() {
     // Nothing special here.
@@ -100,11 +127,14 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
 
   /**
    * Advanced entity type definition settings for the Node.js backend. You
-   * can usually ignore these.
+   * can usually ignore these. By default it will create a new allowed field
+   * in API Unify for the entity type that is:
+   * - stored in the filesystem if it is a file field
+   * - stored in the database otherwise
+   * - required if the field is required by Drupal as well
+   * - modifiable if the field is not set to "read only" in Drupal.
    *
-   * @ToDo: $defintion type differs from the interface which one is correct?
-   *
-   * @param array $definition
+   * @param array $definition The definition to extend.
    */
   public function updateEntityTypeDefinition(&$definition) {
     if (in_array($this->fieldDefinition->getType(), ['file', 'image'])) {

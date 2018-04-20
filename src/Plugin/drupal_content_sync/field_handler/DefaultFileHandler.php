@@ -32,7 +32,7 @@ class DefaultFileHandler extends FieldHandlerBase {
   }
 
   /**
-   *
+   * @inheritdoc
    */
   public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
     // Deletion doesn't require any action on field basis for static data.

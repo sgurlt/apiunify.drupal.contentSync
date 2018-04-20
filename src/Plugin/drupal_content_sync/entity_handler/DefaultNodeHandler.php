@@ -8,8 +8,8 @@ use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 
 /**
- * Class DefaultEntityHandler, providing a minimalistic implementation for any
- * entity type.
+ * Class DefaultNodeHandler, providing proper handling for published/unpublished
+ * content.
  *
  * @EntityHandler(
  *   id = "drupal_content_sync_default_node_handler",
@@ -22,14 +22,14 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 class DefaultNodeHandler extends EntityHandlerBase {
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public static function supports($entity_type, $bundle) {
     return $entity_type == 'node';
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function getAllowedExportOptions() {
     return [
@@ -41,7 +41,7 @@ class DefaultNodeHandler extends EntityHandlerBase {
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function getAllowedImportOptions() {
     return [
@@ -53,7 +53,7 @@ class DefaultNodeHandler extends EntityHandlerBase {
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function getAllowedPreviewOptions() {
     return [
@@ -63,7 +63,7 @@ class DefaultNodeHandler extends EntityHandlerBase {
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function getHandlerSettings() {
     return [

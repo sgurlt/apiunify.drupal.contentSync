@@ -12,9 +12,11 @@ use Drupal\Core\Render\Renderer;
 use Drupal\rest\ResourceResponse;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Provides entity interfaces for Drupal Content Sync.
+ * Provides entity interfaces for Drupal Content Sync, allowing API Unify to
+ * request and manipulate entities.
  *
  * @RestResource(
  *   id = "drupal_content_sync_entity_resource",
@@ -28,47 +30,43 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class DrupalContentSyncEntityResource extends ResourceBase {
 
   /**
-   * @const ENTITY_HAS_NOT_BEEN_FOUND
-   */
-  const TYPE_HAS_NOT_BEEN_FOUND = 'The entity type has not been found.';
-
-  /**
-   * @const TYPE_HAS_INCOMPATIBLE_VERSION
-   */
-  const TYPE_HAS_INCOMPATIBLE_VERSION = 'The entity type has an incompatible version.';
-
-  /**
-   * @const CODE_NOT_FOUND
-   */
-  const CODE_NOT_FOUND = 404;
-
-  /**
-   * @const ENTITY_HAS_NOT_BEEN_FOUND
-   */
-  const FILE_INPUT_DATA_IS_INVALID = 'The entity data of the file object is invalid.';
-
-  /**
-   * @const CODE_NOT_FOUND
+   * @var int CODE_INVALID_DATA The provided data could not be interpreted.
    */
   const CODE_INVALID_DATA = 401;
 
   /**
-   * @var \Drupal\Core\Entity\EntityTypeBundleInfo
+   * @var int CODE_NOT_FOUND The entity doesn't exist or can't be accessed
+   */
+  const CODE_NOT_FOUND = 404;
+
+  /**
+   * @var string TYPE_HAS_NOT_BEEN_FOUND
+   *    The entity type doesn't exist or can't be accessed
+   */
+  const TYPE_HAS_NOT_BEEN_FOUND = 'The entity type has not been found.';
+
+  /**
+   * @var string TYPE_HAS_INCOMPATIBLE_VERSION The version hashes are different
+   */
+  const TYPE_HAS_INCOMPATIBLE_VERSION = 'The entity type has an incompatible version.';
+
+  /**
+   * @var \Drupal\Core\Entity\EntityTypeBundleInfo $entityTypeBundleInfo
    */
   protected $entityTypeBundleInfo;
 
   /**
-   * @var \Drupal\Core\Entity\EntityTypeManager
+   * @var \Drupal\Core\Entity\EntityTypeManager $entityTypeManager
    */
   protected $entityTypeManager;
 
   /**
-   * @var \Drupal\Core\Render\Renderer
+   * @var \Drupal\Core\Render\Renderer $renderedManager
    */
   protected $renderedManager;
 
   /**
-   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface $entityRepository
    */
   protected $entityRepository;
 
@@ -142,15 +140,6 @@ class DrupalContentSyncEntityResource extends ResourceBase {
   }
 
   /**
-   * @ToDo: Add description.
-   */
-  protected function getHandlerForEntityType($config) {
-    $entityPluginManager = \Drupal::service('plugin.manager.dcs_entity_handler');
-
-    return $entityPluginManager->createInstance($config['handler']);
-  }
-
-  /**
    * Responds to entity GET requests.
    *
    * @param string $entity_type
@@ -160,7 +149,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @param string $entity_uuid
    *   The uuid of an entity.
    *
-   * @return \Drupal\rest\ResourceResponse
+   * @return Response
    *   A list of entities of the given type and bundle.
    */
   public function get($entity_type, $entity_bundle, $entity_uuid) {
@@ -244,7 +233,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @param string $entity_uuid
    *   The uuid of an entity.
    *
-   * @return \Drupal\rest\ResourceResponse
+   * @return Response
    *   A list of entities of the given type and bundle.
    */
   public function delete($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid) {
@@ -273,7 +262,18 @@ class DrupalContentSyncEntityResource extends ResourceBase {
   }
 
   /**
-   * @ToDo: Add description.
+   * @param string $api The API {@see DrupalContentSync}
+   * @param string $entity_type_name The entity type of the processed entity.
+   * @param string $entity_bundle The bundle of the processed entity.
+   * @param string $entity_type_version The version the config was saved for.
+   * @param array $data
+   *    For {@see DrupalContentSync::ACTION_CREATE} and
+   *    {@see DrupalContentSync::ACTION_UPDATE}: the data for the entity. Will
+   *    be passed to {@see ApiUnifyRequest}.
+   * @param string $action
+   *    The {@see DrupalContentSync::ACTION_*} to be performed on the entity.
+   *
+   * @return Response The result (error, ignorance or success).
    */
   private function handleIncomingEntity($api, $entity_type_name, $entity_bundle, $entity_type_version, $data, $action) {
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();

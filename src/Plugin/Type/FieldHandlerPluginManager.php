@@ -7,11 +7,11 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
 
 /**
- * Manages discovery and instantiation of resource plugins.
+ * Manages discovery and instantiation of field handler plugins.
  *
- * @see \Drupal\rest\Annotation\RestResource
- * @see \Drupal\rest\Plugin\ResourceBase
- * @see \Drupal\rest\Plugin\ResourceInterface
+ * @see \Drupal\drupal_content_sync\Annotation\FieldHandler
+ * @see \Drupal\drupal_content_sync\Plugin\FieldHandlerBase
+ * @see \Drupal\drupal_content_sync\Plugin\FieldHandlerInterface
  * @see plugin_api
  */
 class FieldHandlerPluginManager extends DefaultPluginManager {
@@ -65,8 +65,16 @@ class FieldHandlerPluginManager extends DefaultPluginManager {
   }
 
   /**
+   * @param string $entity_type The entity type of the processed entity
+   * @param string $bundle The bundle of the processed entity
+   * @param string $field_name The name of the processed field
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field
+   *    The definition of the processed field
+   * @param bool $labels_only
+   *    Whether to return labels instead of the whole definition
    *
    * @return array
+   *    An associative array $id=>$label|$handlerDefinition to display options
    */
   public function getHandlerOptions($entity_type, $bundle, $field_name, $field, $labels_only = FALSE) {
     $options = [];
