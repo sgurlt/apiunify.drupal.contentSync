@@ -8,5 +8,4 @@ use Drupal\Core\Config\Entity\ConfigEntityInterface;
  * Provides an interface defining an DrupalContentSync entity.
  */
 interface DrupalContentSyncInterface extends ConfigEntityInterface {
-
 }

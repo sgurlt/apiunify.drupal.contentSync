@@ -56,14 +56,15 @@ class ApiUnifyRequest {
    * @param DrupalContentSync $sync         {@see ApiUnifyRequest::$sync}
    * @param string            $entity_type  {@see ApiUnifyRequest::$entityType}
    * @param string            $bundle       {@see ApiUnifyRequest::$bundle}
+   * @param string            $uuid         {@see ApiUnifyRequest::$uuid}
    * @param array             $data         NULL for exports or the data provided from API Unify for imports. Format is the same as in self::getData.
    */
-  public function __construct($sync, $entity_type, $bundle, $data = NULL) {
+  public function __construct($sync, $entity_type, $bundle, $uuid, $data = NULL) {
     $this->sync       = $sync;
     $this->entityType = $entity_type;
     $this->bundle     = $bundle;
 
-    $this->uuid                   = NULL;
+    $this->uuid                   = $uuid;
     $this->embedEntities          = [];
     $this->activeLanguage         = NULL;
     $this->translationFieldValues = NULL;

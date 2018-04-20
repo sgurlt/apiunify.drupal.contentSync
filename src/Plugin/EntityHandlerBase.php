@@ -373,7 +373,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
     $menu_items = $menu_link_manager->loadLinksByRoute('entity.' . $this->entityTypeName . '.canonical', [$this->entityTypeName => $entity->id()]);
     foreach ($menu_items as $menu_item) {
-      if (!$this->sync->exportsEntity($menu_item, DrupalContentSync::EXPORT_AS_DEPENDENCY)) {
+      if (!$this->sync->canExportEntity($menu_item, DrupalContentSync::EXPORT_AS_DEPENDENCY)) {
         continue;
       }
 
