@@ -3,6 +3,8 @@
 /**
  * @file
  * Module file for drupal_content_sync.
+ *
+ * @author Edge Box GmbH
  */
 
 use Drupal\drupal_content_sync\Exception\SyncException;
@@ -15,13 +17,29 @@ use Drupal\Core\Url;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Entity\ContentEntityDeleteForm;
 
+/**
+ * @var int DRUPAL_CONTENT_SYNC_USER_ID The user to perform updates with.
+ */
 define('DRUPAL_CONTENT_SYNC_USER_ID', \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->get('uid'));
+/**
+ * @var string DRUPAL_CONTENT_SYNC_PROFILE_NAME The encryption profile name.
+ */
 define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
 
 /**
- * @param $form
+ * 1) Make sure the user is informed that content will not only be deleted on
+ * this * instance but also on all connected instances if configured that way.
+ *
+ * 2) Make sure API Unify knows about password changes at the
+ * Drupal Content Sync user and can still authenticate to perform updates.
+ *
+ * 3) Disabled node forms if the content has been imported and the
+ * synchronization is configured to disable imported content.
+ * @see _drupal_content_sync_form_alter_disabled_fields
+ *
+ * @param array $form The form definition
  * @param \Drupal\Core\Form\FormStateInterface $form_state
- * @param $form_id
+ * @param string $form_id he ID of the form
  */
 function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   $form_object = $form_state->getFormObject();
@@ -49,50 +67,64 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
 }
 
 /**
+ * Helper function to export an entity and display the user the results. If you
+ * want to make changes programmatically, create your own handler instead.
  *
+ * @param \Drupal\Core\Entity\EntityInterface $entity The entity to export
+ * @param string $reason {@see DrupalContentSync::EXPORT_*}
+ * @param string $action {@see DrupalContentSync::ACTION_*}
+ * @param \Drupal\drupal_content_sync\Entity\DrupalContentSync $sync
+ *   The sync to be used. First matching sync will be used if none is given.
  */
-function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $action) {
-  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, $reason, $action);
-
-  if ($sync) {
-    $messenger = \Drupal::messenger();
-    try {
-      $status = $sync->exportEntity($entity, $reason, $action);
-
-      if ($status) {
-        $messenger->addMessage(t('%label has been exported automatically with Drupal Content Sync.', ['%label' => $entity->label()]));
-      }
+function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $action, DrupalContentSync $sync=NULL) {
+  if( !$sync ) {
+    $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, $reason, $action);
+    if( !$sync ) {
+      return;
     }
-    catch (SyncException $e) {
-      $message  = $e->parentException ? $e->parentException->getMessage() : (
-        $e->errorCode==$e->getMessage() ? '' : $e->getMessage()
-      );
-      if ($message) {
-        $messenger->addWarning(t('Failed to export %label automatically with Drupal Content Sync (%code). Message: %message', [
-          '%label' => $entity->label(),
-          '%code' => $e->errorCode,
-          '%message' => $message,
-        ]));
-      }
-      else {
-        $messenger->addWarning(t('Failed to export %label automatically with Drupal Content Sync (%code).', [
-          '%label' => $entity->label(),
-          '%code' => $e->errorCode,
-        ]));
-      }
+  }
+
+  $messenger = \Drupal::messenger();
+  try {
+    $status = $sync->exportEntity($entity, $reason, $action);
+
+    if ($status) {
+      $messenger->addMessage(t('%label has been exported with Drupal Content Sync.', ['%label' => $entity->label()]));
+    }
+  }
+  catch (SyncException $e) {
+    $message  = $e->parentException ? $e->parentException->getMessage() : (
+      $e->errorCode==$e->getMessage() ? '' : $e->getMessage()
+    );
+    if ($message) {
+      $messenger->addWarning(t('Failed to export %label with Drupal Content Sync (%code). Message: %message', [
+        '%label' => $entity->label(),
+        '%code' => $e->errorCode,
+        '%message' => $message,
+      ]));
+    }
+    else {
+      $messenger->addWarning(t('Failed to export %label with Drupal Content Sync (%code).', [
+        '%label' => $entity->label(),
+        '%code' => $e->errorCode,
+      ]));
     }
   }
 }
 
 /**
+ * Export the entity automatically if configured to do so.
  *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
  */
 function drupal_content_sync_entity_insert(EntityInterface $entity) {
   _drupal_content_sync_export_entity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_CREATE);
 }
 
 /**
+ * Export the entity automatically if configured to do so.
  *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
  */
 function drupal_content_sync_entity_update(EntityInterface $entity) {
   // This is actually an update, but for the case this entity existed
@@ -103,14 +135,19 @@ function drupal_content_sync_entity_update(EntityInterface $entity) {
 }
 
 /**
+ * Export the entity deletion automatically if configured to do so.
  *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
  */
 function drupal_content_sync_entity_delete(EntityInterface $entity) {
   _drupal_content_sync_export_entity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_DELETE);
 }
 
 /**
+ * Update the password at API Unify if it's necessary for authentication.
  *
+ * @param $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
  */
 function drupal_content_sync_user_password_submit(&$form, FormStateInterface $form_state) {
   $uid = $form_state->getValue('uid');
@@ -142,7 +179,12 @@ function drupal_content_sync_user_password_submit(&$form, FormStateInterface $fo
 }
 
 /**
+ * Encrypt the provided values. This is used to securely store the
+ * authentication password necessary for API Unify to make changes.
  *
+ * @param array $values The values to encrypt.
+ *
+ * @return array The input array, but with encrypted values.
  */
 function drupal_content_sync_encrypt_values(array $values) {
   $encryption_profile = EncryptionProfile::load(DRUPAL_CONTENT_SYNC_PROFILE_NAME);
@@ -156,9 +198,13 @@ function drupal_content_sync_encrypt_values(array $values) {
 }
 
 /**
- * @param $form
+ * Disable all form elements if the content has been imported and the user
+ * should not be able to alter imported content.
+ * @see \drupal_content_sync_form_alter()
+ *
+ * @param array $form
  * @param \Drupal\Core\Form\FormStateInterface $form_state
- * @param $form_id
+ * @param string $form_id
  */
 function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterface $form_state, $form_id) {
   $form_object = $form_state
@@ -232,6 +278,8 @@ function drupal_content_sync_theme() {
 
 /**
  * Implements hook_entity_operation_alter().
+ *
+ * Provide "publish changes" option.
  */
 function drupal_content_sync_entity_operation_alter(array &$operations, EntityInterface $entity) {
   $operations += drupal_content_sync_get_publish_changes_operations($entity);
@@ -268,9 +316,10 @@ function drupal_content_sync_get_publish_changes_operations(EntityInterface $ent
 
 /**
  * Implements hook_form_menu_edit_form_alter().
+ *
+ * Provide "publish changes" action link.
  */
 function drupal_content_sync_form_menu_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
-  // @TODO Refactor => usage?
   $links = [];
   if (!empty($form['links']['links'])) {
     $links = Element::children($form['links']['links']);

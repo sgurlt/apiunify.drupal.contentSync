@@ -36,18 +36,12 @@ class DrupalContentSyncPublishChanges extends ControllerBase {
    */
   public function publishChanges($sync_id, EntityInterface $entity) {
     $sync   = DrupalContentSync::load($sync_id);
-    $result = $sync->exportEntity(
+    _drupal_content_sync_export_entity(
       $entity,
-      DrupalContentSync::EXPORT_MANUALLY
+      DrupalContentSync::EXPORT_MANUALLY,
+      DrupalContentSync::ACTION_CREATE,
+      $sync
     );
-
-    if ($result) {
-      $this->messenger->addMessage('The changes has been successfully pushed.');
-    }
-    else {
-      $this->messenger->addError('An error occured while pushing the changes to the ' .
-        'Drupal Content Sync backend. Please try again later.');
-    }
 
     return new RedirectResponse('/');
   }

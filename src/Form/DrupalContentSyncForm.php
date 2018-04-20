@@ -25,58 +25,54 @@ use GuzzleHttp\Client;
 class DrupalContentSyncForm extends EntityForm {
 
   /**
-   * @const DRUPAL_CONTENT_SYNC
+   * @var string DRUPAL_CONTENT_SYNC_PREVIEW_FIELD
+   *    The name of the view mode that must be present to allow teaser previews.
    */
   const DRUPAL_CONTENT_SYNC_PREVIEW_FIELD = 'drupal_content_sync_preview';
 
   /**
-   * @const FIELD_DRUPAL_CONTENT_SYNCED
-   */
-  const FIELD_DRUPAL_CONTENT_SYNCED = 'field_drupal_content_synced';
-
-  /**
-   * @var \Drupal\Core\Entity\EntityTypeManager
+   * @var \Drupal\Core\Entity\EntityTypeManager $entityTypeManager
    */
   protected $entityTypeManager;
 
   /**
-   * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface
+   * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface $bundleInfoService
    */
   protected $bundleInfoService;
 
   /**
-   * @var \Drupal\Core\Entity\EntityFieldManager
+   * @var \Drupal\Core\Entity\EntityFieldManager $entityFieldManager
    */
   protected $entityFieldManager;
 
   /**
-   * @var \Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager
+   * @var \Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager $entityPluginManager
    */
   protected $entityPluginManager;
 
   /**
-   * @var \Drupal\drupal_content_sync\Plugin\Type\FieldHandlerPluginManager
+   * @var \Drupal\drupal_content_sync\Plugin\Type\FieldHandlerPluginManager $fieldPluginManager
    */
   protected $fieldPluginManager;
 
   /**
    * The Messenger service.
    *
-   * @var \Drupal\Core\Messenger\MessengerInterface
+   * @var \Drupal\Core\Messenger\MessengerInterface $messenger
    */
   protected $messenger;
 
   /**
    * The config factory to load configuration.
    *
-   * @var \Drupal\Core\Config\ConfigFactory
+   * @var \Drupal\Core\Config\ConfigFactory $configFactory
    */
   protected $configFactory;
 
   /**
    * The http client to connect to API Unify.
    *
-   * @var \GuzzleHttp\Client
+   * @var \GuzzleHttp\Client $httpClient
    */
   protected $httpClient;
 
@@ -135,22 +131,13 @@ class DrupalContentSyncForm extends EntityForm {
   }
 
   /**
-   * Gets migration configurations.
+   * A sync handler has been updated, so the options must be updated as well.
+   * We're simply reloading the table in this case.
    *
    * @return array
-   *   An array of migration names.
+   *   The new sync_entities table.
    */
   public function updateSyncHandler($form, FormStateInterface $form_state) {
-    // $trigger  = $form_state->getTriggeringElement();
-    // $trigger  = explode('[',str_replace(']','',$trigger['#name']));
-    // $id       = $trigger[1];
-    // $value    = $form_state->getValue(['sync_entities',$id,'handler']);
-    // list($entity_type,$bundle,$field) = explode('-',$id);
-    // if(empty($field)) {
-    //
-    // }
-    // $trigger  = $form_state->getTriggeringElement();
-    // $trigger['#ajax']['wrapper'] = 'row-file-file';.
     return $form['sync_entities'];
   }
 
@@ -663,7 +650,8 @@ class DrupalContentSyncForm extends EntityForm {
   }
 
   /**
-   *
+   * Validate format of input fields and make sure the API Unify backend is
+   * accessible to actually update it.
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
@@ -735,37 +723,9 @@ class DrupalContentSyncForm extends EntityForm {
       $sync_entities[$key]['version'] = DrupalContentSync::getEntityTypeVersion($type_key, $bundle_key);
       $sync_entities[$key]['entity_type_name'] = $type_key;
       $sync_entities[$key]['bundle_name'] = $bundle_key;
-
-      if (DrupalContentSync::IMPORT_DISABLED !== $bundle_fields['import']) {
-        $field_storage = FieldStorageConfig::loadByName($type_key, self::FIELD_DRUPAL_CONTENT_SYNCED);
-
-        if (is_null($field_storage)) {
-          $field_drupal_content_synced = [
-            'field_name' => self::FIELD_DRUPAL_CONTENT_SYNCED,
-            'entity_type' => $type_key,
-            'type' => 'boolean',
-            'cardinality' => -1,
-          ];
-
-          FieldStorageConfig::create($field_drupal_content_synced)->save();
-        }
-
-        $bundle_field_config = FieldConfig::loadByName($type_key, $bundle_key, self::FIELD_DRUPAL_CONTENT_SYNCED);
-
-        if (is_null($bundle_field_config)) {
-          $bundle_field = [
-            'field_name' => self::FIELD_DRUPAL_CONTENT_SYNCED,
-            'entity_type' => $type_key,
-            'bundle' => $bundle_key,
-            'label' => 'Drupal Content Synced',
-          ];
-
-          FieldConfig::create($bundle_field)->save();
-        }
-      }
     }
 
-    $is_new = !$this->exist($config->id());
+    $is_new = !$this->exists($config->id());
     $status = $config->save();
 
     if ($status) {
@@ -818,7 +778,7 @@ class DrupalContentSyncForm extends EntityForm {
    * @return bool
    *   Checking on exist an entity.
    */
-  public function exist($id) {
+  public function exists($id) {
     $entity = $this->entityTypeManager
       ->getStorage('drupal_content_sync')
       ->getQuery()
