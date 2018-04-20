@@ -21,5 +21,5 @@ drupal_content_sync.sync.*:
       type: map
       label: 'Sync entities'
     local_connections:
-      type: string
+      type: map
       label: 'Local Drupal Content Sync Connections'

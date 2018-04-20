@@ -8,6 +8,7 @@ use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
+use Drupal\drupal_content_sync\ApiUnifyConfig;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -133,6 +134,9 @@ class DrupalContentSyncForm extends EntityForm {
   /**
    * A sync handler has been updated, so the options must be updated as well.
    * We're simply reloading the table in this case.
+   *
+   * @param array $form
+   * @param FormStateInterface $form_state
    *
    * @return array
    *   The new sync_entities table.
@@ -343,6 +347,7 @@ class DrupalContentSyncForm extends EntityForm {
           ],
         ];
 
+        $handler  = NULL;
         if ($handler_id == 'ignore') {
           $export_options = [
             DrupalContentSync::EXPORT_DISABLED => $this->t('Disabled')->render(),
@@ -371,18 +376,19 @@ class DrupalContentSyncForm extends EntityForm {
           '#default_value' => $row_default_values['export'],
         ];
 
-        if ($handler_id == 'ignore') {
-          $import_options = [
-            DrupalContentSync::IMPORT_DISABLED => $this->t('Disabled')->render(),
-          ];
-        }
-        else {
+        if ($handler) {
           $allowed_import_options = $handler->getAllowedImportOptions();
           $import_options = [];
           foreach ($allowed_import_options as $option) {
             $import_options[$option] = $import_option_labels[$option];
           }
         }
+        else {
+          $import_options = [
+            DrupalContentSync::IMPORT_DISABLED => $this->t('Disabled')->render(),
+          ];
+        }
+
         $entity_bundle_row['import'] = [
           '#type' => 'select',
           '#title' => $this->t('Synchronized Import'),
@@ -652,6 +658,9 @@ class DrupalContentSyncForm extends EntityForm {
   /**
    * Validate format of input fields and make sure the API Unify backend is
    * accessible to actually update it.
+   *
+   * @param array $form
+   * @param FormStateInterface $form_state
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
@@ -665,7 +674,7 @@ class DrupalContentSyncForm extends EntityForm {
     }
 
     $site_id = $form_state->getValue('site_id');
-    if ($site_id == DrupalContentSync::POOL_SITE_ID) {
+    if ($site_id == ApiUnifyConfig::POOL_SITE_ID) {
       $form_state->setErrorByName('site_id', $this->t('This name is reserved.'));
     }
 
@@ -688,7 +697,7 @@ class DrupalContentSyncForm extends EntityForm {
    * Right now it only checks if the config is in the $config-array (overridden
    * by the settings.php)
    *
-   * @todo take care of overriding by modules and languages
+   * @TODO take care of overriding by modules and languages
    *
    * @param string $config_key
    *   The configuration key.

@@ -3,6 +3,7 @@
 namespace Drupal\drupal_content_sync\Plugin;
 
 use Drupal\Component\Plugin\PluginInspectionInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
@@ -71,13 +72,17 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    *
    * Advanced entity type definition settings for API Unify backend. You
    * can usually ignore these.
+   *
+   * @param $definition
+   *   The definition to be sent to API Unify.
+   *   {@see ApiUnifyConfig}
    */
   public function updateEntityTypeDefinition(&$definition);
 
   /**
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
    *   The request containing all exported data.
-   * @param \Drupal\Core\Entity\EntityInterface $entity
+   * @param FieldableEntityInterface $entity
    *   The entity to import.
    * @param bool $is_clone
    *   Whether or not the entity should be clone'd or sync'd.
@@ -92,12 +97,12 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    *   Whether or not the content has been imported. FALSE is a desired state,
    *   meaning the entity should not be imported according to config.
    */
-  public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action);
+  public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action);
 
   /**
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
    *   The request to store all relevant info at.
-   * @param \Drupal\Core\Entity\EntityInterface $entity
+   * @param FieldableEntityInterface $entity
    *   The entity to export.
    * @param string $reason
    *   {@see DrupalContentSync::EXPORT_*}.
@@ -110,6 +115,6 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    *   Whether or not the content has been exported. FALSE is a desired state,
    *   meaning the entity should not be exported according to config.
    */
-  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action);
+  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action);
 
 }

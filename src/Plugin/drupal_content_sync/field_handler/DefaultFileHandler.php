@@ -2,11 +2,10 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
-use Drupal\Core\Entity\EntityInterface;
-use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\file\Entity\File;
 
@@ -34,7 +33,7 @@ class DefaultFileHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
+  public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action) {
     // Deletion doesn't require any action on field basis for static data.
     if ($action == DrupalContentSync::ACTION_DELETE) {
       return FALSE;
@@ -63,7 +62,7 @@ class DefaultFileHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
     // Deletion doesn't require any action on field basis for static data.
     if ($action == DrupalContentSync::ACTION_DELETE) {
       return FALSE;

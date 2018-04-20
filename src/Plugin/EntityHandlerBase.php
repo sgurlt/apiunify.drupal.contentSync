@@ -3,6 +3,8 @@
 namespace Drupal\drupal_content_sync\Plugin;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\Exception\SyncException;
@@ -75,7 +77,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function getAllowedExportOptions() {
     return [
@@ -88,7 +90,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
-   * @ToDo: Add description.
+   * @inheritdoc
    */
   public function getAllowedImportOptions() {
     return [
@@ -100,17 +102,13 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
-   * Update the entity type definition.
-   *
-   * @ToDo: To be done.
+   * @inheritdoc
    */
   public function updateEntityTypeDefinition(&$definition) {
   }
 
   /**
-   * Get the handler settings for the entity type.
-   *
-   * @ToDo: To be done.
+   * @inheritdoc
    */
   public function getHandlerSettings() {
     return [];
@@ -132,7 +130,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   /**
    * Check if the import should be ignored.
    *
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   * @param ApiUnifyRequest $request
    *   The API Unify Request.
    * @param bool $is_clone
    *   Entity cloned parameter.
@@ -164,11 +162,14 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       return FALSE;
     }
 
+    /**
+     * @var FieldableEntityInterface $entity
+     */
     $entity = $this->loadEntity($request);
 
     if ($action == DrupalContentSync::ACTION_DELETE) {
       if ($entity) {
-        return $this->deleteEntity($entity, $reason);
+        return $this->deleteEntity($entity);
       }
       return FALSE;
     }
@@ -199,7 +200,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   /**
    * Delete a entity.
    *
-   * @param \Drupal\Core\Entity\EntityInterface $entity
+   * @param FieldableEntityInterface $entity
    *   The entity to delete.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
@@ -207,7 +208,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    * @return bool
    *   Returns TRUE or FALSE for the deletion process.
    */
-  protected function deleteEntity(EntityInterface $entity) {
+  protected function deleteEntity(FieldableEntityInterface $entity) {
     try {
       $entity->delete();
     }
@@ -222,7 +223,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    *
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
    *   The api unify request.
-   * @param \Drupal\Core\Entity\EntityInterface $entity
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    *   The entity the values show be set for.
    * @param bool $is_clone
    *   The clone parameter of the imported entity.
@@ -236,7 +237,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    * @return bool
    *   Returns TRUE when the values are set.
    */
-  protected function setEntityValues(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
+  protected function setEntityValues(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action) {
     /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
     $entityFieldManager = \Drupal::service('entity_field.manager');
     $type = $entity->getEntityTypeId();
@@ -266,16 +267,23 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE, $e);
     }
 
-    foreach ($request->getTranslationLanguages() as $language) {
-      if ($entity->hasTranslation($language)) {
-        $translation = $entity->getTranslation($language);
-      }
-      else {
-        $translation = $entity->addTranslation($language);
-      }
+    if( $entity instanceof TranslatableInterface ) {
+      foreach ($request->getTranslationLanguages() as $language) {
+        /**
+         * If the provided entity is fieldable, translations are as well.
+         *
+         * @var FieldableEntityInterface $translation
+         */
+        if ($entity->hasTranslation($language)) {
+          $translation = $entity->getTranslation($language);
+        }
+        else {
+          $translation = $entity->addTranslation($language);
+        }
 
-      $request->changeTranslationLanguage($language);
-      $this->setEntityValues($request, $translation, $is_clone, $reason, $action);
+        $request->changeTranslationLanguage($language);
+        $this->setEntityValues($request, $translation, $is_clone, $reason, $action);
+      }
     }
 
     $request->changeTranslationLanguage();
@@ -284,16 +292,25 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
-   * Set the source Url.
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   * @param FieldableEntityInterface $entity
+   *
+   * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
-  protected function setSourceUrl(ApiUnifyRequest $request, EntityInterface $entity) {
+  protected function setSourceUrl(ApiUnifyRequest $request, FieldableEntityInterface $entity) {
     if ($entity->hasLinkTemplate('canonical')) {
-      $request->setField(
-        'url',
-        $entity->toUrl('canonical', ['absolute' => TRUE])
+      try {
+        $url = $entity->toUrl('canonical', ['absolute' => TRUE])
           ->toString(TRUE)
-          ->getGeneratedUrl()
-      );
+          ->getGeneratedUrl();
+        $request->setField(
+          'url',
+          $url
+        );
+      }
+      catch(\Exception $e) {
+        throw new SyncException(SyncException::CODE_UNEXPECTED_EXCEPTION,$e);
+      }
     }
   }
 
@@ -302,19 +319,17 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    *
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
    *   The API Unify Request.
-   * @param \Drupal\Core\Entity\EntityInterface $entity
+   * @param FieldableEntityInterface $entity
    *   The entity that could be ignored.
    * @param string $reason
    *   The reason why the entity should be ignored from the export.
    * @param string $action
    *   The action to apply.
    *
-   * @ToDo: Review.
-   *
    * @return bool
    *   Whether or not to ignore this export request.
    */
-  protected function ignoreExport(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+  protected function ignoreExport(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
     if ($reason == DrupalContentSync::EXPORT_AUTOMATICALLY || $reason == DrupalContentSync::EXPORT_MANUALLY) {
       if ($this->settings['export'] != $reason) {
         return TRUE;
@@ -325,6 +340,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   public function getForbiddenFields() {
+    /**
+     * @var \Drupal\Core\Entity\EntityTypeInterface $entity_type_entity
+     */
     $entity_type_entity = \Drupal::service('entity_type.manager')
       ->getStorage($this->entityTypeName)
       ->getEntityType();
@@ -340,19 +358,14 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
-   * The export method.
-   *
-   * @ToDo: Add detailed description.
-   *
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
     if ($this->ignoreExport($request, $entity, $reason, $action)) {
       return FALSE;
     }
 
     // Base info.
-    $request->setUuid($entity->uuid());
     $request->setField('title', $entity->label());
 
     // Translations.

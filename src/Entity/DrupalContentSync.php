@@ -4,6 +4,7 @@ namespace Drupal\drupal_content_sync\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyConfig;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Exception\SyncException;
@@ -161,6 +162,35 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   public $sync_entities;
 
   /**
+   * The API Unify backend url.
+   *
+   * @var string $url
+   */
+  public $url;
+
+  /**
+   * The API name to be used.
+   *
+   * @var string $api
+   */
+  public $api;
+
+  /**
+   * The unique site identifier.
+   *
+   * @var string $site_id
+   */
+  public $site_id;
+
+  /**
+   * A list of all API Unify connections created for this synchronization.
+   * Used by the content dashboard to display the different entity types.
+   *
+   * @var array $local_connections
+   */
+  public $local_connections;
+
+  /**
    * Acts on a saved entity before the insert or update hook is invoked.
    *
    * Used after the entity is saved, but before invoking the insert or update
@@ -176,7 +206,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
     $exporter = new ApiUnifyConfig($this);
 
-    if (!$exporter->export()) {
+    if (!$exporter->exportConfig()) {
       $messenger = \Drupal::messenger();
       $warning = 'The communication with the Drupal Content Sync Server failed.' .
         ' Therefore the synchronization entity could not be saved. For more' .
@@ -196,13 +226,12 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     try {
       foreach ($entities as $entity) {
         $exporter = new ApiUnifyConfig($entity);
-        $exporter->prepareDataCleaning($entity->url);
-        $exporter->cleanUnifyData();
+        $exporter->deleteConfig();
       }
     }
     catch (RequestException $e) {
       $messenger = \Drupal::messenger();
-      $messenger->addError(t('The API Unify server is offline or has some problems. Please, check the server'));
+      $messenger->addError(t('The API Unify server could not be accessed. Please check the connection.'));
       throw new AccessDeniedHttpException();
     }
   }
@@ -336,7 +365,6 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @param bool $is_clone
    *
    * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    */
   public static function getImportSynchronizationsForEntityType($entity_type_name, $bundle_name, $reason, $action=self::ACTION_CREATE, $is_clone = FALSE) {
     $drupal_content_syncs = self::getAll();
@@ -364,13 +392,12 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @param bool $is_clone
    *
    * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync|null
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    */
   public static function getImportSynchronizationForApiAndEntityType($api, $entity_type_name, $bundle_name, $reason, $action=self::ACTION_CREATE, $is_clone = FALSE) {
     $drupal_content_syncs = self::getAll();
 
     foreach ($drupal_content_syncs as $sync) {
-      if ($api && $sync->{'api'} != $api) {
+      if ($api && $sync->api != $api) {
         continue;
       }
       if ($sync->canImportEntity($entity_type_name, $bundle_name, $reason, $action, $is_clone)) {
@@ -490,7 +517,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * handlers.
    *
    * @param array &$result The data to be provided to API Unify.
-   * @param EntityInterface $entity
+   * @param FieldableEntityInterface $entity
    * @param string $reason
    * @param string $action
    *
@@ -499,7 +526,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @return bool
    *   Whether or not the export could be gotten.
    */
-  public function getSerializedEntity(array &$result, EntityInterface $entity, $reason, $action = self::ACTION_UPDATE) {
+  public function getSerializedEntity(array &$result, FieldableEntityInterface $entity, $reason, $action = self::ACTION_UPDATE) {
     $entity_type   = $entity->getEntityTypeId();
     $entity_bundle = $entity->bundle();
     $entity_uuid   = $entity->uuid();
@@ -530,7 +557,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    * Export the given entity.
    *
-   * @param \Drupal\Core\Entity\EntityInterface $entity
+   * @param FieldableEntityInterface $entity
    * @param string $reason
    * @param string $action
    *
@@ -538,7 +565,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *
    * @return bool Whether or not the entity has actually been exported.
    */
-  public function exportEntity(EntityInterface $entity, $reason, $action = self::ACTION_UPDATE) {
+  public function exportEntity(FieldableEntityInterface $entity, $reason, $action = self::ACTION_UPDATE) {
     if (method_exists($entity, 'getUntranslated')) {
       $entity = $entity->getUntranslated();
     }
@@ -569,6 +596,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     }
     $this->exported[$action][$entity_type][$entity_bundle][$entity_uuid]  = TRUE;
 
+    $body = NULL;
+
     if ($action != self::ACTION_DELETE) {
       $body     = [];
       $proceed  = $this->getSerializedEntity($body, $entity, $reason, $action);
@@ -577,6 +606,9 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         if (!empty($body['embed_entities'])) {
           foreach ($body['embed_entities'] as $data) {
             try {
+              /**
+               * @var FieldableEntityInterface $embed_entity
+               */
               $embed_entity = $entity_repository->loadEntityByUuid($data[ApiUnifyRequest::ENTITY_TYPE_KEY], $data[ApiUnifyRequest::UUID_KEY]);
             } catch (\Exception $e) {
               throw new SyncException(SyncException::CODE_UNEXPECTED_EXCEPTION, $e);
@@ -794,9 +826,9 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @return string
    */
   public function getExternalUrl($entity_type_name, $bundle_name, $entity_uuid = NULL) {
-    $url = $this->{'url'} . '/' . ApiUnifyConfig::getExternalConnectionPath(
-        $this->{'api'},
-        $this->{'site_id'},
+    $url = $this->url . '/' . ApiUnifyConfig::getExternalConnectionPath(
+        $this->api,
+        $this->site_id,
         $entity_type_name,
         $bundle_name,
         $this->sync_entities[$entity_type_name . '-' . $bundle_name]['version']

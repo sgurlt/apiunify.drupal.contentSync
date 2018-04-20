@@ -2,11 +2,10 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
-use Drupal\Core\Entity\EntityInterface;
-use Drupal\drupal_content_sync\SyncResult\SuccessResult;
 use Drupal\Core\Field\FieldDefinitionInterface;
 
 /**
@@ -33,7 +32,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
+  public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action) {
     // Deletion doesn't require any action on field basis for static data.
     if ($action == DrupalContentSync::ACTION_DELETE) {
       return FALSE;
@@ -52,7 +51,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
           $reference = $request->loadEmbeddedEntity($link_element);
           if ($reference) {
             $result[] = [
-              'uri' => 'entity:' . $reference->getEntityType() . '/' . $reference->id(),
+              'uri' => 'entity:' . $reference->getEntityTypeId() . '/' . $reference->id(),
             ];
           }
         }
@@ -72,10 +71,10 @@ class DefaultLinkHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
     // Deletion doesn't require any action on field basis for static data.
     if ($action == DrupalContentSync::ACTION_DELETE) {
-      return new SuccessResult(SuccessResult::CODE_HANDLER_IGNORED);
+      return FALSE;
     }
 
     $data = $entity->get($this->fieldName);
@@ -118,7 +117,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
 
     $request->setField($this->fieldName, $result);
 
-    return new SuccessResult();
+    return TRUE;
   }
 
 }

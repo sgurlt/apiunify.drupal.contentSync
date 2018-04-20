@@ -3,6 +3,7 @@
 namespace Drupal\drupal_content_sync\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\drupal_content_sync\ApiUnifyConfig;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 
 /**
@@ -19,10 +20,10 @@ class DrupalContentSynchronizationController extends ControllerBase {
    */
   public function content(DrupalContentSync $drupal_content_sync) {
     $config = [
-      'api' => $drupal_content_sync->get('api') . '-' . DrupalContentSync::CUSTOM_API_VERSION,
+      'api' => $drupal_content_sync->get('api') . '-' . ApiUnifyConfig::CUSTOM_API_VERSION,
       'url' => $drupal_content_sync->get('url'),
       'site_id' => $drupal_content_sync->get('site_id'),
-      'local_connections' => json_decode($drupal_content_sync->get('local_connections')),
+      'local_connections' => $drupal_content_sync->local_connections,
       'types' => [],
     ];
 
@@ -35,7 +36,7 @@ class DrupalContentSynchronizationController extends ControllerBase {
       }
 
       $config['types'][] = [
-        'id' => DrupalContentSync::getExternalConnectionId(
+        'id' => ApiUnifyConfig::getExternalConnectionId(
           $drupal_content_sync->api,
           $drupal_content_sync->site_id,
           $type['entity_type_name'],

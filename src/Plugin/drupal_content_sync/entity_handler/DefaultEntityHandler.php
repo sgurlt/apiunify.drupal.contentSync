@@ -3,7 +3,6 @@
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 
 /**
  * Class DefaultEntityHandler, providing a minimalistic implementation for any

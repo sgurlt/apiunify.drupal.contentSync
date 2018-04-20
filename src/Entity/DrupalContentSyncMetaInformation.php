@@ -3,6 +3,7 @@
 namespace Drupal\drupal_content_sync\Entity;
 
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityChangedTrait;
@@ -46,6 +47,10 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
       throw new \Exception(t('The type of the entity is required.'));
     }
 
+    /**
+     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
+     */
+
     // Set the uuid if the entity_id is given and the entity_uuid is not given.
     if (isset($values['entity_id']) && !isset($values['entity_uuid'])) {
       $entity = \Drupal::entityTypeManager()->getStorage($values['entity_type'])->load($values['entity_id']);
@@ -65,7 +70,7 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
     $entity = \Drupal::entityTypeManager()->getStorage($values['entity_type'])->load($values['entity_id']);
     if (!isset($values['entity_type_version'])) {
 
-      $values['entity_type_version'] = DrupalContentSync::getEntityTypeVersion($entity->getEntityType()->id(), $entity->getType());
+      $values['entity_type_version'] = DrupalContentSync::getEntityTypeVersion($entity->getEntityType()->id(), $entity->bundle());
       return;
     }
 
@@ -120,11 +125,11 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
   /**
    * Return an element by.
    *
-   * @param $entity
+   * @param FieldableEntityInterface $entity
    *
    * @return \Drupal\Core\Entity\EntityInterface
    */
-  public static function getInfoForEntity($entity) {
+  public static function getInfoForEntity(FieldableEntityInterface $entity) {
     return \Drupal::entityTypeManager()->getStorage('drupal_content_sync_meta_info')->load($entity->id());
   }
 

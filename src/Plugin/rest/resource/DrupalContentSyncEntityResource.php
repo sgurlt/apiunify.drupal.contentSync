@@ -6,6 +6,7 @@ use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\rest\ModifiedResourceResponse;
 use Drupal\rest\Plugin\ResourceBase;
 use Drupal\Core\Render\Renderer;
@@ -151,6 +152,9 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *
    * @return Response
    *   A list of entities of the given type and bundle.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
   public function get($entity_type, $entity_bundle, $entity_uuid) {
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
@@ -208,6 +212,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @param string $entity_bundle
    *   The name of an entity bundle.
    * @param string $entity_type_version
+   *   The version of the entity type to compare ours against.
+   * @param string $entity_uuid
    *   The uuid of an entity.
    * @param array $data
    *   The data to be stored in the entity.
@@ -340,25 +346,20 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         $action
       );
     }
-    catch (\Exception $e) {
+    catch (SyncException $e) {
       $message  = $e->parentException ? $e->parentException->getMessage() : (
         $e->errorCode==$e->getMessage() ? '' : $e->getMessage()
       );
-      if( $e->errorCode ) {
-        if( $message ) {
-          $message  = t('Internal error @code: @message',[
-            '@code'=>$e->errorCode,
-            '@message'=>$message,
-          ]);
-        }
-        else {
-          $message  = t('Internal error @code',[
-            '@code'=>$e->errorCode,
-          ]);
-        }
+      if( $message ) {
+        $message  = t('Internal error @code: @message',[
+          '@code'=>$e->errorCode,
+          '@message'=>$message,
+        ]);
       }
       else {
-        $message  = $e->getMessage();
+        $message  = t('Internal error @code',[
+          '@code'=>$e->errorCode,
+        ]);
       }
 
       \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
@@ -374,12 +375,33 @@ class DrupalContentSyncEntityResource extends ResourceBase {
 
       return new ResourceResponse(
         [
-          'message' => t('SyncException @code',
+          'message' => t('SyncException @code: @message',
             [
-              '@code' => $e->errorCode,
+              '@code'     => $e->errorCode,
+              '@message'  => $e->getMessage(),
             ]
           ),
           'code' => $e->errorCode,
+        ], 500
+      );
+    }
+    catch (\Exception $e) {
+      $message  = $e->getMessage();
+
+      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
+        '@reason' => $reason,
+        '@action' => $action,
+        '@entity_type'  => $entity_type_name,
+        '@bundle' => $entity_bundle,
+        '@uuid' => $data['uuid'],
+        '@not' => 'NO',
+        '@clone'=>$is_clone?'as clone':'',
+        '@message'=>$message,
+      ]);
+
+      return new ResourceResponse(
+        [
+          'message' => t('Unexpected error: @message',['@message'=>$e->getMessage()]),
         ], 500
       );
     }

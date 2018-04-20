@@ -135,6 +135,8 @@ class ApiUnifyRequest {
    * @param string $bundle      The bundle of the referenced entity.
    * @param string $uuid        The UUID of the referenced entity.
    * @param array  $details     Additional details you would like to export.
+   *
+   * @return array The definition to be exported.
    */
   public function getEmbedEntityDefinition($entity_type, $bundle, $uuid, $details = NULL) {
     $version = DrupalContentSync::getEntityTypeVersion($entity_type, $bundle);
@@ -145,16 +147,16 @@ class ApiUnifyRequest {
       self::UUID_KEY          => $uuid,
       self::BUNDLE_KEY        => $bundle,
       self::VERSION_KEY       => $version,
-      self::SOURCE_CONNECTION_ID_KEY => DrupalContentSync::getExternalConnectionId(
+      self::SOURCE_CONNECTION_ID_KEY => ApiUnifyConfig::getExternalConnectionId(
         $this->sync->api,
         $this->sync->site_id,
         $entity_type,
         $bundle,
         $version
       ),
-      self::POOL_CONNECTION_ID_KEY => DrupalContentSync::getExternalConnectionId(
+      self::POOL_CONNECTION_ID_KEY => ApiUnifyConfig::getExternalConnectionId(
         $this->sync->api,
-        DrupalContentSync::POOL_SITE_ID,
+        ApiUnifyConfig::POOL_SITE_ID,
         $entity_type,
         $bundle,
         $version
@@ -210,7 +212,6 @@ class ApiUnifyRequest {
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
   public function embedEntity($entity, $details = NULL) {
-    // @TODO For menu items, use $entity_type=$bundle=$menu_item->getBaseId() and $menu_uuid = $menu_item->getDerivativeId();
     return $this->embedEntityDefinition(
       $entity->getEntityTypeId(),
       $entity->bundle(),
@@ -235,7 +236,12 @@ class ApiUnifyRequest {
       $definition[self::BUNDLE_KEY]
     );
     if ($version != $definition[self::VERSION_KEY]) {
-      // @TODO Log error to drupal_content_sync logger
+      \Drupal::logger('drupal_content_sync')->error('Failed to resolve reference to @entity_type:@bundle: Remote version @remote_version doesn\'t match local version @local_version', [
+        '@entity_type'  => $definition[self::ENTITY_TYPE_KEY],
+        '@bundle' => $definition[self::BUNDLE_KEY],
+        '@remote_version' => $definition[self::VERSION_KEY],
+        '@local_version' => $version,
+      ]);
       return NULL;
     }
 

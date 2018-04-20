@@ -67,6 +67,7 @@ class ApiUnifyConfig {
    */
   const POOL_DEPENDENCY_CONNECTION_ID = 'drupal-[api.name]-' . self::POOL_SITE_ID . '-[entity_type.name_space]-[entity_type.name]-[entity_type.version]';
 
+
   /**
    * @var \GuzzleHttp\Client $client
    */
@@ -92,6 +93,7 @@ class ApiUnifyConfig {
    * @var bool $dataCleanPrepared Whether entities can be deleted.
    */
   protected $dataCleanPrepared = FALSE;
+
 
   /**
    * ApiUnifyConfig constructor.
@@ -265,8 +267,8 @@ class ApiUnifyConfig {
    *
    * @return bool
    */
-  public function export() {
-    $url = $this->sync->{'url'};
+  public function exportConfig() {
+    $url = $this->sync->url;
 
     // Check if a connection to Drupal Content Sync can be established.
     try {
@@ -281,8 +283,8 @@ class ApiUnifyConfig {
       // Create the child entity.
       $this->sendEntityRequest($url . '/api_unify-api_unify-api-0_1', [
         'json' => [
-          'id' => $this->{'api'} . '-' . self::CUSTOM_API_VERSION,
-          'name' => $this->{'api'},
+          'id' => $this->sync->api . '-' . self::CUSTOM_API_VERSION,
+          'name' => $this->sync->api,
           'version' => self::CUSTOM_API_VERSION,
           'parent_id' => 'drupal-' . self::CUSTOM_API_VERSION,
         ],
@@ -291,8 +293,8 @@ class ApiUnifyConfig {
       // Create the instance entity.
       $this->sendEntityRequest($url . '/api_unify-api_unify-instance-0_1', [
         'json' => [
-          'id' => $this->{'site_id'},
-          'api_id' => $this->{'api'} . '-' . self::CUSTOM_API_VERSION,
+          'id' => $this->sync->site_id,
+          'api_id' => $this->sync->api . '-' . self::CUSTOM_API_VERSION,
         ],
       ]);
 
@@ -332,14 +334,14 @@ class ApiUnifyConfig {
   /**
    * Create all entity types, connections and synchronizations as required.
    *
-   * @throws \Exception
+   * @throws \Exception If the user profile for import is not available.
    */
   protected function createEntityTypes() {
     global $base_url;
 
-    $url              = $this->sync->{'url'};
-    $api              = $this->sync->{'api'};
-    $site_id          = $this->sync->{'site_id'};
+    $url              = $this->sync->url;
+    $api              = $this->sync->api;
+    $site_id          = $this->sync->site_id;
     $entity_types     = $this->sync->sync_entities;
 
     $localConnections = [];
@@ -483,7 +485,7 @@ class ApiUnifyConfig {
             'uuid' => 'value',
           ],
         ],
-        'api_id' => $this->{'api'} . '-' . self::CUSTOM_API_VERSION,
+        'api_id' => $this->sync->api . '-' . self::CUSTOM_API_VERSION,
       ];
 
       $handler->updateEntityTypeDefinition($entity_type);
@@ -505,8 +507,6 @@ class ApiUnifyConfig {
       }
 
       try {
-        $this->prepareDataCleaning($url);
-
         // Create the entity type.
         $this->sendEntityRequest($url . '/api_unify-api_unify-entity_type-0_1', [
           'json' => $entity_type,
@@ -666,11 +666,62 @@ class ApiUnifyConfig {
         return;
       }
     }
-    $this->cleanUnifyData();
-    $this->{'local_connections'} = json_encode($localConnections);
+
+    $this->sync->local_connections = $localConnections;
   }
 
   /**
+   * Delete the synchronizations from this connection.
+   */
+  public function deleteConfig() {
+    $connections = $this->getEntitiesByUrl(
+      $this->sync->url . '/api_unify-api_unify-connection_synchronisation-0_1'
+    );
+
+    $condition = [
+      'operator'    => 'or',
+      'conditions'  => [
+        [
+          'operator'    => 'in',
+          'values'      => [
+            [
+              'source'    => 'entity',
+              'field'     => 'source_connection_id',
+            ],
+            [
+              'source'    => 'value',
+              'value'     => $connections
+            ]
+          ]
+        ],
+        [
+          'operator'    => 'in',
+          'values'      => [
+            [
+              'source'    => 'entity',
+              'field'     => 'destination_connection_id',
+            ],
+            [
+              'source'    => 'value',
+              'value'     => $connections
+            ]
+          ]
+        ]
+      ]
+    ];
+
+    $this->client->{'delete'}($this->generateUrl(
+      $this->sync->url . '/api_unify-api_unify-connection_synchronisation-0_1',
+      [
+        'condition' => $condition,
+      ]
+    ) );
+  }
+
+  /**
+   * Send a request to the API Unify backend.
+   * Requests will be passed to $this->>client.
+   *
    * @param string $url
    * @param array $arguments
    *
@@ -697,7 +748,12 @@ class ApiUnifyConfig {
   }
 
   /**
-   * @ToDo: Add description.
+   * Get a URL string from the given url with additional query parameters.
+   *
+   * @param $url
+   * @param array $parameters
+   *
+   * @return string
    */
   protected function generateUrl($url, $parameters = []) {
     $resultUrl = Url::fromUri($url, [
@@ -708,7 +764,12 @@ class ApiUnifyConfig {
   }
 
   /**
-   * @ToDo: Add description.
+   * Get all entities for the given URL from the API Unify backend.
+   *
+   * @param string $baseUrl
+   * @param array $parameters
+   *
+   * @return array
    */
   protected function getEntitiesByUrl($baseUrl, $parameters = []) {
     $result = [];
@@ -728,7 +789,10 @@ class ApiUnifyConfig {
   }
 
   /**
-   * @param $entityId
+   * Check whether or not the given entity already exists.
+   *
+   * @param string $url
+   * @param string $entityId
    *
    * @return bool
    */
@@ -747,83 +811,5 @@ class ApiUnifyConfig {
     }
 
     return $entityExists;
-  }
-
-  /**
-   * @ToDo: Add description.
-   */
-  protected function getRelatedEntities($url, $fieldName, $value) {
-    $query = '{"operator":"==","values":[{"source":"data","field":"' . $fieldName . '"},{"source":"value","value":"' . $value . '"}]}';
-
-    return $this->getEntitiesByUrl($url, ['condition' => $query]);
-  }
-
-  /**
-   * @ToDo: Add description.
-   */
-  public function prepareDataCleaning($url) {
-    if (!$this->dataCleanPrepared) {
-      $result = [];
-      $parentLevel = TRUE;
-      $requestUrls = [
-        [
-          'url'   => 'api_unify-api_unify-connection-0_1',
-          'field' => 'instance_id',
-          'value' => $this->{'site_id'},
-        ],
-        [
-          'url'   => 'api_unify-api_unify-connection_synchronisation-0_1',
-          'field' => 'source_connection_id',
-          'value' => NULL,
-        ],
-        [
-          'url'   => 'api_unify-api_unify-connection_synchronisation-0_1',
-          'field' => 'destination_connection_id',
-          'value' => NULL,
-        ],
-      ];
-
-      foreach ($requestUrls as $requestUrl => $data) {
-        $requestUrl = $url . '/' . $data['url'];
-
-        if ($parentLevel) {
-          $parentItems = $this->getRelatedEntities($requestUrl, $data['field'], $data['value']);
-          $result = array_fill_keys($parentItems, $requestUrl);
-          $parentLevel = !$parentLevel;
-
-          continue;
-        }
-        else {
-          foreach ($parentItems as $id) {
-            $children = $this->getRelatedEntities($requestUrl, $data['field'], $id);
-            $children = array_fill_keys($children, $requestUrl);
-            $result   = array_merge($result, $children);
-          }
-        }
-      }
-
-      $this->toBeDeleted       = $result;
-      $this->dataCleanPrepared = TRUE;
-    }
-
-    return $this->toBeDeleted;
-  }
-
-  /**
-   * @ToDo: Add description.
-   */
-  public function cleanUnifyData() {
-    try {
-      foreach ($this->toBeDeleted as $id => $url) {
-        // $responce = $this->client->delete($url . '/' . $id);.
-      }
-    }
-    catch (RequestException $e) {
-      $messenger = \Drupal::messenger();
-      $messenger->addError($e->getMessage());
-      return FALSE;
-    }
-
-    return TRUE;
   }
 }

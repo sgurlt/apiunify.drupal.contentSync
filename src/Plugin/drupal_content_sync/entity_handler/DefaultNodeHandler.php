@@ -2,7 +2,7 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
-use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
@@ -94,7 +94,10 @@ class DefaultNodeHandler extends EntityHandlerBase {
   /**
    * @inheritdoc
    */
-  public function ignoreExport(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+  public function ignoreExport(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
+    /**
+     * @var \Drupal\node\NodeInterface $entity
+     */
     if (!$entity->isPublished() && $this->settings['handler_settings']['ignore_unpublished']) {
       return TRUE;
     }

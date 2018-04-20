@@ -3,6 +3,7 @@
 namespace Drupal\drupal_content_sync\Plugin;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -157,7 +158,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   /**
    * @inheritdoc
    */
-  public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
+  public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action) {
     // Deletion doesn't require any action on field basis for static data.
     if ($action == DrupalContentSync::ACTION_DELETE) {
       return FALSE;
@@ -182,7 +183,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
     if ($this->settings['export'] != DrupalContentSync::EXPORT_AUTOMATICALLY) {
       return FALSE;
     }

@@ -4,6 +4,7 @@ namespace Drupal\drupal_content_sync\Plugin;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Component\Plugin\PluginInspectionInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 
 /**
@@ -70,6 +71,10 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    *
    * Advanced entity type definition settings for the API Unify. You
    * can usually ignore these.
+   *
+   * @param $definition
+   *   The definition to be sent to API Unify.
+   *   {@see ApiUnifyConfig}
    */
   public function updateEntityTypeDefinition(&$definition);
 
@@ -105,7 +110,7 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
   /**
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
    *   The request to store all relevant info at.
-   * @param \Drupal\Core\Entity\EntityInterface $entity
+   * @param FieldableEntityInterface $entity
    *   The entity to export.
    * @param string $reason
    *   {@see DrupalContentSync::EXPORT_*}.
@@ -118,6 +123,6 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    *   Whether or not the content has been exported. FALSE is a desired state,
    *   meaning nothing should be exported according to config.
    */
-  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action);
+  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action);
 
 }

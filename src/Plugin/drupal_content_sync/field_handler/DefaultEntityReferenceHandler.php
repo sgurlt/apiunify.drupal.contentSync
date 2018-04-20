@@ -2,6 +2,7 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
@@ -54,7 +55,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function import(ApiUnifyRequest $request, EntityInterface $entity, $is_clone, $reason, $action) {
+  public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action) {
     // Deletion doesn't require any action on field basis for static data.
     if ($action == DrupalContentSync::ACTION_DELETE) {
       return FALSE;
@@ -91,7 +92,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
     // Deletion doesn't require any action on field basis for static data.
     if ($action == DrupalContentSync::ACTION_DELETE) {
       return FALSE;
@@ -99,6 +100,9 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
 
     $entityFieldManager = \Drupal::service('entity_field.manager');
     $field_definitions  = $entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
+    /**
+     * @var FieldDefinitionInterface $field_definition
+     */
     $field_definition   = $field_definitions[$this->fieldName];
     $entityTypeManager  = \Drupal::entityTypeManager();
 

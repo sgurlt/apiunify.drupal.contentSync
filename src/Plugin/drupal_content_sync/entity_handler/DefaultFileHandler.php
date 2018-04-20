@@ -2,7 +2,7 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
-use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
@@ -94,11 +94,14 @@ class DefaultFileHandler extends EntityHandlerBase {
    * @inheritdoc
    */
   public function import(ApiUnifyRequest $request, $is_clone, $reason, $action) {
+    /**
+     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
+     */
     $entity = $this->loadEntity($request);
 
     if ($action == DrupalContentSync::ACTION_DELETE) {
       if ($entity) {
-        return $this->deleteEntity($entity, $reason);
+        return $this->deleteEntity($entity);
       }
       return FALSE;
     }
@@ -159,7 +162,11 @@ class DefaultFileHandler extends EntityHandlerBase {
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request, EntityInterface $entity, $reason, $action) {
+  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
+    /**
+     * @var \Drupal\file\FileInterface $entity
+     */
+
     if (!parent::export($request, $entity, $request, $action)) {
       return FALSE;
     }
