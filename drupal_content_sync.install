@@ -34,9 +34,7 @@ function drupal_content_sync_install() {
   // Store UID in key value table.
   \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->set('uid', $user->id());
 
-  $data     = drupal_content_sync_encrypt_values($data);
   $userData = \Drupal::service('user.data');
-
   $userData->set('drupal_content_sync', $user->id(), 'sync_data', $data);
 }
 
@@ -46,7 +44,9 @@ function drupal_content_sync_install() {
 function drupal_content_sync_uninstall() {
   // Delete Drupal Content Sync User.
   $user = User::load(DRUPAL_CONTENT_SYNC_USER_ID);
-  $user->delete();
+  if (isset($user)) {
+    $user->delete();
+  }
 
   // Delete entry from key value table.
   \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->delete('uid');
