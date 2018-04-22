@@ -9,3 +9,7 @@ services:
     class: Drupal\drupal_content_sync\Normalizer\CacheableMetadataNormalizer
     tags:
       - { name: normalizer, priority: 2 }
+  drupal_content_sync.config_subscriber:
+    class: Drupal\drupal_content_sync\EventSubscriber\DrupalContentSyncConfigSubscriber
+    tags:
+      - { name: event_subscriber }
