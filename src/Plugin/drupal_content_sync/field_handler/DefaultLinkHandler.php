@@ -77,7 +77,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
       return FALSE;
     }
 
-    $data = $entity->get($this->fieldName);
+    $data = $entity->get($this->fieldName)->getValue();
 
     $result = [];
 
