@@ -713,7 +713,7 @@ class ApiUnifyConfig {
     $this->client->{'delete'}($this->generateUrl(
       $this->sync->url . '/api_unify-api_unify-connection_synchronisation-0_1',
       [
-        'condition' => $condition,
+        'condition' => json_encode($condition),
       ]
     ) );
   }
