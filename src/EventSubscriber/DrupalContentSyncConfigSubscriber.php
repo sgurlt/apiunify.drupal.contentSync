@@ -5,7 +5,6 @@ namespace Drupal\drupal_content_sync\EventSubscriber;
 use Drupal\Core\Config\ConfigCrudEvent;
 use Drupal\Core\Config\ConfigEvents;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Drupal\user\Entity\User;
 
 /**
  * A subscriber triggering a config when certain configuration changes.
@@ -13,7 +12,7 @@ use Drupal\user\Entity\User;
 class DrupalContentSyncConfigSubscriber implements EventSubscriberInterface {
 
   /**
-   * Change form display for paragraph.
+   * Create API Unify connection user.
    *
    * @param \Drupal\Core\Config\ConfigCrudEvent $event
    *   The Event to process.
