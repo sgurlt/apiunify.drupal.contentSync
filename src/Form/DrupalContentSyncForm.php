@@ -747,9 +747,10 @@ class DrupalContentSyncForm extends EntityForm {
         'parent' => 'system.admin_content',
       ];
       if ($is_new) {
-        $item = MenuLinkContent::create($link_data);
-        $item->save();
-        menu_cache_clear_all();
+        // @ToDo: Needs to be refactored - "Manual Import Dashboard".
+        // $item = MenuLinkContent::create($link_data);
+        // $item->save();
+        // menu_cache_clear_all();
       }
       else {
         $links = $this->entityTypeManager->getStorage('menu_link_content')->loadByProperties(['link__uri' => $uri]);
