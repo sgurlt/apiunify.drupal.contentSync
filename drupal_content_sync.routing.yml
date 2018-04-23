@@ -1,5 +1,5 @@
 entity.drupal_content_sync.introduction:
-  path: '/admin/config/service/drupal_content_sync/introduction'
+  path: '/admin/config/services/drupal_content_sync/introduction'
   defaults:
     _controller: 'Drupal\drupal_content_sync\Controller\DrupalContentSyncIntroduction::content'
     _title: 'Drupal Content Sync - Introduction'
@@ -7,7 +7,7 @@ entity.drupal_content_sync.introduction:
     _permission: 'administer site configuration'
 
 entity.drupal_content_sync.collection:
-  path: '/admin/config/service/drupal_content_sync/synchronizations'
+  path: '/admin/config/services/drupal_content_sync/synchronizations'
   defaults:
     _entity_list: 'drupal_content_sync'
     _title: 'Drupal Content Sync - Configuration'
