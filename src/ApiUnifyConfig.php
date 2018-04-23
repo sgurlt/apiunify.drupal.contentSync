@@ -78,7 +78,8 @@ class ApiUnifyConfig {
   protected $sync;
 
   /**
-   * @var array $toBeDeleted All entities that have to be deleted after new export.
+   * @var array
+   *   All entities that have to be deleted after new export.
    */
   protected $toBeDeleted = [];
 
@@ -89,7 +90,8 @@ class ApiUnifyConfig {
   protected $unifyData = [];
 
   /**
-   * @var bool $dataCleanPrepared Whether entities can be deleted.
+   * @var bool
+   *   Whether entities can be deleted.
    */
   protected $dataCleanPrepared = FALSE;
 

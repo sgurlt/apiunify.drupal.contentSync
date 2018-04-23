@@ -11,7 +11,8 @@ namespace Drupal\drupal_content_sync\Exception;
 class SyncException extends \Exception {
 
   /**
-   * @var string $errorCode The error code constant (see below).
+   * @var string
+   *   The error code constant (see below).
    */
   public $errorCode;
 

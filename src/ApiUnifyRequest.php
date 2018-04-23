@@ -18,7 +18,8 @@ use Drupal\drupal_content_sync\Exception\SyncException;
  */
 class ApiUnifyRequest {
   /**
-   * @var DrupalContentSync $sync                   The synchronization this request spawned at.
+   * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync
+   *   The synchronization this request spawned at.
    * @var string            $entityType             Entity type of the processed entity.
    * @var string            $bundle                 Bundle of the processed entity.
    * @var string            $uuid                   UUID of the processed entity.
