@@ -66,7 +66,7 @@ class SyncException extends \Exception {
    * @param string $message
    *   Optional message to describe the error in more detail.
    */
-  public function __construct($errorCode, $parentException = NULL, $message = NULL) {
+  public function __construct($errorCode, \Exception $parentException = NULL, $message = NULL) {
     parent::__construct($message ? $message : $errorCode);
 
     $this->errorCode       = $errorCode;
