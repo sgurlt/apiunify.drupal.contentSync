@@ -2,7 +2,6 @@
 
 namespace Drupal\drupal_content_sync\Plugin;
 
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Component\Plugin\PluginInspectionInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
@@ -20,11 +19,13 @@ use Drupal\drupal_content_sync\ApiUnifyRequest;
  * @ingroup third_party
  */
 interface EntityHandlerInterface extends PluginInspectionInterface {
+
   /**
    * Check if this handler supports the given entity type.
    *
    * @param string $entity_type
    * @param string $bundle
+   *
    * @return bool
    */
   public static function supports($entity_type, $bundle);
@@ -33,6 +34,7 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    * Get the allowed export options.
    *
    * Get a list of all allowed export options for this entity.
+   *
    * @see DrupalContentSync::EXPORT_*
    *
    * @return string[]
@@ -43,6 +45,7 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    * Get the allowed import options.
    *
    * Get a list of all allowed import options for this field.
+   *
    * @see DrupalContentSync::IMPORT_*
    *
    * @return string[]
@@ -52,7 +55,7 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
   /**
    * @return string[]
    *   Provide the allowed preview options used for display when manually
-   * importing entities.
+   *   importing entities.
    */
   public function getAllowedPreviewOptions();
 
@@ -110,7 +113,7 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
   /**
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
    *   The request to store all relevant info at.
-   * @param FieldableEntityInterface $entity
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    *   The entity to export.
    * @param string $reason
    *   {@see DrupalContentSync::EXPORT_*}.

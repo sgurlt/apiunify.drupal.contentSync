@@ -7,7 +7,6 @@ use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 
 /**
@@ -27,7 +26,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
    * {@inheritdoc}
    */
   public static function supports($entity_type, $bundle, $field_name, FieldDefinitionInterface $field) {
-    if (!in_array($field->getType(), ["entity_reference","entity_reference_revisions"])) {
+    if (!in_array($field->getType(), ["entity_reference", "entity_reference_revisions"])) {
       return FALSE;
     }
 
@@ -99,12 +98,12 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     }
 
     $entityFieldManager = \Drupal::service('entity_field.manager');
-    $field_definitions  = $entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
+    $field_definitions = $entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
     /**
-     * @var FieldDefinitionInterface $field_definition
+     * @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition
      */
-    $field_definition   = $field_definitions[$this->fieldName];
-    $entityTypeManager  = \Drupal::entityTypeManager();
+    $field_definition = $field_definitions[$this->fieldName];
+    $entityTypeManager = \Drupal::entityTypeManager();
 
     $data   = $entity->get($this->fieldName)->getValue();
     $result = [];
@@ -128,7 +127,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
         ->load($target_id);
 
       if ($reference && $reference->uuid() != $request->getUuid()) {
-        if( $export_referenced_entities ) {
+        if ($export_referenced_entities) {
           $result[] = $request->embedEntity($reference);
         }
         else {

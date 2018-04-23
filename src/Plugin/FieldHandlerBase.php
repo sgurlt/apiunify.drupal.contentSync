@@ -2,7 +2,6 @@
 
 namespace Drupal\drupal_content_sync\Plugin;
 
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
@@ -25,39 +24,39 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   /**
    * A logger instance.
    *
-   * @var \Psr\Log\LoggerInterface $logger
+   * @var \Psr\Log\LoggerInterface
    */
   protected $logger;
 
   /**
-   * @var string $entityTypeName The entity type of the entity to be processed.
+   * @var string
    */
   protected $entityTypeName;
 
   /**
-   * @var string $bundleName The bundle of the entity to be processed.
+   * @var string
    */
   protected $bundleName;
 
   /**
-   * @var string $fieldName The name of the field this handler processes.
+   * @var string
    */
   protected $fieldName;
 
   /**
-   * @var \Drupal\Core\Field\FieldDefinitionInterface $fieldDefinition
+   * @var \Drupal\Core\Field\FieldDefinitionInterface
    */
   protected $fieldDefinition;
 
   /**
-   * @var array $settings
+   * @var array
    *   Additional settings as provided by
    *   {@see FieldHandlerInterface::getHandlerSettings}.
    */
   protected $settings;
 
   /**
-   * @var DrupalContentSync $sync The synchronization this handler belongs to.
+   * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync
    */
   protected $sync;
 
@@ -135,7 +134,8 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
    * - required if the field is required by Drupal as well
    * - modifiable if the field is not set to "read only" in Drupal.
    *
-   * @param array $definition The definition to extend.
+   * @param array $definition
+   *   The definition to extend.
    */
   public function updateEntityTypeDefinition(&$definition) {
     if (in_array($this->fieldDefinition->getType(), ['file', 'image'])) {

@@ -72,13 +72,13 @@ class DefaultFileHandler extends FieldHandlerBase {
     $result = [];
 
     foreach ($data as $value) {
-      if( isset($value['target_id']) ) {
+      if (isset($value['target_id'])) {
         $file = File::load($value['target_id']);
       }
-      // "uri" field type
+      // "uri" field type.
       else {
-        $files  = \Drupal::entityTypeManager()->getStorage('file')->loadByProperties(['uri' => $value['value']]);
-        $file   = empty($files) ? NULL : reset($files);
+        $files = \Drupal::entityTypeManager()->getStorage('file')->loadByProperties(['uri' => $value['value']]);
+        $file = empty($files) ? NULL : reset($files);
       }
       if ($file) {
         $result[] = $request->embedEntity($file);

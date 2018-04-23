@@ -10,8 +10,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Drupal\drupal_content_sync\ApiUnifyConfig;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
-use Drupal\field\Entity\FieldConfig;
-use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Messenger\MessengerInterface;
@@ -32,48 +30,48 @@ class DrupalContentSyncForm extends EntityForm {
   const DRUPAL_CONTENT_SYNC_PREVIEW_FIELD = 'drupal_content_sync_preview';
 
   /**
-   * @var \Drupal\Core\Entity\EntityTypeManager $entityTypeManager
+   * @var \Drupal\Core\Entity\EntityTypeManager
    */
   protected $entityTypeManager;
 
   /**
-   * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface $bundleInfoService
+   * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface
    */
   protected $bundleInfoService;
 
   /**
-   * @var \Drupal\Core\Entity\EntityFieldManager $entityFieldManager
+   * @var \Drupal\Core\Entity\EntityFieldManager
    */
   protected $entityFieldManager;
 
   /**
-   * @var \Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager $entityPluginManager
+   * @var \Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager
    */
   protected $entityPluginManager;
 
   /**
-   * @var \Drupal\drupal_content_sync\Plugin\Type\FieldHandlerPluginManager $fieldPluginManager
+   * @var \Drupal\drupal_content_sync\Plugin\Type\FieldHandlerPluginManager
    */
   protected $fieldPluginManager;
 
   /**
    * The Messenger service.
    *
-   * @var \Drupal\Core\Messenger\MessengerInterface $messenger
+   * @var \Drupal\Core\Messenger\MessengerInterface
    */
   protected $messenger;
 
   /**
    * The config factory to load configuration.
    *
-   * @var \Drupal\Core\Config\ConfigFactory $configFactory
+   * @var \Drupal\Core\Config\ConfigFactory
    */
   protected $configFactory;
 
   /**
    * The http client to connect to API Unify.
    *
-   * @var \GuzzleHttp\Client $httpClient
+   * @var \GuzzleHttp\Client
    */
   protected $httpClient;
 
@@ -136,7 +134,7 @@ class DrupalContentSyncForm extends EntityForm {
    * We're simply reloading the table in this case.
    *
    * @param array $form
-   * @param FormStateInterface $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    *
    * @return array
    *   The new sync_entities table.
@@ -335,7 +333,7 @@ class DrupalContentSyncForm extends EntityForm {
           '#title' => $this->t('Handler'),
           '#title_display' => 'invisible',
           '#options' => $entity_handlers,
-          '#disabled' => count($entity_handlers)<2 && isset($entity_handlers['ignore']),
+          '#disabled' => count($entity_handlers) < 2 && isset($entity_handlers['ignore']),
           '#default_value' => $handler_id,
           '#ajax' => [
             'callback' => '::updateSyncHandler',
@@ -347,7 +345,7 @@ class DrupalContentSyncForm extends EntityForm {
           ],
         ];
 
-        $handler  = NULL;
+        $handler = NULL;
         if ($handler_id == 'ignore') {
           $export_options = [
             DrupalContentSync::EXPORT_DISABLED => $this->t('Disabled')->render(),
@@ -421,7 +419,7 @@ class DrupalContentSyncForm extends EntityForm {
           '#title_display' => 'invisible',
           '#options' => array_merge([
             'excluded' => $this->t('Excluded')->render(),
-          ], $handler_id == 'ignore' ? ['table'=>$this->t('Table')->render()] : $handler->getAllowedPreviewOptions()),
+          ], $handler_id == 'ignore' ? ['table' => $this->t('Table')->render()] : $handler->getAllowedPreviewOptions()),
           '#default_value' => $row_default_values['preview'],
         ];
 
@@ -525,7 +523,7 @@ class DrupalContentSyncForm extends EntityForm {
               '#options' => count($field_handlers) ? array_merge(['ignore' => $this->t('Ignore')->render()], $field_handlers) : [
                 'ignore' => $this->t('Not supported')->render(),
               ],
-              '#disabled' => !count($field_handlers) || (count($field_handlers)==1 && isset($field_handlers['ignore'])),
+              '#disabled' => !count($field_handlers) || (count($field_handlers) == 1 && isset($field_handlers['ignore'])),
               '#default_value' => $handler_id,
               '#ajax' => [
                 'callback' => '::updateSyncHandler',
@@ -563,7 +561,7 @@ class DrupalContentSyncForm extends EntityForm {
               '#type' => 'select',
               '#title' => $this->t('Export'),
               '#title_display' => 'invisible',
-              '#disabled' => count($export_options)<2,
+              '#disabled' => count($export_options) < 2,
               '#options' => $export_options,
               '#default_value' => $field_default_values['export'] ? $field_default_values['export'] : (isset($export_options[DrupalContentSync::EXPORT_AUTOMATICALLY]) ? DrupalContentSync::EXPORT_AUTOMATICALLY : DrupalContentSync::EXPORT_DISABLED),
             ];
@@ -585,7 +583,7 @@ class DrupalContentSyncForm extends EntityForm {
               '#title' => $this->t('Import'),
               '#title_display' => 'invisible',
               '#options' => $import_options,
-              '#disabled' => count($import_options)<2,
+              '#disabled' => count($import_options) < 2,
               '#default_value' => $field_default_values['import'] ? $field_default_values['import'] : (isset($import_options[DrupalContentSync::IMPORT_AUTOMATICALLY]) ? DrupalContentSync::IMPORT_AUTOMATICALLY : DrupalContentSync::IMPORT_DISABLED),
             ];
             $field_row['import_clone'] = [
@@ -660,7 +658,7 @@ class DrupalContentSyncForm extends EntityForm {
    * accessible to actually update it.
    *
    * @param array $form
-   * @param FormStateInterface $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);

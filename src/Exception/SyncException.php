@@ -16,7 +16,7 @@ class SyncException extends \Exception {
   public $errorCode;
 
   /**
-   * @var \Exception $parentException
+   * @var \Exception
    *   The parent exception that caused this exception, if any.
    */
   public $parentException;
@@ -27,21 +27,21 @@ class SyncException extends \Exception {
    *   saving an entity. More information is available at
    *   {@see SyncException::$parentException}.
    */
-  const CODE_ENTITY_API_FAILURE     = 'ENTITY_API_FAILURE';
+  const CODE_ENTITY_API_FAILURE = 'ENTITY_API_FAILURE';
 
   /**
    * @var string CODE_UNEXPECTED_EXCEPTION
    *   Any unexpected exception was thrown during synchronization. The exception
    *   is available via {@see SyncException::$parentException}.
    */
-  const CODE_UNEXPECTED_EXCEPTION   = 'UNEXPECTED_EXCEPTION';
+  const CODE_UNEXPECTED_EXCEPTION = 'UNEXPECTED_EXCEPTION';
 
   /**
    * @var string CODE_EXPORT_REQUEST_FAILED
    *   The export request to the API Unify backend failed. The request failure
    *   exception is available via {@see SyncException::$parentException}.
    */
-  const CODE_EXPORT_REQUEST_FAILED  = 'EXPORT_REQUEST_FAILED';
+  const CODE_EXPORT_REQUEST_FAILED = 'EXPORT_REQUEST_FAILED';
 
   /**
    * @var string CODE_INVALID_IMPORT_REQUEST
@@ -53,18 +53,20 @@ class SyncException extends \Exception {
    * @var string CODE_INTERNAL_ERROR
    *   An internal error occurred while processing the request.
    */
-  const CODE_INTERNAL_ERROR         = 'INTERNAL_ERROR';
+  const CODE_INTERNAL_ERROR = 'INTERNAL_ERROR';
 
   /**
    * SyncException constructor.
    *
-   * @param string $errorCode See SyncException::CODE_*
-   * @param \Exception $parentException {@see SyncException::$parentException}
+   * @param string $errorCode
+   *   See SyncException::CODE_*.
+   * @param \Exception $parentException
+   *   {@see SyncException::$parentException}.
    * @param string $message
    *   Optional message to describe the error in more detail.
    */
   public function __construct($errorCode, $parentException = NULL, $message = NULL) {
-    parent::__construct($message ? $message : $errorCode );
+    parent::__construct($message ? $message : $errorCode);
 
     $this->errorCode       = $errorCode;
     $this->parentException = $parentException;

@@ -13,7 +13,6 @@ use Drupal\Core\Render\Renderer;
 use Drupal\rest\ResourceResponse;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Provides entity interfaces for Drupal Content Sync, allowing API Unify to
@@ -52,22 +51,22 @@ class DrupalContentSyncEntityResource extends ResourceBase {
   const TYPE_HAS_INCOMPATIBLE_VERSION = 'The entity type has an incompatible version.';
 
   /**
-   * @var \Drupal\Core\Entity\EntityTypeBundleInfo $entityTypeBundleInfo
+   * @var \Drupal\Core\Entity\EntityTypeBundleInfo
    */
   protected $entityTypeBundleInfo;
 
   /**
-   * @var \Drupal\Core\Entity\EntityTypeManager $entityTypeManager
+   * @var \Drupal\Core\Entity\EntityTypeManager
    */
   protected $entityTypeManager;
 
   /**
-   * @var \Drupal\Core\Render\Renderer $renderedManager
+   * @var \Drupal\Core\Render\Renderer
    */
   protected $renderedManager;
 
   /**
-   * @var \Drupal\Core\Entity\EntityRepositoryInterface $entityRepository
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
    */
   protected $entityRepository;
 
@@ -150,7 +149,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @param string $entity_uuid
    *   The uuid of an entity.
    *
-   * @return Response
+   * @return \Symfony\Component\HttpFoundation\Response
    *   A list of entities of the given type and bundle.
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
@@ -184,8 +183,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         $sync   = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
         $result = [];
         $status = $sync->getSerializedEntity($result, $entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
-        if( $status ) {
-          $items[]  = $result;
+        if ($status) {
+          $items[] = $result;
         }
       }
 
@@ -218,7 +217,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @param array $data
    *   The data to be stored in the entity.
    *
-   * @return Response
+   * @return \Symfony\Component\HttpFoundation\Response
    *   A list of entities of the given type and bundle.
    */
   public function patch($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid, array $data) {
@@ -239,7 +238,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @param string $entity_uuid
    *   The uuid of an entity.
    *
-   * @return Response
+   * @return \Symfony\Component\HttpFoundation\Response
    *   A list of entities of the given type and bundle.
    */
   public function delete($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid) {
@@ -260,7 +259,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @param array $data
    *   The data to be stored in the entity.
    *
-   * @return Response
+   * @return \Symfony\Component\HttpFoundation\Response
    *   A list of entities of the given type and bundle.
    */
   public function post($api, $entity_type, $entity_bundle, $entity_type_version, array $data) {
@@ -268,18 +267,22 @@ class DrupalContentSyncEntityResource extends ResourceBase {
   }
 
   /**
-   * @param string $api The API {@see DrupalContentSync}
-   * @param string $entity_type_name The entity type of the processed entity.
-   * @param string $entity_bundle The bundle of the processed entity.
-   * @param string $entity_type_version The version the config was saved for.
+   * @param string $api
+   *   The API {@see DrupalContentSync}.
+   * @param string $entity_type_name
+   *   The entity type of the processed entity.
+   * @param string $entity_bundle
+   *   The bundle of the processed entity.
+   * @param string $entity_type_version
+   *   The version the config was saved for.
    * @param array $data
-   *    For {@see DrupalContentSync::ACTION_CREATE} and
+   *   For {@see DrupalContentSync::ACTION_CREATE} and
    *    {@see DrupalContentSync::ACTION_UPDATE}: the data for the entity. Will
    *    be passed to {@see ApiUnifyRequest}.
    * @param string $action
-   *    The {@see DrupalContentSync::ACTION_*} to be performed on the entity.
+   *   The {@see DrupalContentSync::ACTION_*} to be performed on the entity.
    *
-   * @return Response The result (error, ignorance or success).
+   * @return \Symfony\Component\HttpFoundation\Response The result (error, ignorance or success).
    */
   private function handleIncomingEntity($api, $entity_type_name, $entity_bundle, $entity_type_version, $data, $action) {
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
@@ -305,10 +308,10 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         '@bundle' => $entity_bundle,
         '@uuid' => $data['uuid'],
         '@not' => 'NO',
-        '@clone'=>$is_clone?'as clone':'',
-        '@message'=>t('No synchronization config matches this request (dependency: @dependency, manual: @manual).',[
-          '@dependency'=>$is_dependency?'YES':'NO',
-          '@manual'=>$is_manual?'YES':'NO',
+        '@clone' => $is_clone ? 'as clone' : '',
+        '@message' => t('No synchronization config matches this request (dependency: @dependency, manual: @manual).', [
+          '@dependency' => $is_dependency ? 'YES' : 'NO',
+          '@manual' => $is_manual ? 'YES' : 'NO',
         ]),
       ]);
       return new ResourceResponse(
@@ -316,8 +319,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
 
-    $local_version = DrupalContentSync::getEntityTypeVersion($entity_type_name,$entity_bundle);
-    if( $entity_type_version!=$local_version ) {
+    $local_version = DrupalContentSync::getEntityTypeVersion($entity_type_name, $entity_bundle);
+    if ($entity_type_version != $local_version) {
       \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
         '@reason' => $reason,
         '@action' => $action,
@@ -325,10 +328,10 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         '@bundle' => $entity_bundle,
         '@uuid' => $data['uuid'],
         '@not' => 'NO',
-        '@clone'=>$is_clone?'as clone':'',
-        '@message'=>t('The requested entity type version @requested doesn\'t match the local entity type version @local.',[
-          '@requested'=>$entity_type_version,
-          '@local'=>$local_version,
+        '@clone' => $is_clone ? 'as clone' : '',
+        '@message' => t('The requested entity type version @requested doesn\'t match the local entity type version @local.', [
+          '@requested' => $entity_type_version,
+          '@local' => $local_version,
         ]),
       ]);
       return new ResourceResponse(
@@ -347,18 +350,18 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
     catch (SyncException $e) {
-      $message  = $e->parentException ? $e->parentException->getMessage() : (
-        $e->errorCode==$e->getMessage() ? '' : $e->getMessage()
+      $message = $e->parentException ? $e->parentException->getMessage() : (
+        $e->errorCode == $e->getMessage() ? '' : $e->getMessage()
       );
-      if( $message ) {
-        $message  = t('Internal error @code: @message',[
-          '@code'=>$e->errorCode,
-          '@message'=>$message,
+      if ($message) {
+        $message = t('Internal error @code: @message', [
+          '@code' => $e->errorCode,
+          '@message' => $message,
         ]);
       }
       else {
-        $message  = t('Internal error @code',[
-          '@code'=>$e->errorCode,
+        $message = t('Internal error @code', [
+          '@code' => $e->errorCode,
         ]);
       }
 
@@ -369,8 +372,8 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         '@bundle' => $entity_bundle,
         '@uuid' => $data['uuid'],
         '@not' => 'NO',
-        '@clone'=>$is_clone?'as clone':'',
-        '@message'=>$message,
+        '@clone' => $is_clone ? 'as clone' : '',
+        '@message' => $message,
       ]);
 
       return new ResourceResponse(
@@ -386,7 +389,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
     catch (\Exception $e) {
-      $message  = $e->getMessage();
+      $message = $e->getMessage();
 
       \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
         '@reason' => $reason,
@@ -395,18 +398,18 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         '@bundle' => $entity_bundle,
         '@uuid' => $data['uuid'],
         '@not' => 'NO',
-        '@clone'=>$is_clone?'as clone':'',
-        '@message'=>$message,
+        '@clone' => $is_clone ? 'as clone' : '',
+        '@message' => $message,
       ]);
 
       return new ResourceResponse(
         [
-          'message' => t('Unexpected error: @message',['@message'=>$e->getMessage()]),
+          'message' => t('Unexpected error: @message', ['@message' => $e->getMessage()]),
         ], 500
       );
     }
 
-    if( $status ) {
+    if ($status) {
       return new ModifiedResourceResponse($data, $action == DrupalContentSync::ACTION_DELETE ? 204 : 200);
     }
     else {

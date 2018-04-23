@@ -31,6 +31,7 @@ class ApiUnifyRequest {
 
   /**
    * Keys used in the definition array for embedded entities.
+   *
    * @see ApiUnifyRequest::embedEntity        for its usage on export.
    * @see ApiUnifyRequest::loadEmbeddedEntity for its usage on import.
    *
@@ -53,11 +54,16 @@ class ApiUnifyRequest {
   /**
    * ApiUnifyRequest constructor.
    *
-   * @param DrupalContentSync $sync         {@see ApiUnifyRequest::$sync}
-   * @param string            $entity_type  {@see ApiUnifyRequest::$entityType}
-   * @param string            $bundle       {@see ApiUnifyRequest::$bundle}
-   * @param string            $uuid         {@see ApiUnifyRequest::$uuid}
-   * @param array             $data         NULL for exports or the data provided from API Unify for imports. Format is the same as in self::getData.
+   * @param \Drupal\drupal_content_sync\Entity\DrupalContentSync $sync
+   *   {@see ApiUnifyRequest::$sync}.
+   * @param string $entity_type
+   *   {@see ApiUnifyRequest::$entityType}.
+   * @param string $bundle
+   *   {@see ApiUnifyRequest::$bundle}.
+   * @param string $uuid
+   *   {@see ApiUnifyRequest::$uuid}.
+   * @param array $data
+   *   NULL for exports or the data provided from API Unify for imports. Format is the same as in self::getData.
    */
   public function __construct($sync, $entity_type, $bundle, $uuid, $data = NULL) {
     $this->sync       = $sync;
@@ -110,7 +116,8 @@ class ApiUnifyRequest {
    * untranslated entity by using self::changeTranslationLanguage() without
    * arguments.
    *
-   * @param string $language The identifier of the language to switch to or NULL to reset.
+   * @param string $language
+   *   The identifier of the language to switch to or NULL to reset.
    */
   public function changeTranslationLanguage($language = NULL) {
     $this->activeLanguage = $language;
@@ -131,10 +138,14 @@ class ApiUnifyRequest {
    *
    * @see ApiUnifyRequest::$embedEntities
    *
-   * @param string $entity_type The entity type of the referenced entity.
-   * @param string $bundle      The bundle of the referenced entity.
-   * @param string $uuid        The UUID of the referenced entity.
-   * @param array  $details     Additional details you would like to export.
+   * @param string $entity_type
+   *   The entity type of the referenced entity.
+   * @param string $bundle
+   *   The bundle of the referenced entity.
+   * @param string $uuid
+   *   The UUID of the referenced entity.
+   * @param array $details
+   *   Additional details you would like to export.
    *
    * @return array The definition to be exported.
    */
@@ -170,28 +181,32 @@ class ApiUnifyRequest {
    * @see ApiUnifyRequest::getEmbedEntityDefinition
    * @see ApiUnifyRequest::embedEntity
    *
-   * @param string $entity_type {@see ApiUnifyRequest::getEmbedEntityDefinition}
-   * @param string $bundle {@see ApiUnifyRequest::getEmbedEntityDefinition}
-   * @param string $uuid {@see ApiUnifyRequest::getEmbedEntityDefinition}
-   * @param array  $details {@see ApiUnifyRequest::getEmbedEntityDefinition}
+   * @param string $entity_type
+   *   {@see ApiUnifyRequest::getEmbedEntityDefinition}.
+   * @param string $bundle
+   *   {@see ApiUnifyRequest::getEmbedEntityDefinition}.
+   * @param string $uuid
+   *   {@see ApiUnifyRequest::getEmbedEntityDefinition}.
+   * @param array $details
+   *   {@see ApiUnifyRequest::getEmbedEntityDefinition}.
    *
    * @return array The definition you can store via {@see ApiUnifyRequest::setField} and on the other end receive via {@see ApiUnifyRequest::getField}.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
   public function embedEntityDefinition($entity_type, $bundle, $uuid, $details = NULL) {
-    // Prevent circle references without middle man
-    if( $entity_type==$this->entityType && $uuid==$this->uuid ) {
+    // Prevent circle references without middle man.
+    if ($entity_type == $this->entityType && $uuid == $this->uuid) {
       throw new SyncException(
         SyncException::CODE_INTERNAL_ERROR,
-        null,
-        "Can't circle-reference own entity (".$entity_type." ".$uuid.")."
+        NULL,
+        "Can't circle-reference own entity (" . $entity_type . " " . $uuid . ")."
       );
     }
 
-    // Already included? Just return the definition then
-    foreach( $this->embedEntities as $definition ) {
-      if( $definition[self::ENTITY_TYPE_KEY]==$entity_type && $definition[self::UUID_KEY]==$uuid ) {
+    // Already included? Just return the definition then.
+    foreach ($this->embedEntities as $definition) {
+      if ($definition[self::ENTITY_TYPE_KEY] == $entity_type && $definition[self::UUID_KEY] == $uuid) {
         return $definition;
       }
     }
@@ -204,8 +219,10 @@ class ApiUnifyRequest {
   /**
    * Export the provided entity along with the processed entity.
    *
-   * @param \Drupal\Core\Entity\EntityInterface $entity The referenced entity to export as well.
-   * @param array $details {@see ApiUnifyRequest::getEmbedEntityDefinition}
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The referenced entity to export as well.
+   * @param array $details
+   *   {@see ApiUnifyRequest::getEmbedEntityDefinition}.
    *
    * @return array The definition you can store via {@see ApiUnifyRequest::setField} and on the other end receive via {@see ApiUnifyRequest::getField}.
    *
@@ -223,10 +240,11 @@ class ApiUnifyRequest {
   /**
    * Restore an entity that was added via
    * {@see ApiUnifyRequest::embedEntityDefinition} or
-   * {@see ApiUnifyRequest::embedEntity}
+   * {@see ApiUnifyRequest::embedEntity}.
    *
-   * @param array $definition The definition you saved in a field and gotten
-   *    back when calling one of the mentioned functions above.
+   * @param array $definition
+   *   The definition you saved in a field and gotten
+   *   back when calling one of the mentioned functions above.
    *
    * @return \Drupal\Core\Entity\EntityInterface The restored entity.
    */
@@ -268,10 +286,12 @@ class ApiUnifyRequest {
   }
 
   /**
-   * Provide the value of a field you stored when exporting by using
+   * Provide the value of a field you stored when exporting by using.
+   *
    * @see ApiUnifyRequest::setField()
    *
-   * @param string $name The name of the field to restore.
+   * @param string $name
+   *   The name of the field to restore.
    *
    * @return mixed The value you stored for this field.
    */
@@ -306,8 +326,10 @@ class ApiUnifyRequest {
    * decoded when importing. They will be saved in a structured database by
    * API Unify in between, so you can't pass any non-array value by default.
    *
-   * @param string $name The name of the field in question.
-   * @param mixed $value The value to store.
+   * @param string $name
+   *   The name of the field in question.
+   * @param mixed $value
+   *   The value to store.
    */
   public function setField($name, $value) {
     if ($this->activeLanguage) {
@@ -343,4 +365,5 @@ class ApiUnifyRequest {
   public function getUuid() {
     return $this->uuid;
   }
+
 }

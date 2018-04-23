@@ -3,7 +3,6 @@
 namespace Drupal\drupal_content_sync\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -36,12 +35,12 @@ class DrupalContentSyncPublishChanges extends ControllerBase {
    * Published entity to API Unify.
    *
    * @param string $sync_id
-   * @param FieldableEntityInterface $entity
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    *
-   * @return RedirectResponse
+   * @return \Symfony\Component\HttpFoundation\RedirectResponse
    */
   public function publishChanges($sync_id, FieldableEntityInterface $entity) {
-    $sync   = DrupalContentSync::load($sync_id);
+    $sync = DrupalContentSync::load($sync_id);
     _drupal_content_sync_export_entity(
       $entity,
       DrupalContentSync::EXPORT_MANUALLY,

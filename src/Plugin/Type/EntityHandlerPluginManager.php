@@ -65,13 +65,15 @@ class EntityHandlerPluginManager extends DefaultPluginManager {
   }
 
   /**
-   * @param string $entity_type The entity type of the processed entity
-   * @param string $bundle The bundle of the processed entity
+   * @param string $entity_type
+   *   The entity type of the processed entity.
+   * @param string $bundle
+   *   The bundle of the processed entity.
    * @param bool $labels_only
-   *    Whether to return labels instead of the whole definition
+   *   Whether to return labels instead of the whole definition.
    *
    * @return array
-   *    An associative array $id=>$label|$handlerDefinition to display options
+   *   An associative array $id=>$label|$handlerDefinition to display options
    */
   public function getHandlerOptions($entity_type, $bundle, $labels_only = FALSE) {
     $options = [];

@@ -10,7 +10,6 @@ use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Exception\SyncException;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Defines the DrupalContentSync entity.
@@ -45,21 +44,21 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *   - used as a configuration option
    *   - not used as $action
    */
-  const EXPORT_DISABLED       = 'disabled';
+  const EXPORT_DISABLED = 'disabled';
   /**
    * @var string EXPORT_AUTOMATICALLY
    *   Automatically export all entities of this entity type.
    *   - used as a configuration option
    *   - used as $action
    */
-  const EXPORT_AUTOMATICALLY  = 'automatically';
+  const EXPORT_AUTOMATICALLY = 'automatically';
   /**
    * @var string EXPORT_MANUALLY
    *   Export only some of these entities, chosen manually.
    *   - used as a configuration option
    *   - used as $action
    */
-  const EXPORT_MANUALLY       = 'manually';
+  const EXPORT_MANUALLY = 'manually';
   /**
    * @var string EXPORT_AS_DEPENDENCY
    *   Export only some of these entities, exported if other exported entities
@@ -67,7 +66,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *   - used as a configuration option
    *   - used as $action
    */
-  const EXPORT_AS_DEPENDENCY  = 'dependency';
+  const EXPORT_AS_DEPENDENCY = 'dependency';
   /**
    * @var string EXPORT_FORCED
    *   Force the entity to be exported (as long as a handler is also selected).
@@ -75,7 +74,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *   - not used as a configuration option
    *   - used as $action
    */
-  const EXPORT_FORCED         = 'forced';
+  const EXPORT_FORCED = 'forced';
 
 
   /**
@@ -84,21 +83,21 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *   - used as a configuration option
    *   - not used as $action
    */
-  const IMPORT_DISABLED       = 'disabled';
+  const IMPORT_DISABLED = 'disabled';
   /**
    * @var string IMPORT_AUTOMATICALLY
    *   Automatically import all entities of this entity type.
    *   - used as a configuration option
    *   - used as $action
    */
-  const IMPORT_AUTOMATICALLY  = 'automatically';
+  const IMPORT_AUTOMATICALLY = 'automatically';
   /**
    * @var string IMPORT_MANUALLY
    *   Import only some of these entities, chosen manually.
    *   - used as a configuration option
    *   - used as $action
    */
-  const IMPORT_MANUALLY       = 'manually';
+  const IMPORT_MANUALLY = 'manually';
   /**
    * @var string IMPORT_AS_DEPENDENCY
    *   Import only some of these entities, imported if other imported entities
@@ -106,7 +105,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *   - used as a configuration option
    *   - used as $action
    */
-  const IMPORT_AS_DEPENDENCY  = 'dependency';
+  const IMPORT_AS_DEPENDENCY = 'dependency';
   /**
    * @var string IMPORT_FORCED
    *   Force the entity to be imported (as long as a handler is also selected).
@@ -114,7 +113,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *   - not used as a configuration option
    *   - used as $action
    */
-  const IMPORT_FORCED         = 'forced';
+  const IMPORT_FORCED = 'forced';
 
 
   /**
@@ -164,21 +163,21 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    * The API Unify backend url.
    *
-   * @var string $url
+   * @var string
    */
   public $url;
 
   /**
    * The API name to be used.
    *
-   * @var string $api
+   * @var string
    */
   public $api;
 
   /**
    * The unique site identifier.
    *
-   * @var string $site_id
+   * @var string
    */
   public $site_id;
 
@@ -186,7 +185,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * A list of all API Unify connections created for this synchronization.
    * Used by the content dashboard to display the different entity types.
    *
-   * @var array $local_connections
+   * @var array
    */
   public $local_connections;
 
@@ -240,8 +239,10 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * Get a unique version hash for the configuration of the provided entity type
    * and bundle.
    *
-   * @param string $type_name The entity type in question.
-   * @param string $bundle_name The bundle in question.
+   * @param string $type_name
+   *   The entity type in question.
+   * @param string $bundle_name
+   *   The bundle in question.
    *
    * @return string
    *   A 32 character MD5 hash of all important configuration for this entity
@@ -266,13 +267,13 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    * Get the correct synchronization for a specific action on a given entity.
    *
-   * @param EntityInterface $entity
+   * @param \Drupal\Core\Entity\EntityInterface $entity
    * @param string $reason
    * @param string $action
    *
    * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync|null
    */
-  public static function getExportSynchronizationForEntity($entity, $reason, $action=self::ACTION_CREATE) {
+  public static function getExportSynchronizationForEntity($entity, $reason, $action = self::ACTION_CREATE) {
     $drupal_content_syncs = self::getAll();
 
     foreach ($drupal_content_syncs as $sync) {
@@ -287,27 +288,27 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    * Ask this synchronization whether or not it can export the given entity.
    *
-   * @param EntityInterface $entity
+   * @param \Drupal\Core\Entity\EntityInterface $entity
    * @param string $reason
    * @param string $action
    *
    * @return bool
    */
-  public function canExportEntity($entity, $reason, $action=self::ACTION_CREATE) {
+  public function canExportEntity($entity, $reason, $action = self::ACTION_CREATE) {
     // @TODO For menu items, use $menu_item->getBaseId() if required
     $config = $this->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
     if (empty($config) || $config['handler'] == self::HANDLER_IGNORE) {
       return FALSE;
     }
 
-    if( $action==self::ACTION_DELETE && !$config['delete_entity']) {
+    if ($action == self::ACTION_DELETE && !$config['delete_entity']) {
       return FALSE;
     }
 
     /**
      * If any handler is available, we can export this entity.
      */
-    if ($reason == self::EXPORT_FORCED || $config['export']==self::EXPORT_AUTOMATICALLY) {
+    if ($reason == self::EXPORT_FORCED || $config['export'] == self::EXPORT_AUTOMATICALLY) {
       return TRUE;
     }
 
@@ -315,7 +316,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   /**
-   * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync[] $all
+   * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
    *   All content synchronization configs. Use {@see DrupalContentSync::getAll}
    *   to request them.
    */
@@ -366,7 +367,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *
    * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
    */
-  public static function getImportSynchronizationsForEntityType($entity_type_name, $bundle_name, $reason, $action=self::ACTION_CREATE, $is_clone = FALSE) {
+  public static function getImportSynchronizationsForEntityType($entity_type_name, $bundle_name, $reason, $action = self::ACTION_CREATE, $is_clone = FALSE) {
     $drupal_content_syncs = self::getAll();
 
     $result = [];
@@ -393,7 +394,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *
    * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync|null
    */
-  public static function getImportSynchronizationForApiAndEntityType($api, $entity_type_name, $bundle_name, $reason, $action=self::ACTION_CREATE, $is_clone = FALSE) {
+  public static function getImportSynchronizationForApiAndEntityType($api, $entity_type_name, $bundle_name, $reason, $action = self::ACTION_CREATE, $is_clone = FALSE) {
     $drupal_content_syncs = self::getAll();
 
     foreach ($drupal_content_syncs as $sync) {
@@ -419,19 +420,19 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *
    * @return bool
    */
-  public function canImportEntity($entity_type_name, $bundle_name, $reason, $action=self::ACTION_CREATE, $is_clone = FALSE) {
+  public function canImportEntity($entity_type_name, $bundle_name, $reason, $action = self::ACTION_CREATE, $is_clone = FALSE) {
     $config = $this->getEntityTypeConfig($entity_type_name, $bundle_name);
     if (empty($config) || $config['handler'] == self::HANDLER_IGNORE) {
       return FALSE;
     }
-    if( $config['import_clone']!=$is_clone ) {
+    if ($config['import_clone'] != $is_clone) {
       return FALSE;
     }
-    if( $action==self::ACTION_DELETE && !$config['delete_entity'] )  {
+    if ($action == self::ACTION_DELETE && !$config['delete_entity']) {
       return FALSE;
     }
     // If any handler is available, we can import this entity.
-    if ($reason == self::IMPORT_FORCED || $config['import']==self::IMPORT_AUTOMATICALLY) {
+    if ($reason == self::IMPORT_FORCED || $config['import'] == self::IMPORT_AUTOMATICALLY) {
       return TRUE;
     }
     return $config['import'] == $reason;
@@ -442,7 +443,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * Returns false if either the entity type is not known or the config handler
    * is set to {@see DrupalContentSync::HANDLER_IGNORE}.
    *
-   * @param EntityInterface $entity
+   * @param \Drupal\Core\Entity\EntityInterface $entity
    *
    * @return bool
    */
@@ -487,9 +488,9 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       '@entity_type'  => $entity_type_name,
       '@bundle' => $entity_bundle,
       '@uuid' => $data['uuid'],
-      '@not' => $result?'':'NO',
-      '@clone'=>$is_clone?'as clone':'',
-      '@message'=>$result?t('The entity has been imported.'):t('The entity handler denied to import this entity.'),
+      '@not' => $result ? '' : 'NO',
+      '@clone' => $is_clone ? 'as clone' : '',
+      '@message' => $result ? t('The entity has been imported.') : t('The entity handler denied to import this entity.'),
     ]);
 
     // Don't save meta entity if entity wasn't imported anyway.
@@ -516,8 +517,9 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * Serialize the given entity using the entity export and field export
    * handlers.
    *
-   * @param array &$result The data to be provided to API Unify.
-   * @param FieldableEntityInterface $entity
+   * @param array &$result
+   *   The data to be provided to API Unify.
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    * @param string $reason
    * @param string $action
    *
@@ -548,16 +550,17 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   /**
-   * @var array $exported
+   * @var array
    *   A list of all exported entities to make sure entities aren't exported
    *   multiple times during the same request in the format
    *   [$action][$entity_type][$bundle][$uuid] => TRUE
    */
   protected $exported;
+
   /**
    * Export the given entity.
    *
-   * @param FieldableEntityInterface $entity
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    * @param string $reason
    * @param string $action
    *
@@ -588,29 +591,30 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
     $proceed = TRUE;
 
-    if( !$this->exported ) {
+    if (!$this->exported) {
       $this->exported = [];
     }
-    if( isset($this->exported[$action][$entity_type][$entity_bundle][$entity_uuid]) ) {
+    if (isset($this->exported[$action][$entity_type][$entity_bundle][$entity_uuid])) {
       return TRUE;
     }
-    $this->exported[$action][$entity_type][$entity_bundle][$entity_uuid]  = TRUE;
+    $this->exported[$action][$entity_type][$entity_bundle][$entity_uuid] = TRUE;
 
     $body = NULL;
 
     if ($action != self::ACTION_DELETE) {
-      $body     = [];
-      $proceed  = $this->getSerializedEntity($body, $entity, $reason, $action);
+      $body    = [];
+      $proceed = $this->getSerializedEntity($body, $entity, $reason, $action);
 
       if ($proceed) {
         if (!empty($body['embed_entities'])) {
           foreach ($body['embed_entities'] as $data) {
             try {
               /**
-               * @var FieldableEntityInterface $embed_entity
+               * @var \Drupal\Core\Entity\FieldableEntityInterface $embed_entity
                */
               $embed_entity = $entity_repository->loadEntityByUuid($data[ApiUnifyRequest::ENTITY_TYPE_KEY], $data[ApiUnifyRequest::UUID_KEY]);
-            } catch (\Exception $e) {
+            }
+            catch (\Exception $e) {
               throw new SyncException(SyncException::CODE_UNEXPECTED_EXCEPTION, $e);
             }
 
@@ -630,13 +634,13 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       '@entity_type'  => $entity_type,
       '@bundle' => $entity_bundle,
       '@uuid' => $entity_uuid,
-      '@not' => $proceed?'':'NO',
-      '@message'=>$proceed?t('The entity has been exported.'):t('The entity handler denied to export this entity.'),
+      '@not' => $proceed ? '' : 'NO',
+      '@message' => $proceed ? t('The entity has been exported.') : t('The entity handler denied to export this entity.'),
     ]);
 
     // Handler chose to deliberately ignore this entity,
     // e.g. a node that wasn't published yet and is not exported unpublished.
-    if( !$proceed ) {
+    if (!$proceed) {
       return FALSE;
     }
 
@@ -756,7 +760,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    * The the entity type handler for the given config.
    *
-   * @param $config {@see DrupalContentSync::getEntityTypeConfig()}
+   * @param $config
+   *   {@see DrupalContentSync::getEntityTypeConfig()}
    *
    * @return \Drupal\drupal_content_sync\Plugin\EntityHandlerInterface
    */
@@ -817,7 +822,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   /**
-   * Wrapper for {@see DrupalContentSync::getExternalConnectionPath}
+   * Wrapper for {@see DrupalContentSync::getExternalConnectionPath}.
    *
    * @param string $entity_type_name
    * @param string $bundle_name

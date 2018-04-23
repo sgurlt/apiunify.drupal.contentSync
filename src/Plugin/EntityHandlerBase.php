@@ -2,7 +2,6 @@
 
 namespace Drupal\drupal_content_sync\Plugin;
 
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
@@ -130,7 +129,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   /**
    * Check if the import should be ignored.
    *
-   * @param ApiUnifyRequest $request
+   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
    *   The API Unify Request.
    * @param bool $is_clone
    *   Entity cloned parameter.
@@ -163,7 +162,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     }
 
     /**
-     * @var FieldableEntityInterface $entity
+     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
      */
     $entity = $this->loadEntity($request);
 
@@ -200,7 +199,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   /**
    * Delete a entity.
    *
-   * @param FieldableEntityInterface $entity
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    *   The entity to delete.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
@@ -228,9 +227,10 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    * @param bool $is_clone
    *   The clone parameter of the imported entity.
    * @param string $reason
-   *   The reason why the values should be set. @see DrupalContentSync::REASON_*
+   *   The reason why the values should be set. @see DrupalContentSync::REASON_*.
    * @param string $action
-   *   @see DrupalContentSync::IMPORT_*
+   *
+   * @see DrupalContentSync::IMPORT_*
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
@@ -245,8 +245,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     $field_definitions = $entityFieldManager->getFieldDefinitions($type, $bundle);
 
     $entity_type = \Drupal::entityTypeManager()->getDefinition($request->getEntityType());
-    $label        = $entity_type->getKey('label');
-    if( $label ) {
+    $label       = $entity_type->getKey('label');
+    if ($label) {
       $entity->set($label, $request->getField('title'));
     }
 
@@ -267,12 +267,12 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE, $e);
     }
 
-    if( $entity instanceof TranslatableInterface ) {
+    if ($entity instanceof TranslatableInterface) {
       foreach ($request->getTranslationLanguages() as $language) {
         /**
          * If the provided entity is fieldable, translations are as well.
          *
-         * @var FieldableEntityInterface $translation
+         * @var \Drupal\Core\Entity\FieldableEntityInterface $translation
          */
         if ($entity->hasTranslation($language)) {
           $translation = $entity->getTranslation($language);
@@ -293,7 +293,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
 
   /**
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
-   * @param FieldableEntityInterface $entity
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
@@ -308,8 +308,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
           $url
         );
       }
-      catch(\Exception $e) {
-        throw new SyncException(SyncException::CODE_UNEXPECTED_EXCEPTION,$e);
+      catch (\Exception $e) {
+        throw new SyncException(SyncException::CODE_UNEXPECTED_EXCEPTION, $e);
       }
     }
   }
@@ -319,7 +319,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    *
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
    *   The API Unify Request.
-   * @param FieldableEntityInterface $entity
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    *   The entity that could be ignored.
    * @param string $reason
    *   The reason why the entity should be ignored from the export.
@@ -339,6 +339,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     return FALSE;
   }
 
+  /**
+   *
+   */
   public function getForbiddenFields() {
     /**
      * @var \Drupal\Core\Entity\EntityTypeInterface $entity_type_entity

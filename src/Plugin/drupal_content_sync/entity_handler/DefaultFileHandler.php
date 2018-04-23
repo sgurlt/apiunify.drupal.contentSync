@@ -79,6 +79,9 @@ class DefaultFileHandler extends EntityHandlerBase {
     $definition['new_property_lists']['required']['apiu_file_content'] = 'value';
   }
 
+  /**
+   *
+   */
   public function getForbiddenFields() {
     return array_merge(
       parent::getForbiddenFields(),
@@ -120,13 +123,13 @@ class DefaultFileHandler extends EntityHandlerBase {
     }
 
     if ($action == DrupalContentSync::ACTION_CREATE) {
-      if( !$is_clone ) {
+      if (!$is_clone) {
         $file = File::load($request->getUuid());
-        if( $file ) {
-          if( file_save_data(base64_decode($content), $file->getFileUri(),FILE_EXISTS_REPLACE) ) {
+        if ($file) {
+          if (file_save_data(base64_decode($content), $file->getFileUri(), FILE_EXISTS_REPLACE)) {
             return TRUE;
           }
-          throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE );
+          throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE);
         }
       }
 
@@ -174,7 +177,7 @@ class DefaultFileHandler extends EntityHandlerBase {
     // Base Info.
     $uri = $entity->getFileUri();
     $request->setField('apiu_file_content', base64_encode(file_get_contents($uri)));
-    $request->setField('uri', [['value'=>$uri]]);
+    $request->setField('uri', [['value' => $uri]]);
     $request->setField('title', $entity->getFilename());
 
     // Preview.
