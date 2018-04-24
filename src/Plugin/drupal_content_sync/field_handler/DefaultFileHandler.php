@@ -49,7 +49,11 @@ class DefaultFileHandler extends FieldHandlerBase {
       foreach ($data as $value) {
         $file = $request->loadEmbeddedEntity($value);
         if ($file) {
-          $file_ids[] = $file->id();
+          $file_ids[] = [
+            'target_id'=>$file->id(),
+            'alt'=>$value['alt'],
+            'title'=>$value['title'],
+          ];
         }
       }
 
@@ -81,7 +85,10 @@ class DefaultFileHandler extends FieldHandlerBase {
         $file = empty($files) ? NULL : reset($files);
       }
       if ($file) {
-        $result[] = $request->embedEntity($file);
+        $result[] = $request->embedEntity($file,[
+          'alt'=>$value['alt'],
+          'title'=>$value['title'],
+        ]);
       }
     }
 
