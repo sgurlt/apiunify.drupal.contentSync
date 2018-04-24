@@ -205,6 +205,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     parent::preSave($storage);
 
     $exporter = new ApiUnifyConfig($this);
+    $exporter->deleteConfig();
 
     if (!$exporter->exportConfig()) {
       $messenger = \Drupal::messenger();

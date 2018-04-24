@@ -674,9 +674,16 @@ class ApiUnifyConfig {
    * Delete the synchronizations from this connection.
    */
   public function deleteConfig() {
-    $connections = $this->getEntitiesByUrl(
-      $this->sync->url . '/api_unify-api_unify-connection_synchronisation-0_1'
-    );
+    $connections = [];
+    foreach($this->sync->getEntityTypeConfig() as $config) {
+      $connections[]  = self::getExternalConnectionId(
+        $this->sync->api,
+        $this->sync->site_id,
+        $config['entity_type_name'],
+        $config['bundle_name'],
+        $config['version']
+      );
+    }
 
     $condition = [
       'operator'    => 'or',
