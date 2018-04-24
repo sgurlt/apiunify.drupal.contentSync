@@ -77,6 +77,14 @@ class DefaultFileHandler extends EntityHandlerBase {
     $definition['new_property_lists']['filesystem']['apiu_file_content'] = 'value';
     $definition['new_property_lists']['modifiable']['apiu_file_content'] = 'value';
     $definition['new_property_lists']['required']['apiu_file_content'] = 'value';
+
+    $definition['new_properties']['uri'] = [
+      'type' => 'array',
+      'default_value' => NULL,
+    ];
+    $definition['new_property_lists']['details']['uri'] = 'value';
+    $definition['new_property_lists']['database']['uri'] = 'value';
+    $definition['new_property_lists']['required']['uri'] = 'value';
   }
 
   /**
