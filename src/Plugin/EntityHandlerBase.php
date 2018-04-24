@@ -340,7 +340,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
-   *
+   * @inheritdoc
    */
   public function getForbiddenFields() {
     /**
