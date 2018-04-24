@@ -47,9 +47,9 @@ class DefaultFileHandler extends FieldHandlerBase {
     else {
       $file_ids = [];
       foreach ($data as $value) {
-        $entity = $request->loadEmbeddedEntity($value);
-        if ($entity) {
-          $file_ids[] = $entity->id();
+        $file = $request->loadEmbeddedEntity($value);
+        if ($file) {
+          $file_ids[] = $file->id();
         }
       }
 
