@@ -8,7 +8,6 @@ use Drupal\Core\Url;
 use Drupal\user\Entity\User;
 use GuzzleHttp\Exception\RequestException;
 
-
 /**
  * Class ApiUnifyConfig used to export the Synchronization config to the API
  * Unify backend.
@@ -26,12 +25,12 @@ class ApiUnifyConfig {
    * @var string PREVIEW_CONNECTION_ID
    *   The unique connection ID in API Unify used to store preview entities at.
    */
-  const PREVIEW_CONNECTION_ID  = 'drupal_drupal-content-sync_preview';
+  const PREVIEW_CONNECTION_ID = 'drupal_drupal-content-sync_preview';
   /**
    * @var string PREVIEW_ENTITY_ID
    *   The entity type ID from API Unify used to store preview entities as.
    */
-  const PREVIEW_ENTITY_ID      = 'drupal-synchronization-entity_preview-0_1';
+  const PREVIEW_ENTITY_ID = 'drupal-synchronization-entity_preview-0_1';
   /**
    * @var string PREVIEW_ENTITY_VERSION
    *   The preview entity version (see above).
@@ -69,31 +68,32 @@ class ApiUnifyConfig {
 
 
   /**
-   * @var \GuzzleHttp\Client $client
+   * @var \GuzzleHttp\Client
    */
   protected $client;
 
   /**
-   * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync $sync
+   * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync
    */
   protected $sync;
 
   /**
-   * @var array $toBeDeleted All entities that have to be deleted after new export.
+   * @var array
+   *   All entities that have to be deleted after new export.
    */
   protected $toBeDeleted = [];
 
   /**
-   * @var array $unifyData
+   * @var array
    *   A list of existing entities, cached for better performance.
    */
-  protected $unifyData   = [];
+  protected $unifyData = [];
 
   /**
-   * @var bool $dataCleanPrepared Whether entities can be deleted.
+   * @var bool
+   *   Whether entities can be deleted.
    */
   protected $dataCleanPrepared = FALSE;
-
 
   /**
    * ApiUnifyConfig constructor.
@@ -109,12 +109,16 @@ class ApiUnifyConfig {
   /**
    * Get the API Unify connection ID for the given entity type config.
    *
-   * @param string $api_id API ID from this config.
-   * @param string $site_id ID from this site from this config.
-   * @param string $entity_type_name The entity type.
-   * @param string $bundle_name The bundle.
+   * @param string $api_id
+   *   API ID from this config.
+   * @param string $site_id
+   *   ID from this site from this config.
+   * @param string $entity_type_name
+   *   The entity type.
+   * @param string $bundle_name
+   *   The bundle.
    * @param string $version
-   *   The version. {@see DrupalContentSync::getEntityTypeVersion}
+   *   The version. {@see DrupalContentSync::getEntityTypeVersion}.
    *
    * @return string A unique connection ID.
    */
@@ -131,11 +135,14 @@ class ApiUnifyConfig {
   /**
    * Get the API Unify entity type ID for the given entity type config.
    *
-   * @param string $api_id API ID from this config.
-   * @param string $entity_type_name The entity type.
-   * @param string $bundle_name The bundle.
+   * @param string $api_id
+   *   API ID from this config.
+   * @param string $entity_type_name
+   *   The entity type.
+   * @param string $bundle_name
+   *   The bundle.
    * @param string $version
-   *   The version. {@see DrupalContentSync::getEntityTypeVersion}
+   *   The version. {@see DrupalContentSync::getEntityTypeVersion}.
    *
    * @return string A unique entity type ID.
    */
@@ -151,12 +158,16 @@ class ApiUnifyConfig {
   /**
    * Get the API Unify connection path for the given entity type config.
    *
-   * @param string $api_id API ID from this config.
-   * @param string $site_id ID from this site from this config.
-   * @param string $entity_type_name The entity type.
-   * @param string $bundle_name The bundle.
+   * @param string $api_id
+   *   API ID from this config.
+   * @param string $site_id
+   *   ID from this site from this config.
+   * @param string $entity_type_name
+   *   The entity type.
+   * @param string $bundle_name
+   *   The bundle.
    * @param string $version
-   *   The version. {@see DrupalContentSync::getEntityTypeVersion}
+   *   The version. {@see DrupalContentSync::getEntityTypeVersion}.
    *
    * @return string A unique connection path.
    */
@@ -339,13 +350,12 @@ class ApiUnifyConfig {
   protected function createEntityTypes() {
     global $base_url;
 
-    $url              = $this->sync->url;
-    $api              = $this->sync->api;
-    $site_id          = $this->sync->site_id;
-    $entity_types     = $this->sync->sync_entities;
+    $url          = $this->sync->url;
+    $api          = $this->sync->api;
+    $site_id      = $this->sync->site_id;
+    $entity_types = $this->sync->sync_entities;
 
     $localConnections = [];
-
 
     foreach ($this->sync->getEntityTypeConfig() as $id => $type) {
       $entity_type_name = $type['entity_type_name'];
@@ -615,11 +625,11 @@ class ApiUnifyConfig {
             'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from Pool -> ' . $site_id,
             'options' => [
               'dependency_connection_id'  => self::DEPENDENCY_CONNECTION_ID,
-              'create_entities' => $type['import']!=DrupalContentSync::IMPORT_DISABLED,
-              'update_entities' => $type['import']!=DrupalContentSync::IMPORT_DISABLED && !$type['import_clone'],
-              'delete_entities' => $type['import']!=DrupalContentSync::IMPORT_DISABLED && boolval($type['delete_entity']),
+              'create_entities' => $type['import'] != DrupalContentSync::IMPORT_DISABLED,
+              'update_entities' => $type['import'] != DrupalContentSync::IMPORT_DISABLED && !$type['import_clone'],
+              'delete_entities' => $type['import'] != DrupalContentSync::IMPORT_DISABLED && boolval($type['delete_entity']),
               'clone_entities'  => boolval($type['import_clone']),
-              'dependent_entities_only'  => $type['import']==DrupalContentSync::IMPORT_AS_DEPENDENCY,
+              'dependent_entities_only'  => $type['import'] == DrupalContentSync::IMPORT_AS_DEPENDENCY,
               'update_none_when_loading' => TRUE,
               'exclude_reference_properties' => [
                 'pSource',
@@ -640,15 +650,15 @@ class ApiUnifyConfig {
               // As entities will only be sent to API Unify if the sync config
               // allows it, the synchronization entity doesn't need to filter
               // any further
-              //'create_entities' => TRUE,
-              //'update_entities' => TRUE,
-              //'delete_entities' => TRUE,
-              //'clone_entities'  => FALSE,
-              //'dependent_entities_only'  => FALSE,
-              'create_entities' => $type['export']!=DrupalContentSync::EXPORT_DISABLED,
-              'update_entities' => $type['export']!=DrupalContentSync::EXPORT_DISABLED,
-              'delete_entities' => $type['export']!=DrupalContentSync::EXPORT_DISABLED && boolval($type['delete_entity']),
-              'dependent_entities_only'  => $type['export']==DrupalContentSync::EXPORT_AS_DEPENDENCY,
+              // 'create_entities' => TRUE,
+              // 'update_entities' => TRUE,
+              // 'delete_entities' => TRUE,
+              // 'clone_entities'  => FALSE,
+              // 'dependent_entities_only'  => FALSE,.
+              'create_entities' => $type['export'] != DrupalContentSync::EXPORT_DISABLED,
+              'update_entities' => $type['export'] != DrupalContentSync::EXPORT_DISABLED,
+              'delete_entities' => $type['export'] != DrupalContentSync::EXPORT_DISABLED && boolval($type['delete_entity']),
+              'dependent_entities_only'  => $type['export'] == DrupalContentSync::EXPORT_AS_DEPENDENCY,
               'update_none_when_loading' => TRUE,
               'exclude_reference_properties' => [
                 'pSource',
@@ -697,9 +707,9 @@ class ApiUnifyConfig {
             ],
             [
               'source'    => 'value',
-              'value'     => $connections
-            ]
-          ]
+              'value'     => $connections,
+            ],
+          ],
         ],
         [
           'operator'    => 'in',
@@ -710,11 +720,11 @@ class ApiUnifyConfig {
             ],
             [
               'source'    => 'value',
-              'value'     => $connections
-            ]
-          ]
-        ]
-      ]
+              'value'     => $connections,
+            ],
+          ],
+        ],
+      ],
     ];
 
     $this->client->{'delete'}($this->generateUrl(
@@ -722,7 +732,7 @@ class ApiUnifyConfig {
       [
         'condition' => json_encode($condition),
       ]
-    ) );
+    ));
   }
 
   /**
@@ -819,4 +829,5 @@ class ApiUnifyConfig {
 
     return $entityExists;
   }
+
 }

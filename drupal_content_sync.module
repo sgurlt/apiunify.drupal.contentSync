@@ -35,11 +35,14 @@ define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
  *
  * 3) Disabled node forms if the content has been imported and the
  * synchronization is configured to disable imported content.
+ *
  * @see _drupal_content_sync_form_alter_disabled_fields
  *
- * @param array $form The form definition
+ * @param array $form
+ *   The form definition.
  * @param \Drupal\Core\Form\FormStateInterface $form_state
- * @param string $form_id he ID of the form
+ * @param string $form_id
+ *   he ID of the form.
  */
 function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   $form_object = $form_state->getFormObject();
@@ -70,16 +73,19 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
  * Helper function to export an entity and display the user the results. If you
  * want to make changes programmatically, create your own handler instead.
  *
- * @param \Drupal\Core\Entity\EntityInterface $entity The entity to export
- * @param string $reason {@see DrupalContentSync::EXPORT_*}
- * @param string $action {@see DrupalContentSync::ACTION_*}
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   The entity to export.
+ * @param string $reason
+ *   {@see DrupalContentSync::EXPORT_*}.
+ * @param string $action
+ *   {@see DrupalContentSync::ACTION_*}.
  * @param \Drupal\drupal_content_sync\Entity\DrupalContentSync $sync
  *   The sync to be used. First matching sync will be used if none is given.
  */
-function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $action, DrupalContentSync $sync=NULL) {
-  if( !$sync ) {
+function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $action, DrupalContentSync $sync = NULL) {
+  if (!$sync) {
     $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, $reason, $action);
-    if( !$sync ) {
+    if (!$sync) {
       return;
     }
   }
@@ -93,8 +99,8 @@ function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $a
     }
   }
   catch (SyncException $e) {
-    $message  = $e->parentException ? $e->parentException->getMessage() : (
-      $e->errorCode==$e->getMessage() ? '' : $e->getMessage()
+    $message = $e->parentException ? $e->parentException->getMessage() : (
+      $e->errorCode == $e->getMessage() ? '' : $e->getMessage()
     );
     if ($message) {
       $messenger->addWarning(t('Failed to export %label with Drupal Content Sync (%code). Message: %message', [
@@ -182,7 +188,8 @@ function drupal_content_sync_user_password_submit(&$form, FormStateInterface $fo
  * Encrypt the provided values. This is used to securely store the
  * authentication password necessary for API Unify to make changes.
  *
- * @param array $values The values to encrypt.
+ * @param array $values
+ *   The values to encrypt.
  *
  * @return array The input array, but with encrypted values.
  */
@@ -200,6 +207,7 @@ function drupal_content_sync_encrypt_values(array $values) {
 /**
  * Disable all form elements if the content has been imported and the user
  * should not be able to alter imported content.
+ *
  * @see \drupal_content_sync_form_alter()
  *
  * @param array $form

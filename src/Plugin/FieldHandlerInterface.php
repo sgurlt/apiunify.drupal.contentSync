@@ -5,7 +5,6 @@ namespace Drupal\drupal_content_sync\Plugin;
 use Drupal\Component\Plugin\PluginInspectionInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 
 /**
@@ -21,6 +20,7 @@ use Drupal\Core\Field\FieldDefinitionInterface;
  * @ingroup third_party
  */
 interface FieldHandlerInterface extends PluginInspectionInterface {
+
   /**
    * Check if this handler supports the given field instance.
    *
@@ -82,7 +82,7 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
   /**
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
    *   The request containing all exported data.
-   * @param FieldableEntityInterface $entity
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    *   The entity to import.
    * @param bool $is_clone
    *   Whether or not the entity should be clone'd or sync'd.
@@ -102,7 +102,7 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
   /**
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
    *   The request to store all relevant info at.
-   * @param FieldableEntityInterface $entity
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    *   The entity to export.
    * @param string $reason
    *   {@see DrupalContentSync::EXPORT_*}.

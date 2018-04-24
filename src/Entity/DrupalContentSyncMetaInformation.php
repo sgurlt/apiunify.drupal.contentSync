@@ -125,7 +125,7 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
   /**
    * Return an element by.
    *
-   * @param FieldableEntityInterface $entity
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    *
    * @return \Drupal\Core\Entity\EntityInterface
    */

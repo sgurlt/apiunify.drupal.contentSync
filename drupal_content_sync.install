@@ -6,6 +6,7 @@
  */
 
 use Drupal\user\Entity\User;
+use Drupal\Core\Config\FileStorage;
 
 /**
  * Implements hook_install().
@@ -14,10 +15,21 @@ use Drupal\user\Entity\User;
  * him with needed permissions.
  */
 function drupal_content_sync_install() {
+  $config_path    = drupal_get_path('module', 'drupal_content_sync') . '/config/install';
+  $source         = new FileStorage($config_path);
+  $config_storage = \Drupal::service('config.storage');
+
+  $configsNames = [
+    'key.key.drupal_content_sync',
+    'encrypt.profile.drupal_content_sync',
+  ];
+
+  foreach ($configsNames as $name) {
+    $config_storage->write($name, $source->read($name));
+  }
+
   $username = 'Drupal Content Sync';
-
   \Drupal::moduleHandler()->alter('drupal_content_sync_username', $username);
-
   $data = [
     'userName' => $username,
     'userPass' => user_password(),
@@ -34,7 +46,9 @@ function drupal_content_sync_install() {
   // Store UID in key value table.
   \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->set('uid', $user->id());
 
+  $data     = drupal_content_sync_encrypt_values($data);
   $userData = \Drupal::service('user.data');
+
   $userData->set('drupal_content_sync', $user->id(), 'sync_data', $data);
 }
 
