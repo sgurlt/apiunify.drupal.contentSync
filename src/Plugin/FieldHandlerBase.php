@@ -138,13 +138,8 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
    *   The definition to extend.
    */
   public function updateEntityTypeDefinition(&$definition) {
-    if (in_array($this->fieldDefinition->getType(), ['file', 'image'])) {
-      $definition['new_property_lists']['filesystem'][$this->fieldName] = 'value';
-    }
-    else {
-      $definition['new_property_lists']['details'][$this->fieldName] = 'value';
-      $definition['new_property_lists']['database'][$this->fieldName] = 'value';
-    }
+    $definition['new_property_lists']['details'][$this->fieldName] = 'value';
+    $definition['new_property_lists']['database'][$this->fieldName] = 'value';
 
     if ($this->fieldDefinition->isRequired()) {
       $definition['new_property_lists']['required'][$this->fieldName] = 'value';

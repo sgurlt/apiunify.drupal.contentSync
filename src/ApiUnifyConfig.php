@@ -684,6 +684,7 @@ class ApiUnifyConfig {
    * Delete the synchronizations from this connection.
    */
   public function deleteConfig() {
+    return;
     $connections = [];
     foreach($this->sync->getEntityTypeConfig() as $config) {
       $connections[]  = self::getExternalConnectionId(
