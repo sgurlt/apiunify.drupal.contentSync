@@ -89,7 +89,7 @@ class DefaultFileHandler extends EntityHandlerBase {
   }
 
   /**
-   *
+   * @inheritdoc
    */
   public function getForbiddenFields() {
     return array_merge(
