@@ -12,11 +12,11 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
  *
  * @Action(
  *   id = "node_drupal_content_sync_export_action",
- *   label = @Translation("Publish changes"),
+ *   label = @Translation("Push changes"),
  *   type = "node"
  * )
  */
-class PublishChanges extends ActionBase {
+class PushChanges extends ActionBase {
 
   /**
    * {@inheritdoc}

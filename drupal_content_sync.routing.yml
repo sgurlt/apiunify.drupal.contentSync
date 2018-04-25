@@ -50,7 +50,7 @@ entity.drupal_content_sync.delete_form:
 drupal_content_sync.publish_changes:
   path: '/drupal-content-sync/publish-changes/{sync_id}/{entity_type}/{entity}'
   defaults:
-    _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSyncPublishChanges::publishChanges'
+    _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSyncPushChanges::pushChanges'
   requirements:
     _permission: 'publish drupal content sync changes'
   options:
@@ -61,6 +61,6 @@ drupal_content_sync.publish_changes:
 drupal_content_sync.publish_changes_entities:
   path: '/drupal-content-sync/publish-changes/entities'
   defaults:
-    _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSyncPublishChanges::publishChangesEntitiesList'
+    _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSyncPushChanges::pushChangesEntitiesList'
   requirements:
     _permission: 'access content'

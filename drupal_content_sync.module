@@ -287,14 +287,14 @@ function drupal_content_sync_theme() {
 /**
  * Implements hook_entity_operation_alter().
  *
- * Provide "publish changes" option.
+ * Provide "push changes" option.
  */
 function drupal_content_sync_entity_operation_alter(array &$operations, EntityInterface $entity) {
   $operations += drupal_content_sync_get_publish_changes_operations($entity);
 }
 
 /**
- * Returns operations for "publish changes" action.
+ * Returns operations for "push changes" action.
  */
 function drupal_content_sync_get_publish_changes_operations(EntityInterface $entity) {
   /** @var \Drupal\Core\Routing\RedirectDestinationInterface $redirect_destination */
@@ -313,7 +313,7 @@ function drupal_content_sync_get_publish_changes_operations(EntityInterface $ent
   ];
 
   $operations['publish_changes'] = [
-    'title' => t('Publish changes'),
+    'title' => t('Push changes'),
     'weight' => 150,
     'url' => Url::fromRoute('drupal_content_sync.publish_changes', $route_parameters),
     'query' => $redirect_destination->getAsArray(),
@@ -325,7 +325,7 @@ function drupal_content_sync_get_publish_changes_operations(EntityInterface $ent
 /**
  * Implements hook_form_menu_edit_form_alter().
  *
- * Provide "publish changes" action link.
+ * Provide "push changes" action link.
  */
 function drupal_content_sync_form_menu_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   $links = [];

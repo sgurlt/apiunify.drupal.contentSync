@@ -7,29 +7,11 @@ use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
-use Drupal\Core\Messenger\MessengerInterface;
 
 /**
- * Publish changes controller.
+ * Push changes controller.
  */
-class DrupalContentSyncPublishChanges extends ControllerBase {
-
-  /**
-   * The Messenger service.
-   *
-   * @var \Drupal\Core\Messenger\MessengerInterface
-   */
-  protected $messenger;
-
-  /**
-   * DrupalContentSyncPublishChanges constructor.
-   *
-   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
-   *   The messenger service.
-   */
-  public function __construct(MessengerInterface $messenger) {
-    $this->messenger = $messenger;
-  }
+class DrupalContentSyncPushChanges extends ControllerBase {
 
   /**
    * Published entity to API Unify.
@@ -39,7 +21,7 @@ class DrupalContentSyncPublishChanges extends ControllerBase {
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
    */
-  public function publishChanges($sync_id, FieldableEntityInterface $entity) {
+  public function pushChanges($sync_id, FieldableEntityInterface $entity) {
     $sync = DrupalContentSync::load($sync_id);
     _drupal_content_sync_export_entity(
       $entity,
@@ -56,7 +38,7 @@ class DrupalContentSyncPublishChanges extends ControllerBase {
    *
    * TODO Should be removed when read_list will be allowed to omit.
    */
-  public function publishChangesEntitiesList() {
+  public function pushChangesEntitiesList() {
     return new Response('[]');
   }
 
