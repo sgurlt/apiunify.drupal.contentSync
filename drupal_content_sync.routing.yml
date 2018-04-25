@@ -64,3 +64,10 @@ drupal_content_sync.publish_changes_entities:
     _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSyncPushChanges::pushChangesEntitiesList'
   requirements:
     _permission: 'access content'
+
+node.drupal_content_sync_export_publish_changes_confirm:
+  path: '/admin/content/push-changes/confirm'
+  defaults:
+    _form: '\Drupal\drupal_content_sync\Form\DrupalContentSyncPushChangesConfirm'
+  requirements:
+    _permission: 'publish drupal content sync changes'
