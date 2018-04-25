@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+id: node_drupal_content_sync_export_action
+label: 'Publish changes'
+type: node
+plugin: node_drupal_content_sync_export_action
+configuration: {  }
