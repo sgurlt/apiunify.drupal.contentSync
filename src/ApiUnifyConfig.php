@@ -196,7 +196,7 @@ class ApiUnifyConfig {
   public static function getInternalUrl($api_id, $entity_type_name, $bundle_name, $version, $entity_uuid = NULL) {
     global $base_url;
 
-    $url = sprintf('%s/drupal_content_sync_entity_resource/%s/%s/%s/%s',
+    $url = sprintf('%s/rest/dcs/%s/%s/%s/%s',
       $base_url,
       $api_id,
       $entity_type_name,

@@ -22,8 +22,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   id = "drupal_content_sync_entity_resource",
  *   label = @Translation("DrupalContentSync Entity Resource"),
  *   uri_paths = {
- *     "canonical" = "/drupal_content_sync_entity_resource/{api}/{entity_type}/{entity_bundle}/{entity_type_version}/{entity_uuid}",
- *     "https://www.drupal.org/link-relations/create" = "/drupal_content_sync_entity_resource/{api}/{entity_type}/{entity_bundle}/{entity_type_version}"
+ *     "canonical" = "/rest/dcs/{api}/{entity_type}/{entity_bundle}/{entity_type_version}/{entity_uuid}",
+ *     "https://www.drupal.org/link-relations/create" = "/rest/dcs/{api}/{entity_type}/{entity_bundle}/{entity_type_version}"
  *   }
  * )
  */
