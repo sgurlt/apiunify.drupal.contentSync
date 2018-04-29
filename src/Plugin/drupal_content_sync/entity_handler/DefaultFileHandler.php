@@ -133,9 +133,8 @@ class DefaultFileHandler extends EntityHandlerBase {
 
     if ($action == DrupalContentSync::ACTION_CREATE) {
       if (!$is_clone) {
-        $file = File::load($request->getUuid());
-        if ($file) {
-          if (file_save_data(base64_decode($content), $file->getFileUri(), FILE_EXISTS_REPLACE)) {
+        if ($entity) {
+          if (file_save_data(base64_decode($content), $entity->getFileUri(), FILE_EXISTS_REPLACE)) {
             return TRUE;
           }
           throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE);

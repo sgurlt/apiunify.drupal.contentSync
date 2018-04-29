@@ -123,7 +123,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    *   Returns the loaded entity.
    */
   protected function loadEntity(ApiUnifyRequest $request) {
-    return \Drupal::service('entity.repository')->loadEntityByUuid($request->getEntityType(), $request->getUuid());
+    return \Drupal::service('entity.repository')
+      ->loadEntityByUuid($request->getEntityType(), $request->getUuid());
   }
 
   /**
