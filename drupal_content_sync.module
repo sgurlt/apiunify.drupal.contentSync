@@ -63,8 +63,8 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
       $messenger = \Drupal::messenger();
       $messenger->addWarning(
         t(
-          'This will delete the %type from all sites using it.',
-          ['%type' => $entity->getEntityTypeId()]
+          'This will delete %label from all sites using it.',
+          ['%label' => $entity->label()]
         )
       );
     }

@@ -84,8 +84,13 @@ class DefaultNodeHandler extends EntityHandlerBase {
    * @inheritdoc
    */
   public function ignoreImport(ApiUnifyRequest $request, $is_clone, $reason, $action) {
+    // Not published? Ignore this revision then.
     if (empty($request->getField('status')) && $this->settings['handler_settings']['ignore_unpublished']) {
-      return TRUE;
+      // Unless it's a delete, then it won't have a status and is independent
+      // of published state, so we don't ignore it
+      if($action!=DrupalContentSync::ACTION_DELETE) {
+        return TRUE;
+      }
     }
 
     return parent::ignoreImport($request, $is_clone, $reason, $action);

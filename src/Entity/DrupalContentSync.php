@@ -190,6 +190,26 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   public $local_connections;
 
   /**
+   * Check if the provided entity has just been deleted by API Unify in this
+   * very request. In this case it doesn't make sense to perform a remote
+   * request telling API Unify it has been deleted (it will know as a result
+   * of this current request).
+   *
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
+   *   The entity to check against
+   * @param bool $set Whether to get the information or set it
+   * @return bool
+   */
+  public static function entityHasBeenDeletedByRemote(FieldableEntityInterface $entity, $set=FALSE) {
+    static $deletingEntities = [];
+    if($set) {
+      $deletingEntities[$entity->getEntityTypeId()][$entity->uuid()]  = TRUE;
+    }
+
+    return !empty($deletingEntities[$entity->getEntityTypeId()][$entity->uuid()]);
+  }
+
+  /**
    * Acts on a saved entity before the insert or update hook is invoked.
    *
    * Used after the entity is saved, but before invoking the insert or update
@@ -481,6 +501,14 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $config = $this->getEntityTypeConfig($entity_type_name, $entity_bundle);
     $handler = $this->getEntityTypeHandler($config);
 
+    if( $action==self::ACTION_DELETE ) {
+      $entity = \Drupal::service('entity.repository')
+        ->loadEntityByUuid($request->getEntityType(), $request->getUuid());
+      if( $entity ) {
+        self::entityHasBeenDeletedByRemote($entity,TRUE);
+      }
+    }
+
     $result = $handler->import($request, $is_clone, $reason, $action);
 
     \Drupal::logger('drupal_content_sync')->info('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
@@ -572,6 +600,13 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   public function exportEntity(FieldableEntityInterface $entity, $reason, $action = self::ACTION_UPDATE) {
     if (method_exists($entity, 'getUntranslated')) {
       $entity = $entity->getUntranslated();
+    }
+
+    // If this very request was sent to delete this entity, ignore the export
+    // As the result of this request will already tell API Unify it has been
+    // deleted. Otherwise API Unify will return a reasonable 404.
+    if(self::entityHasBeenDeletedByRemote($entity)){
+      return FALSE;
     }
 
     // @TODO: Save state in custom entity for each entity

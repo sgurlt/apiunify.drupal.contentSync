@@ -196,7 +196,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     }
 
     return new ResourceResponse(
-      ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)], self::CODE_NOT_FOUND
+      ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)->render()], self::CODE_NOT_FOUND
     );
 
   }
@@ -289,7 +289,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
 
     if (empty($entity_types[$entity_type_name])) {
       return new ResourceResponse(
-        ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)], self::CODE_NOT_FOUND
+        ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)->render()], self::CODE_NOT_FOUND
       );
     }
 
@@ -312,10 +312,10 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         '@message' => t('No synchronization config matches this request (dependency: @dependency, manual: @manual).', [
           '@dependency' => $is_dependency ? 'YES' : 'NO',
           '@manual' => $is_manual ? 'YES' : 'NO',
-        ]),
+        ])->render(),
       ]);
       return new ResourceResponse(
-        ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)], self::CODE_NOT_FOUND
+        ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)->render()], self::CODE_NOT_FOUND
       );
     }
 
@@ -332,10 +332,10 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         '@message' => t('The requested entity type version @requested doesn\'t match the local entity type version @local.', [
           '@requested' => $entity_type_version,
           '@local' => $local_version,
-        ]),
+        ])->render(),
       ]);
       return new ResourceResponse(
-        ['message' => t(self::TYPE_HAS_INCOMPATIBLE_VERSION)], self::CODE_NOT_FOUND
+        ['message' => t(self::TYPE_HAS_INCOMPATIBLE_VERSION)->render()], self::CODE_NOT_FOUND
       );
     }
 
@@ -357,12 +357,12 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         $message = t('Internal error @code: @message', [
           '@code' => $e->errorCode,
           '@message' => $message,
-        ]);
+        ])->render();
       }
       else {
         $message = t('Internal error @code', [
           '@code' => $e->errorCode,
-        ]);
+        ])->render();
       }
 
       \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
@@ -383,7 +383,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
               '@code'     => $e->errorCode,
               '@message'  => $e->getMessage(),
             ]
-          ),
+          )->render(),
           'code' => $e->errorCode,
         ], 500
       );
@@ -404,18 +404,20 @@ class DrupalContentSyncEntityResource extends ResourceBase {
 
       return new ResourceResponse(
         [
-          'message' => t('Unexpected error: @message', ['@message' => $e->getMessage()]),
+          'message' => t('Unexpected error: @message', ['@message' => $e->getMessage()])->render(),
         ], 500
       );
     }
 
     if ($status) {
-      return new ModifiedResourceResponse($data, $action == DrupalContentSync::ACTION_DELETE ? 204 : 200);
+      // If we send data for DELETE requests, the Drupal Serializer will throw
+      // a random error. So we just leave the body empty then.
+      return new ModifiedResourceResponse($action==DrupalContentSync::ACTION_DELETE?NULL:$data);
     }
     else {
       return new ResourceResponse(
         [
-          'message' => t('Entity is not configured to be imported yet.'),
+          'message' => t('Entity is not configured to be imported yet.')->render(),
         ], 404
       );
     }
