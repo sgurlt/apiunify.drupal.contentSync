@@ -107,7 +107,7 @@ class DefaultFileHandler extends EntityHandlerBase {
    */
   public function import(ApiUnifyRequest $request, $is_clone, $reason, $action) {
     /**
-     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
+     * @var \Drupal\file\FileInterface $entity
      */
     $entity = $this->loadEntity($request);
 

@@ -48,15 +48,25 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
   $form_object = $form_state->getFormObject();
 
   if ($form_object instanceof ContentEntityDeleteForm) {
-    if ($form_state->getUserInput()['confirm']) {
+    if (!empty($form_state->getUserInput()['confirm'])) {
       return;
     }
-    $entity = $form_object->getEntity();
-    $sync   = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_DELETE);
 
-    if ($sync && $sync->delete_entities) {
+    $entity = $form_object->getEntity();
+    $sync   = DrupalContentSync::getExportSynchronizationForEntity(
+      $entity,
+      DrupalContentSync::EXPORT_AUTOMATICALLY,
+      DrupalContentSync::ACTION_DELETE
+    );
+
+    if ($sync) {
       $messenger = \Drupal::messenger();
-      $messenger->addError(t('This will delete the %type from all sites using it.', ['%type' => $entity->getEntityTypeId()]));
+      $messenger->addWarning(
+        t(
+          'This will delete the %type from all sites using it.',
+          ['%type' => $entity->getEntityTypeId()]
+        )
+      );
     }
   }
 
