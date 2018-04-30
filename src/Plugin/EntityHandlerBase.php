@@ -7,6 +7,7 @@ use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\Exception\SyncException;
+use Drupal\menu_link_content\Plugin\Menu\MenuLinkContent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\PluginBase;
@@ -194,7 +195,25 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       }
     }
 
-    return $this->setEntityValues($request, $entity, $is_clone, $reason, $action);
+    if( !$this->setEntityValues($request, $entity, $is_clone, $reason, $action) ) {
+      return FALSE;
+    }
+
+    // Make sure that menu items that were created for this entity before
+    // the entity was available now reference this entity correctly by ID
+    // {@see DefaultLinkHandler}
+    $menu_links = \Drupal::entityTypeManager()
+      ->getStorage('menu_link_content')
+      ->loadByProperties(['link.uri' => 'internal:/'.$this->entityTypeName.'/'.$entity->uuid()]);
+    foreach ($menu_links as $item) {
+      /**
+       * @var \Drupal\menu_link_content\Entity\MenuLinkContent $item
+       */
+      $item->set('link','entity:'.$this->entityTypeName.'/'.$entity->id());
+      $item->save();
+    }
+
+    return TRUE;
   }
 
   /**
@@ -390,11 +409,21 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
     $menu_items = $menu_link_manager->loadLinksByRoute('entity.' . $this->entityTypeName . '.canonical', [$this->entityTypeName => $entity->id()]);
     foreach ($menu_items as $menu_item) {
-      if (!$this->sync->canExportEntity($menu_item, DrupalContentSync::EXPORT_AS_DEPENDENCY)) {
+      if( !($menu_item instanceof MenuLinkContent)) {
         continue;
       }
 
-      $request->embedEntity($menu_item);
+      $item = \Drupal::service('entity.repository')
+        ->loadEntityByUuid('menu_link_content', $menu_item->getDerivativeId());
+      if( !$item ) {
+        continue;
+      }
+
+      if (!$this->sync->canExportEntity($item, DrupalContentSync::EXPORT_AS_DEPENDENCY)) {
+        continue;
+      }
+
+      $request->embedEntity($item);
     }
 
     // Preview.

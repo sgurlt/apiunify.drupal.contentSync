@@ -7,6 +7,7 @@ use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\menu_link_content\Entity\MenuLinkContent;
 
 /**
  * Providing a minimalistic implementation for any field type.
@@ -52,6 +53,17 @@ class DefaultLinkHandler extends FieldHandlerBase {
           if ($reference) {
             $result[] = [
               'uri' => 'entity:' . $reference->getEntityTypeId() . '/' . $reference->id(),
+            ];
+          }
+          // Menu items are created before the node as they are embedded
+          // entities. For the link to work however the node must already
+          // exist which won't work. So instead we're creating a temporary
+          // uri that uses the entity UUID instead of it's ID. Once the node
+          // is imported it will look for this link and replace it with the
+          // now available entity reference by ID.
+          elseif($entity instanceof MenuLinkContent && $this->fieldName=='link') {
+            $result[] = [
+              'uri' => 'internal:/' . $link_element[ApiUnifyRequest::ENTITY_TYPE_KEY] . '/' . $link_element[ApiUnifyRequest::UUID_KEY],
             ];
           }
         }
@@ -108,7 +120,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
         }
 
         $result[] = $request->getEmbedEntityDefinition(
-          $link_entity->getEntityType(),
+          $link_entity->getEntityTypeId(),
           $link_entity->bundle(),
           $link_entity->uuid()
         );
