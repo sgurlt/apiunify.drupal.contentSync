@@ -20,6 +20,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *   base_table = "drupal_content_sync_meta_info",
  *   entity_keys = {
  *     "id" = "id",
+ *     "entity_type_config" = "entity_type_config",
  *     "entity_id" = "entity_id",
  *     "entity_uuid" = "entity_uuid",
  *     "entity_type" = "entity_type",
@@ -46,11 +47,13 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
     if (!isset($values['entity_type'])) {
       throw new \Exception(t('The type of the entity is required.'));
     }
+    if (!isset($values['entity_type_config'])) {
+      throw new \Exception(t('The entity type config is required.'));
+    }
 
     /**
      * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
      */
-
     // Set the uuid if the entity_id is given and the entity_uuid is not given.
     if (isset($values['entity_id']) && !isset($values['entity_uuid'])) {
       $entity = \Drupal::entityTypeManager()->getStorage($values['entity_type'])->load($values['entity_id']);
@@ -232,6 +235,25 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
   }
 
   /**
+   * Set the entity type config.
+   *
+   * @param string $entity_type_config
+   */
+  public function setEntityTypeConfig($entity_type_config) {
+    $this->set('entity_type_config', $entity_type_config);
+    $this->save();
+  }
+
+  /**
+   * Get the entity type config.
+   *
+   * @return string
+   */
+  public function getEntityTypeConfig() {
+    return $this->get('entity_type_config')->value;
+  }
+
+  /**
    * Returns the entity type version.
    *
    * @return string
@@ -268,6 +290,10 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
     $fields['entity_id'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Entity ID'))
       ->setDescription(t('The ID of the entity that is synchronized.'));
+
+    $fields['entity_type_config'] = BaseFieldDefinition::create('string')
+      ->setLabel(t('Entity type config'))
+      ->setDescription(t('The entity type config the meta entity is based on.'));
 
     $fields['entity_uuid'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Entity UUID'))
