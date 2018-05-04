@@ -60,19 +60,6 @@ class PushChanges extends ActionBase implements ContainerFactoryPluginInterface 
     );
   }
 
-//  /**
-//   * {@inheritdoc}
-//   */
-//  public function execute(FieldableEntityInterface $entity = NULL) {
-//
-//
-//    _drupal_content_sync_export_entity(
-//      $entity,
-//      DrupalContentSync::EXPORT_MANUALLY,
-//      DrupalContentSync::ACTION_CREATE
-//    );
-//  }
-
   /**
    * {@inheritdoc}
    */
@@ -102,5 +89,4 @@ class PushChanges extends ActionBase implements ContainerFactoryPluginInterface 
     return $return_as_object ? $result : $result
       ->isAllowed();
   }
-
 }
