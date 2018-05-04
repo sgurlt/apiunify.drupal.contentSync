@@ -7,6 +7,7 @@ use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation;
 
 /**
  * Builds the form to delete an DrupalContentSync.
@@ -43,7 +44,7 @@ class DrupalContentSyncDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion() {
-    return $this->t('Are you sure you want to delete %name?', ['%name' => $this->entity->label()]);
+    return $this->t('Are you sure you want to delete %name? This will also delete all synchronisation meta entities!', ['%name' => $this->entity->label()]);
   }
 
   /**
@@ -64,6 +65,15 @@ class DrupalContentSyncDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    // Delete config related meta entities.
+    $meta_entities = \Drupal::entityTypeManager()->getStorage('drupal_content_sync_meta_info')
+      ->loadByProperties(['entity_type_config' => $this->getEntity()->id()]);
+
+    foreach($meta_entities as $meta_entity) {
+      $entity = DrupalContentSyncMetaInformation::load($meta_entity->id());
+      $entity->delete();
+    }
+
     $links = \Drupal::entityTypeManager()->getStorage('menu_link_content')
       ->loadByProperties(['link__uri' => 'internal:/admin/content/drupal_content_synchronization/' . $this->entity->id()]);
 
