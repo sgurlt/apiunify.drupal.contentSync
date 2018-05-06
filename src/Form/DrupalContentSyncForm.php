@@ -235,9 +235,10 @@ class DrupalContentSyncForm extends EntityForm {
       '#default_value' => isset($sync_entity->{'site_id'}) ? $sync_entity->{'site_id'} : '',
       '#description' => $this->t("This identifier will be used to identify the origin of entities on other sites and is used as a machine name for identification. 
       Once connected, you cannot change this identifier anylonger. Typicall you want to use the fully qualified domain name of this website as an identifier.<br>
-      The Site identifier can be overridden within your environment specific settings.php file by using <i>@settings</i>.
+      The Site identifier can be overridden within your environment specific settings.php file by using <i>@settings</i>.<br>
       If you do so, you should exclude the Site identifier for this configuration from the configuration import/export by using the module <a href='https://www.drupal.org/project/config_ignore' target='_blank'>Config ignore</a>.
-      The exclude could for example look like this: <i>drupal_content_sync.sync.@config_machine_name:site_id</i>", [
+      The exclude could for example look like this: <i>drupal_content_sync.sync.@config_machine_name:site_id</i><br>
+      <i>Hint: If this configuration is saved before the value with the settings.php got set, you need to resave this configuration once the value within the settings.php got set.</i>", [
         '@settings' => '$settings["drupal_content_sync"]["'.$config_machine_name.'"] = "my-site-identifier"',
         '@config_machine_name' => $config_machine_name
        ]),
