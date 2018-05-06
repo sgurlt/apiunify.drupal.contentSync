@@ -229,7 +229,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     parent::preSave($storage);
 
     $exporter = new ApiUnifyConfig($this);
-    $exporter->deleteConfig();
+    $exporter->deleteConfig(TRUE);
 
     if (!$exporter->exportConfig()) {
       $messenger = \Drupal::messenger();
@@ -251,7 +251,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     try {
       foreach ($entities as $entity) {
         $exporter = new ApiUnifyConfig($entity);
-        $exporter->deleteConfig();
+        $exporter->deleteConfig(FALSE);
       }
     }
     catch (RequestException $e) {

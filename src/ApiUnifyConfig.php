@@ -692,57 +692,112 @@ class ApiUnifyConfig {
   /**
    * Delete the synchronizations from this connection.
    */
-  public function deleteConfig() {
-    return;
-    $connections = [];
-    foreach ($this->sync->getEntityTypeConfig() as $config) {
-      $connections[] = self::getExternalConnectionId(
-        $this->sync->api,
-        $this->sync->site_id,
-        $config['entity_type_name'],
-        $config['bundle_name'],
-        $config['version']
-      );
-    }
-
+  public function deleteConfig($removedOnly=TRUE) {
     $condition = [
-      'operator'    => 'or',
-      'conditions'  => [
+      'operator'  => '==',
+      'values'    => [
         [
-          'operator'    => 'in',
-          'values'      => [
-            [
-              'source'    => 'entity',
-              'field'     => 'source_connection_id',
-            ],
-            [
-              'source'    => 'value',
-              'value'     => $connections,
-            ],
-          ],
+          'source'  => 'entity',
+          'field'   => 'instance_id',
         ],
         [
-          'operator'    => 'in',
-          'values'      => [
-            [
-              'source'    => 'entity',
-              'field'     => 'destination_connection_id',
-            ],
-            [
-              'source'    => 'value',
-              'value'     => $connections,
-            ],
-          ],
-        ],
+          'source'  => 'value',
+          'value'   => $this->sync->site_id,
+        ]
       ],
     ];
+    $url      = $this->generateUrl(
+      $this->sync->url . '/api_unify-api_unify-connection-0_1',
+      [
+        'items_per_page'  => '99999',
+        'condition' => json_encode($condition),
+      ]
+    );
+    $response = $this->client->{'get'}($url);
+    $body     = json_decode($response->getBody(),TRUE);
+    $connections = [];
+    foreach($body['items'] as $reference) {
+      $connections[] = $reference['id'];
+    }
+    $importConnections = $connections;
+    $exportConnections = $connections;
 
-    $this->client->{'delete'}($this->generateUrl(
+    if( $removedOnly ) {
+      $existingExport = [];
+      $existingImport = [];
+      foreach ($this->sync->getEntityTypeConfig() as $config) {
+        $id = self::getExternalConnectionId(
+          $this->sync->api,
+          $this->sync->site_id,
+          $config['entity_type_name'],
+          $config['bundle_name'],
+          $config['version']
+        );
+        if($config['export']!=DrupalContentSync::EXPORT_DISABLED) {
+          $existingExport[] = $id;
+        }
+        if($config['import']!=DrupalContentSync::IMPORT_DISABLED) {
+          $existingImport[] = $id;
+        }
+      }
+      $importConnections  = array_diff($importConnections,$existingImport);
+      $exportConnections  = array_diff($exportConnections,$existingExport);
+    }
+    $condition = NULL;
+    if(count($exportConnections)>0) {
+      $condition  = [
+        'operator'    => 'in',
+        'values'      => [
+          [
+            'source'    => 'entity',
+            'field'     => 'source_connection_id',
+          ],
+          [
+            'source'    => 'value',
+            'value'     => $exportConnections,
+          ],
+        ],
+      ];
+    }
+    if(count($importConnections)>0) {
+      $importCondition = [
+        'operator'    => 'in',
+        'values'      => [
+          [
+            'source'    => 'entity',
+            'field'     => 'destination_connection_id',
+          ],
+          [
+            'source'    => 'value',
+            'value'     => $importConnections,
+          ],
+        ],
+      ];
+      if( $condition ) {
+        $condition = [
+          'operator'    => 'or',
+          'conditions'  => [
+            $condition,
+            $importCondition,
+          ],
+        ];
+      }
+      else {
+        $condition  = $importCondition;
+      }
+    }
+
+    if(!$condition) {
+      return;
+    }
+
+    $url = $this->generateUrl(
       $this->sync->url . '/api_unify-api_unify-connection_synchronisation-0_1',
       [
         'condition' => json_encode($condition),
       ]
-    ));
+    );
+    $this->client->{'delete'}($url);
   }
 
   /**
