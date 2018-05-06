@@ -471,6 +471,7 @@ class ApiUnifyConfig {
             'created' => 'value',
             'changed' => 'value',
             'uuid' => 'value',
+            'url'=>'value',
           ],
           'database' => [
             'id' => 'value',

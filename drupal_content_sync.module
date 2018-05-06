@@ -232,6 +232,10 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
     return;
   }
 
+  if($form_object instanceof ContentEntityDeleteForm) {
+    return;
+  }
+
   $entity = $form_object
     ->getEntity();
 
@@ -240,19 +244,17 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
     return;
   }
 
-  // @TODO: Disable editing only if meta says entity is NOT CLONED
-  // $meta = ***load_meta_info***($entity);
-  // if( !$meta || $meta->isCloned() ) {
-  // return;
-  // }
-  // @TODO Save in the meta entity which APIs were used for synchronization
-  // So we can properly restrict access. Currently this will only work
-  // if all APIs apply restrictions or don't apply restrictions.
-  /** @var \Drupal\drupal_content_sync\Entity\DrupalContentSync[] $syncs */
-  $syncs    = DrupalContentSync::getImportSynchronizationsForEntityType(NULL, $entity->getEntityType(), $entity->bundle(), DrupalContentSync::IMPORT_FORCED, DrupalContentSync::ACTION_UPDATE);
+  $meta_infos = \Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation::getInfoForEntity(
+    $entity->getEntityTypeId(),
+    $entity->uuid()
+  );
   $restrict = FALSE;
-  foreach ($syncs as $sync) {
-    $config = $sync->getEntityTypeConfig($entity->getEntityType(), $entity->bundle());
+  foreach ($meta_infos as $info) {
+    if(!$info || !$info->getLastImport() || $info->isCloned()) {
+      continue;
+    }
+    $config = DrupalContentSync::load($info->getEntityTypeConfig())
+    ->getEntityTypeConfig($entity->getEntityTypeId(),$entity->bundle());
     if (!empty($config['handler_settings']['restrict_editing'])) {
       $restrict = TRUE;
       break;
@@ -263,18 +265,13 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
     return;
   }
 
-  $drupal_content_synched_value = $entity->get('field_drupal_content_synced')->getValue();
-  $field_drupal_content_synce_value = reset($drupal_content_synched_value);
-
-  if (isset($field_drupal_content_synce_value['value']) && '1' === $field_drupal_content_synce_value['value']) {
-    foreach ($form as $key => $form_item) {
-      if (0 === strpos($key, 'field_') || (is_array($form_item) && isset($form_item['#type']) && 'container' === $form_item['#type'])) {
-        $form[$key]['#disabled'] = TRUE;
-      }
+  foreach ($form as $key => $form_item) {
+    if (0 === strpos($key, 'field_') || (is_array($form_item) && isset($form_item['#type']) && 'container' === $form_item['#type'])) {
+      $form[$key]['#disabled'] = TRUE;
     }
-    $messenger = \Drupal::messenger();
-    $messenger->addWarning(t('The entity cannot be edited because it has been synced.'));
   }
+  $messenger = \Drupal::messenger();
+  $messenger->addWarning(t('The entity cannot be edited because it has been synced.'));
 }
 
 /**

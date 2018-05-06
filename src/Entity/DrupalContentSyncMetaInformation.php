@@ -3,7 +3,6 @@
 namespace Drupal\drupal_content_sync\Entity;
 
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityChangedTrait;
@@ -76,64 +75,45 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
       $values['entity_type_version'] = DrupalContentSync::getEntityTypeVersion($entity->getEntityType()->id(), $entity->bundle());
       return;
     }
-
-    // Set source URL if is not given.
-    if ($entity->hasLinkTemplate('canonical')) {
-      $values['source_url'] = $entity->toUrl('canonical', ['absolute' => TRUE])
-        ->toString(TRUE)
-        ->getGeneratedUrl();
-    }
   }
 
   /**
-   * Return an element by the entity id and entity type.
+   * Get a list of all meta information entities for the given entity.
+   * The list will use the sync config ID of the meta info as key. If a sync
+   * config doesn't have a meta information entity yet, the value will be NULL.
    *
-   * @param string $entity_type
-   *   The type of the entity.
-   * @param int $entity_id
-   *   The ID of the entity.
-   * @param int $entity_uuid
-   *   The UUID of the entity.
+   * @param string $entity_type The entity type ID.
+   * @param string $entity_uuid The entity UUID.
+   * @param string $api_id Optional api_id to filter by
    *
-   * @return \Drupal\Core\Entity\EntityInterface $entity
-   *
-   * @throws
-   *   An exception if neither the entity_id nor the entity_uuid is given.
+   * @return \Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation[]
    */
-  public static function getInfoByEntity($entity_type, $entity_id = NULL, $entity_uuid = NULL) {
-
-    // Load the object by the entity id.
-    if (!is_null($entity_id)) {
-      $entity = \Drupal::entityTypeManager()->getStorage('drupal_content_sync_meta_info')->loadByProperties([
-        'entity_type' => $entity_type,
-        'entity_id' => $entity_id,
-      ]);
+  public static function getInfoForEntity($entity_type, $entity_uuid, $api_id=NULL) {
+    // Fill with NULL values by default
+    $result   = [];
+    $configs  = $api_id ?
+      DrupalContentSync::getSynchronizationsByApi($api_id) :
+      DrupalContentSync::getAll();
+    foreach($configs as $sync) {
+      $result[$sync->id] = NULL;
     }
-    // Load the object by the entity uuid.
-    elseif (!is_null($entity_uuid)) {
-      $entity = \Drupal::entityTypeManager()->getStorage('drupal_content_sync_meta_info')->loadByProperties([
+
+    /**
+     * @var \Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation[] $entities
+     */
+    $entities = \Drupal::entityTypeManager()
+      ->getStorage('drupal_content_sync_meta_info')
+      ->loadByProperties([
         'entity_type' => $entity_type,
         'entity_uuid' => $entity_uuid,
       ]);
-    }
-    // Throw and exception if neither the id nor the uuid is given.
-    elseif (is_null($entity_id) && is_null($entity_uuid)) {
-      throw new \Exception(t('Either the entity_id or the entity_uuid must be given.'));
+
+    // Now extend with existing meta information entities
+    foreach($entities as $info) {
+      $result[ $info->getEntityTypeConfig() ] = $info;
     }
 
-    // @ToDo: Is there a better way to just receive one object here?
-    return reset($entity);
-  }
-
-  /**
-   * Return an element by.
-   *
-   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
-   *
-   * @return \Drupal\Core\Entity\EntityInterface
-   */
-  public static function getInfoForEntity(FieldableEntityInterface $entity) {
-    return \Drupal::entityTypeManager()->getStorage('drupal_content_sync_meta_info')->load($entity->id());
+    return $result;
   }
 
   /**
@@ -316,16 +296,19 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
 
     $fields['last_export'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Last exported'))
-      ->setDescription(t('The last time the entity got exported.'));
+      ->setDescription(t('The last time the entity got exported.'))
+      ->setRequired(FALSE);
 
     $fields['last_import'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Last import'))
-      ->setDescription(t('The last time the entity got imported.'));
+      ->setDescription(t('The last time the entity got imported.'))
+      ->setRequired(FALSE);
 
     $fields['flags'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Flags'))
       ->setDescription(t('Stores further information about the exported/imported entity.'))
-      ->setSetting('unsigned', TRUE);
+      ->setSetting('unsigned', TRUE)
+      ->setDefaultValue(0);
 
     return $fields;
   }

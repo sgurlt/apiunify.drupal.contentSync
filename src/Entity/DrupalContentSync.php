@@ -331,7 +331,6 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @return bool
    */
   public function canExportEntity($entity, $reason, $action = self::ACTION_CREATE) {
-    // @TODO For menu items, use $menu_item->getBaseId() if required
     $config = $this->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
     if (empty($config) || $config['handler'] == self::HANDLER_IGNORE) {
       return FALSE;
@@ -488,6 +487,25 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   /**
+   * Get all sync configurations using the same API id.
+   *
+   * @param string $api_id
+   *
+   * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
+   */
+  public static function getSynchronizationsByApi($api_id) {
+    $all = self::getAll();
+    $result = [];
+    foreach($all as $sync) {
+      if( $sync->api!=$api_id)
+        continue;
+      $result[] = $sync;
+    }
+
+    return $result;
+  }
+
+  /**
    * Import the provided entity.
    *
    * @param string $entity_type_name
@@ -502,16 +520,21 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @return bool
    */
   public function importEntity($entity_type_name, $entity_bundle, array $data, $is_clone, $reason, $action = self::ACTION_CREATE) {
-    // @TODO Save state in custom entity for each entity
-    // $meta = ***load_meta_info***($entity_type_name,$data['uuid']);
-    // if($meta && $action==self::ACTION_CREATE) {
-    // $action = self::ACTION_UPDATE;
-    // }
-    // @TODO If the entity was deleted, we ignore it
-    // if( $meta && $meta->isDeleted() && $reason!=self::IMPORT_FORCED ) {
-    // return TRUE;
-    // }}
-    $request = new ApiUnifyRequest($this, $entity_type_name, $entity_bundle, $data['uuid'], $data);
+    $import = time();
+    $uuid   = $data['uuid'];
+    $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity($entity_type_name,$uuid,$this->api);
+    foreach ($meta_infos as $info) {
+      if(!$info) {
+        continue;
+      }
+      if($info->isDeleted()) {
+        return TRUE;
+      }
+      if($info->getLastImport() && $action==self::ACTION_CREATE) {
+        $action = self::ACTION_UPDATE;
+      }
+    }
+    $request = new ApiUnifyRequest($this, $entity_type_name, $entity_bundle, $uuid, $data);
 
     $config = $this->getEntityTypeConfig($entity_type_name, $entity_bundle);
     $handler = $this->getEntityTypeHandler($config);
@@ -536,19 +559,42 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       return FALSE;
     }
 
-    // @TODO Save meta information
-    // if( $result ) {
-    //  if( $meta ) {
-    //    $meta->setLastImport(time());
-    //    $meta->save();
-    //  }
-    //  else {
-    //    ***create_meta*** [
-    //      'source_url' => $request->getField('url')
-    //    ]
-    //  }
-    // }
-    return $result;
+    /** @var \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository */
+    $entity_repository = \Drupal::service('entity.repository');
+    /**
+     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
+     */
+    $entity = $entity_repository->loadEntityByUuid($entity_type_name,$uuid);
+
+    foreach($meta_infos as $id=>$info) {
+      if($info) {
+        $info->setLastImport($import);
+        if($action==self::ACTION_DELETE) {
+          $info->isDeleted(TRUE);
+        }
+        $info->save();
+      }
+      else if($id==$this->id) {
+        $info = DrupalContentSyncMetaInformation::create([
+          'entity_type_config' => $this->id,
+          'entity_type' => $entity_type_name,
+          'entity_id' => $entity->id(),
+          'last_import' => $import,
+          'entity_type_version' => self::getEntityTypeVersion($entity_type_name,$entity_bundle),
+          'flags' => 0,
+          'source_url' => $request->getField('url'),
+        ]);
+        if($action==self::ACTION_DELETE) {
+          $info->isDeleted(TRUE);
+        }
+        if($is_clone) {
+          $info->isCloned(TRUE);
+        }
+        $info->save();
+      }
+    }
+
+    return TRUE;
   }
 
   /**
@@ -571,12 +617,12 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $entity_bundle = $entity->bundle();
     $entity_uuid   = $entity->uuid();
 
-    $config = $this->getEntityTypeConfig($entity_type, $entity_bundle);
-    $handler = $this->getEntityTypeHandler($config);
+    $config   = $this->getEntityTypeConfig($entity_type, $entity_bundle);
+    $handler  = $this->getEntityTypeHandler($config);
 
-    $request = new ApiUnifyRequest($this, $entity_type, $entity_bundle, $entity_uuid);
+    $request  = new ApiUnifyRequest($this, $entity_type, $entity_bundle, $entity_uuid);
 
-    $status = $handler->export($request, $entity, $reason, $action);
+    $status   = $handler->export($request, $entity, $reason, $action);
 
     if (!$status) {
       return FALSE;
@@ -607,6 +653,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @return bool Whether or not the entity has actually been exported.
    */
   public function exportEntity(FieldableEntityInterface $entity, $reason, $action = self::ACTION_UPDATE) {
+    $export = time();
     if (method_exists($entity, 'getUntranslated')) {
       $entity = $entity->getUntranslated();
     }
@@ -619,18 +666,43 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       return FALSE;
     }
 
-    // @TODO: Save state in custom entity for each entity
-    // $meta = ***load_meta_info***($entity);
-    // if(!$meta && $action==self::ACTION_UPDATE) {
-    //  $action = self::ACTION_CREATE;
-    // }
-    // @TODO If the entity didn't change, it doesn't have to be re-exported
-    // if( $meta && $meta->getLastExport()>$entity->changed() && $reason!=self::EXPORT_FORCED ) {
-    //  return TRUE;
-    // }}
     $entity_type   = $entity->getEntityTypeId();
     $entity_bundle = $entity->bundle();
     $entity_uuid   = $entity->uuid();
+
+    $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity($entity_type,$entity_uuid,$this->api);
+    $exported   = FALSE;
+    foreach($meta_infos as $info) {
+      if(!$info) {
+        continue;
+      }
+      if($info->getLastExport()) {
+        if(!$exported || $exported<$info->getLastExport()) {
+          $exported = $info->getLastExport();
+        }
+      }
+    }
+    if($exported) {
+      if($action==self::ACTION_CREATE) {
+        $action = self::ACTION_UPDATE;
+      }
+    }
+    else {
+      if($action==self::ACTION_UPDATE) {
+        $action = self::ACTION_CREATE;
+      }
+    }
+    // If the entity didn't change, it doesn't have to be re-exported
+    $interface = 'Drupal\Core\Entity\EntityChangedInterface';
+    if( $exported && in_array($interface, class_implements($entity)) ) {
+      /**
+       * @var \Drupal\Core\Entity\EntityChangedInterface $changeable
+       */
+      $changeable = $entity;
+      if($exported>=$changeable->getChangedTime() && $reason!=self::EXPORT_FORCED) {
+        return TRUE;
+      }
+    }
 
     /** @var \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository */
     $entity_repository = \Drupal::service('entity.repository');
@@ -740,17 +812,30 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       throw new SyncException(SyncException::CODE_EXPORT_REQUEST_FAILED);
     }
 
-    // @TODO store update time to save performance at upcoming requests
-    // if( $meta ) {
-    //  $meta->setLastExport(time());
-    // }
-    // else {
-    //  $meta = ***create_meta_info***([
-    //    'entity_type' => $entity_type,
-    //    'uuid' => $entity_uuid,
-    //    'last_export' => time(),
-    //  ]);
-    // }
+    foreach($meta_infos as $id=>$info) {
+      if($info) {
+        $info->setLastExport($export);
+        if($action==self::ACTION_DELETE) {
+          $info->isDeleted(TRUE);
+        }
+        $info->save();
+      }
+      else if($id==$this->id) {
+        $info = DrupalContentSyncMetaInformation::create([
+          'entity_type_config' => $this->id,
+          'entity_type' => $entity_type,
+          'entity_id' => $entity->id(),
+          'last_export' => $export,
+          'entity_type_version' => self::getEntityTypeVersion($entity_type,$entity_bundle),
+          'flags' => 0,
+          'source_url' => $body['url'],
+        ]);
+        if($action==self::ACTION_DELETE) {
+          $info->isDeleted(TRUE);
+        }
+        $info->save();
+      }
+    }
     return TRUE;
   }
 
