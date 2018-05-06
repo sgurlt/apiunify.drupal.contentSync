@@ -216,7 +216,7 @@ class DrupalContentSyncForm extends EntityForm {
       '#required' => TRUE,
     ];
 
-    // Check if the site id got set within the settings*.php
+    // Check if the site id got set within the settings*.php.
     if (!is_null($sync_entity->id)) {
       $config_machine_name = $sync_entity->id;
       $dcs_settings = Settings::get('drupal_content_sync');
@@ -239,15 +239,15 @@ class DrupalContentSyncForm extends EntityForm {
       If you do so, you should exclude the Site identifier for this configuration from the configuration import/export by using the module <a href='https://www.drupal.org/project/config_ignore' target='_blank'>Config ignore</a>.
       The exclude could for example look like this: <i>drupal_content_sync.sync.@config_machine_name:site_id</i><br>
       <i>Hint: If this configuration is saved before the value with the settings.php got set, you need to resave this configuration once the value within the settings.php got set.</i>", [
-        '@settings' => '$settings["drupal_content_sync"]["'.$config_machine_name.'"] = "my-site-identifier"',
-        '@config_machine_name' => $config_machine_name
-       ]),
+        '@settings' => '$settings["drupal_content_sync"]["' . $config_machine_name . '"] = "my-site-identifier"',
+        '@config_machine_name' => $config_machine_name,
+      ]),
       '#required' => TRUE,
     ];
 
     // If the site id is set within the settings.php, the form field is disabled.
     if (isset($site_id)) {
-      $form['site_id']['#disabled'] = true;
+      $form['site_id']['#disabled'] = TRUE;
       $form['site_id']['#default_value'] = $site_id;
       $form['site_id']['#description'] = $this->t('Site identifier ist set with the environment specific settings.php file.');
     }

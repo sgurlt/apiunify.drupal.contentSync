@@ -32,7 +32,7 @@ class DefaultMediaHandler extends EntityHandlerBase {
     return array_merge(
       parent::getForbiddenFields(),
       [
-        // Must be recreated automatically on remote site
+        // Must be recreated automatically on remote site.
         'thumbnail',
       ]
     );

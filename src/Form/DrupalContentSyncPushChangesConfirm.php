@@ -100,7 +100,7 @@ class DrupalContentSyncPushChangesConfirm extends ConfirmFormBase {
     }
 
     $items = [];
-    foreach($this->nodes as $node) {
+    foreach ($this->nodes as $node) {
       $items[$node->id()] = $node->label();
     }
 
@@ -134,4 +134,5 @@ class DrupalContentSyncPushChangesConfirm extends ConfirmFormBase {
     }
     $form_state->setRedirect('system.admin_content');
   }
+
 }

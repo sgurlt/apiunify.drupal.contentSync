@@ -196,16 +196,19 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * (it will know as a result of this current request).
    *
    * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
-   *   The entity to check against
-   * @param string $set_entity_type Set instead of get
-   * @param string $set_entity_uuid Set instead of get
+   *   The entity to check against.
+   * @param string $set_entity_type
+   *   Set instead of get.
+   * @param string $set_entity_uuid
+   *   Set instead of get.
+   *
    * @return bool
    */
-  public static function entityHasBeenImportedByRemote($entity, $set_entity_type=NULL, $set_entity_uuid=NULL) {
+  public static function entityHasBeenImportedByRemote($entity, $set_entity_type = NULL, $set_entity_uuid = NULL) {
     static $entities = [];
 
-    if($set_entity_type && $set_entity_uuid) {
-      return $entities[$set_entity_type][$set_entity_uuid]=TRUE;
+    if ($set_entity_type && $set_entity_uuid) {
+      return $entities[$set_entity_type][$set_entity_uuid] = TRUE;
     }
 
     return !empty($entities[$entity->getEntityTypeId()][$entity->uuid()]);
@@ -277,7 +280,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       ->getDefinition($type_name)
       ->getOriginalClass();
     $interface = 'Drupal\Core\Entity\FieldableEntityInterface';
-    if(in_array($interface, class_implements($class))) {
+    if (in_array($interface, class_implements($class))) {
       $entityFieldManager = \Drupal::service('entity_field.manager');
       $field_definitions = $entityFieldManager->getFieldDefinitions($type_name, $bundle_name);
 
@@ -287,10 +290,10 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       $field_names = array_keys($field_definitions_array);
       sort($field_names);
 
-      $version  = json_encode($field_names);
+      $version = json_encode($field_names);
     }
     else {
-      $version  = '';
+      $version = '';
     }
 
     $version = md5($version);
@@ -513,7 +516,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $config = $this->getEntityTypeConfig($entity_type_name, $entity_bundle);
     $handler = $this->getEntityTypeHandler($config);
 
-    self::entityHasBeenImportedByRemote(NULL, $request->getEntityType(), $request->getUuid() );
+    self::entityHasBeenImportedByRemote(NULL, $request->getEntityType(), $request->getUuid());
 
     $result = $handler->import($request, $is_clone, $reason, $action);
 
@@ -612,7 +615,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     // export as the result of this request will already tell API Unify it has
     // been deleted. Otherwise API Unify will return a reasonable 404 for
     // deletions.
-    if(self::entityHasBeenImportedByRemote($entity)){
+    if (self::entityHasBeenImportedByRemote($entity)) {
       return FALSE;
     }
 

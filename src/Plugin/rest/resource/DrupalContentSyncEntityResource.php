@@ -412,7 +412,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     if ($status) {
       // If we send data for DELETE requests, the Drupal Serializer will throw
       // a random error. So we just leave the body empty then.
-      return new ModifiedResourceResponse($action==DrupalContentSync::ACTION_DELETE?NULL:$data);
+      return new ModifiedResourceResponse($action == DrupalContentSync::ACTION_DELETE ? NULL : $data);
     }
     else {
       return new ResourceResponse(

@@ -195,21 +195,21 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       }
     }
 
-    if( !$this->setEntityValues($request, $entity, $is_clone, $reason, $action) ) {
+    if (!$this->setEntityValues($request, $entity, $is_clone, $reason, $action)) {
       return FALSE;
     }
 
     // Make sure that menu items that were created for this entity before
     // the entity was available now reference this entity correctly by ID
-    // {@see DefaultLinkHandler}
+    // {@see DefaultLinkHandler}.
     $menu_links = \Drupal::entityTypeManager()
       ->getStorage('menu_link_content')
-      ->loadByProperties(['link.uri' => 'internal:/'.$this->entityTypeName.'/'.$entity->uuid()]);
+      ->loadByProperties(['link.uri' => 'internal:/' . $this->entityTypeName . '/' . $entity->uuid()]);
     foreach ($menu_links as $item) {
       /**
        * @var \Drupal\menu_link_content\Entity\MenuLinkContent $item
        */
-      $item->set('link','entity:'.$this->entityTypeName.'/'.$entity->id());
+      $item->set('link', 'entity:' . $this->entityTypeName . '/' . $entity->id());
       $item->save();
     }
 
@@ -409,13 +409,13 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
     $menu_items = $menu_link_manager->loadLinksByRoute('entity.' . $this->entityTypeName . '.canonical', [$this->entityTypeName => $entity->id()]);
     foreach ($menu_items as $menu_item) {
-      if( !($menu_item instanceof MenuLinkContent)) {
+      if (!($menu_item instanceof MenuLinkContent)) {
         continue;
       }
 
       $item = \Drupal::service('entity.repository')
         ->loadEntityByUuid('menu_link_content', $menu_item->getDerivativeId());
-      if( !$item ) {
+      if (!$item) {
         continue;
       }
 

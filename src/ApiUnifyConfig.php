@@ -100,7 +100,7 @@ class ApiUnifyConfig {
    *   The sync this exporter is used for.
    */
   public function __construct(DrupalContentSync $sync) {
-    // Check if the site id got set within the settings*.php
+    // Check if the site id got set within the settings*.php.
     $dcs_settings = Settings::get('drupal_content_sync');
     if (!is_null($dcs_settings) && isset($dcs_settings[$sync->id])) {
       $sync->site_id = $dcs_settings[$sync->id];
@@ -695,8 +695,8 @@ class ApiUnifyConfig {
   public function deleteConfig() {
     return;
     $connections = [];
-    foreach($this->sync->getEntityTypeConfig() as $config) {
-      $connections[]  = self::getExternalConnectionId(
+    foreach ($this->sync->getEntityTypeConfig() as $config) {
+      $connections[] = self::getExternalConnectionId(
         $this->sync->api,
         $this->sync->site_id,
         $config['entity_type_name'],

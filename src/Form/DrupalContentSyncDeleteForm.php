@@ -69,7 +69,7 @@ class DrupalContentSyncDeleteForm extends EntityConfirmFormBase {
     $meta_entities = \Drupal::entityTypeManager()->getStorage('drupal_content_sync_meta_info')
       ->loadByProperties(['entity_type_config' => $this->getEntity()->id()]);
 
-    foreach($meta_entities as $meta_entity) {
+    foreach ($meta_entities as $meta_entity) {
       $entity = DrupalContentSyncMetaInformation::load($meta_entity->id());
       $entity->delete();
     }

@@ -7,7 +7,6 @@ use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
-use Drupal\file\Entity\File;
 
 /**
  * Class DefaultFileHandler, providing proper file handling capabilities.
@@ -81,7 +80,7 @@ class DefaultFileHandler extends EntityHandlerBase {
     $definition['new_properties']['uri'] = [
       'type' => 'object',
       'default_value' => NULL,
-      'multiple'=> TRUE,
+      'multiple' => TRUE,
     ];
     $definition['new_property_lists']['details']['uri'] = 'value';
     $definition['new_property_lists']['database']['uri'] = 'value';

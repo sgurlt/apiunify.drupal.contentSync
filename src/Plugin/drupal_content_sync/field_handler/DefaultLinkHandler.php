@@ -61,7 +61,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
           // uri that uses the entity UUID instead of it's ID. Once the node
           // is imported it will look for this link and replace it with the
           // now available entity reference by ID.
-          elseif($entity instanceof MenuLinkContent && $this->fieldName=='link') {
+          elseif ($entity instanceof MenuLinkContent && $this->fieldName == 'link') {
             $result[] = [
               'uri' => 'internal:/' . $link_element[ApiUnifyRequest::ENTITY_TYPE_KEY] . '/' . $link_element[ApiUnifyRequest::UUID_KEY],
             ];

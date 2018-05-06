@@ -50,9 +50,9 @@ class DefaultFileHandler extends FieldHandlerBase {
         $file = $request->loadEmbeddedEntity($value);
         if ($file) {
           $file_ids[] = [
-            'target_id'=>$file->id(),
-            'alt'=>$value['alt'],
-            'title'=>$value['title'],
+            'target_id' => $file->id(),
+            'alt' => $value['alt'],
+            'title' => $value['title'],
           ];
         }
       }
@@ -74,8 +74,8 @@ class DefaultFileHandler extends FieldHandlerBase {
 
     $result = [];
 
-    if( $this->fieldDefinition->getType()=='uri' ) {
-      $data   = $entity->get($this->fieldName)->getValue();
+    if ($this->fieldDefinition->getType() == 'uri') {
+      $data = $entity->get($this->fieldName)->getValue();
 
       foreach ($data as $value) {
         $files = \Drupal::entityTypeManager()
@@ -88,7 +88,7 @@ class DefaultFileHandler extends FieldHandlerBase {
       }
     }
     else {
-      $item   = $entity->get($this->fieldName);
+      $item = $entity->get($this->fieldName);
 
       if (!empty($item->target_id)) {
         $file = File::load($item->target_id);

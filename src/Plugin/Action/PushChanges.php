@@ -3,10 +3,8 @@
 namespace Drupal\drupal_content_sync\Plugin\Action;
 
 use Drupal\Core\Action\ActionBase;
-use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -74,13 +72,11 @@ class PushChanges extends ActionBase implements ContainerFactoryPluginInterface 
     $this->executeMultiple([$object]);
   }
 
-
   /**
    * {@inheritdoc}
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
-    // TODO return 'publish drupal content sync changes' permission instead
-
+    // TODO return 'publish drupal content sync changes' permission instead.
     /** @var \Drupal\node\NodeInterface $object */
     $result = $object
       ->access('update', $account, TRUE)
@@ -89,4 +85,5 @@ class PushChanges extends ActionBase implements ContainerFactoryPluginInterface 
     return $return_as_object ? $result : $result
       ->isAllowed();
   }
+
 }
