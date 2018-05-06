@@ -21,7 +21,6 @@ class ApiUnifyConfig {
    */
   const POOL_SITE_ID = '_pool';
 
-
   /**
    * @var string PREVIEW_CONNECTION_ID
    *   The unique connection ID in API Unify used to store preview entities at.
@@ -53,7 +52,6 @@ class ApiUnifyConfig {
    */
   const READ_LIST_ENTITY_ID = '0';
 
-
   /**
    * @var string DEPENDENCY_CONNECTION_ID
    *   The format for connection IDs. Must be used consequently to allow
@@ -66,7 +64,6 @@ class ApiUnifyConfig {
    *   pool connection.
    */
   const POOL_DEPENDENCY_CONNECTION_ID = 'drupal-[api.name]-' . self::POOL_SITE_ID . '-[entity_type.name_space]-[entity_type.name]-[entity_type.version]';
-
 
   /**
    * @var \GuzzleHttp\Client
@@ -563,6 +560,12 @@ class ApiUnifyConfig {
         ]);
 
         $user = User::load(DRUPAL_CONTENT_SYNC_USER_ID);
+        // During the installation from an existing config for some reason DRUPAL_CONTENT_SYNC_USER_ID is not set right after the installation of the module, so we've to double check that...
+        // @ToDo: Why?
+        if (is_null(DRUPAL_CONTENT_SYNC_USER_ID)) {
+          $user = User::load(\Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->get('uid'));
+        }
+
         if (!$user) {
           throw new \Exception(
             t("Drupal Content Sync User not found. Encrypted data can't be saved")
