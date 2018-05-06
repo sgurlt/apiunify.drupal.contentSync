@@ -17,6 +17,7 @@ use Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager;
 use Drupal\drupal_content_sync\Plugin\Type\FieldHandlerPluginManager;
 use Drupal\Core\Config\ConfigFactory;
 use GuzzleHttp\Client;
+use Drupal\Core\Site\Settings;
 
 /**
  * Form handler for the DrupalContentSync add and edit forms.
@@ -215,14 +216,40 @@ class DrupalContentSyncForm extends EntityForm {
       '#required' => TRUE,
     ];
 
+    // Check if the site id got set within the settings*.php
+    if (!is_null($sync_entity->id)) {
+      $config_machine_name = $sync_entity->id;
+      $dcs_settings = Settings::get('drupal_content_sync');
+      if (!is_null($dcs_settings) && isset($dcs_settings[$sync_entity->id])) {
+        $site_id = $dcs_settings[$sync_entity->id];
+      }
+    }
+    if (!isset($config_machine_name)) {
+      $config_machine_name = '<machine_name_of_the_configuration>';
+    }
+
     $form['site_id'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Site identifier'),
       '#maxlength' => 255,
       '#default_value' => isset($sync_entity->{'site_id'}) ? $sync_entity->{'site_id'} : '',
-      '#description' => $this->t("This identifier will be used to identify the origin of entities on other sites and is used as a machine name for identification. Once connected, you cannot change this identifier anylonger. Typicall you want to use the fully qualified domain name of this website as an identifier."),
+      '#description' => $this->t("This identifier will be used to identify the origin of entities on other sites and is used as a machine name for identification. 
+      Once connected, you cannot change this identifier anylonger. Typicall you want to use the fully qualified domain name of this website as an identifier.<br>
+      The Site identifier can be overridden within your environment specific settings.php file by using <i>@settings</i>.
+      If you do so, you should exclude the Site identifier for this configuration from the configuration import/export by using the module <a href='https://www.drupal.org/project/config_ignore' target='_blank'>Config ignore</a>.
+      The exclude could for example look like this: <i>drupal_content_sync.sync.@config_machine_name:site_id</i>", [
+        '@settings' => '$settings["drupal_content_sync"]["'.$config_machine_name.'"] = "my-site-identifier"',
+        '@config_machine_name' => $config_machine_name
+       ]),
       '#required' => TRUE,
     ];
+
+    // If the site id is set within the settings.php, the form field is disabled.
+    if (isset($site_id)) {
+      $form['site_id']['#disabled'] = true;
+      $form['site_id']['#default_value'] = $site_id;
+      $form['site_id']['#description'] = $this->t('Site identifier ist set with the environment specific settings.php file.');
+    }
 
     $entity_types = $this->bundleInfoService->getAllBundleInfo();
 
