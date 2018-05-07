@@ -23,8 +23,6 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *     "entity_id" = "entity_id",
  *     "entity_uuid" = "entity_uuid",
  *     "entity_type" = "entity_type",
- *     "last_export" = "last_export",
- *     "last_import" = "last_import",
  *     "entity_type_version" = "entity_type_version",
  *     "flags" = "flags",
  *   },
