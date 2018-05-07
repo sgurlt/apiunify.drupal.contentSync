@@ -767,31 +767,31 @@ class DrupalContentSyncForm extends EntityForm {
       $this->messenger->addMessage($this->t('Saved the %label Drupal Content Synchronization.', [
         '%label' => $config->label(),
       ]));
-      $uri = 'internal:/admin/content/drupal_content_synchronization/' . $this->entity->id();
-      $link_data = [
-        'link' => ['uri' => $uri],
-        'title' => $this->entity->label(),
-        'menu_name' => 'admin',
-        'parent' => 'system.admin_content',
-      ];
-      if ($is_new) {
-        // @ToDo: Needs to be refactored - "Manual Import Dashboard".
-        // $item = MenuLinkContent::create($link_data);
-        // $item->save();
-        // menu_cache_clear_all();
-      }
-      else {
-        $links = $this->entityTypeManager->getStorage('menu_link_content')->loadByProperties(['link__uri' => $uri]);
-
-        if ($link = reset($links)) {
-          $link->set('title', $this->entity->label());
-        }
-        else {
-          $link = MenuLinkContent::create($link_data);
-        }
-        $link->save();
-        menu_cache_clear_all();
-      }
+//      @ToDo: Needs to be refactored - "Manual Import Dashboard".
+//      $uri = 'internal:/admin/content/drupal_content_synchronization/' . $this->entity->id();
+//      $link_data = [
+//        'link' => ['uri' => $uri],
+//        'title' => $this->entity->label(),
+//        'menu_name' => 'admin',
+//        'parent' => 'system.admin_content',
+//      ];
+//      if ($is_new) {
+//        // $item = MenuLinkContent::create($link_data);
+//        // $item->save();
+//        // menu_cache_clear_all();
+//      }
+//      else {
+//        $links = $this->entityTypeManager->getStorage('menu_link_content')->loadByProperties(['link__uri' => $uri]);
+//
+//        if ($link = reset($links)) {
+//          $link->set('title', $this->entity->label());
+//        }
+//        else {
+//          $link = MenuLinkContent::create($link_data);
+//        }
+//        $link->save();
+//        menu_cache_clear_all();
+//      }
     }
     else {
       $this->messenger->addMessage($this->t('The %label Drupal Content Synchronization was not saved.', [
