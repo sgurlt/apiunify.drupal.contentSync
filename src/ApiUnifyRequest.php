@@ -209,7 +209,9 @@ class ApiUnifyRequest {
     // Already included? Just return the definition then.
     foreach ($this->embedEntities as $definition) {
       if ($definition[self::ENTITY_TYPE_KEY] == $entity_type && $definition[self::UUID_KEY] == $uuid) {
-        return $definition;
+        return $this->getEmbedEntityDefinition(
+          $entity_type, $bundle, $uuid, $details
+        );
       }
     }
 
