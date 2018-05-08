@@ -280,15 +280,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       $handler->import($request, $entity, $is_clone, $reason, $action);
     }
 
-    try {
-      $entity->save();
-    }
-    catch (\Exception $e) {
-      throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE, $e);
-    }
-
-    if ($entity instanceof TranslatableInterface) {
-      foreach ($request->getTranslationLanguages() as $language) {
+    if ($entity instanceof TranslatableInterface && !$request->getActiveLanguage()) {
+      $languages = $request->getTranslationLanguages();
+      foreach ($languages as $language) {
         /**
          * If the provided entity is fieldable, translations are as well.
          *
@@ -304,9 +298,28 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         $request->changeTranslationLanguage($language);
         $this->setEntityValues($request, $translation, $is_clone, $reason, $action);
       }
+
+      // Delete translations that were deleted on master site
+      if($this->settings['delete_entity']) {
+        $existing = $entity->getTranslationLanguages(FALSE);
+        foreach($existing as &$language) {
+          $language = $language->getId();
+        }
+        $languages = array_diff( $existing,  $languages );
+        foreach($languages as $language) {
+          $entity->removeTranslation($language);
+        }
+      }
     }
 
     $request->changeTranslationLanguage();
+
+    try {
+      $entity->save();
+    }
+    catch (\Exception $e) {
+      throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE, $e);
+    }
 
     return TRUE;
   }
@@ -393,13 +406,16 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
 
     // Translations.
     if (!$request->getActiveLanguage() &&
-      method_exists($entity, 'getTranslationLanguages') &&
-      method_exists($entity, 'getTranslation')) {
+      $entity instanceof TranslatableInterface ) {
       $languages = array_keys($entity->getTranslationLanguages(FALSE));
 
       foreach ($languages as $language) {
         $request->changeTranslationLanguage($language);
-        $this->export($request, $entity->getTranslation($language), $request, $action);
+        /**
+         * @var FieldableEntityInterface $translation
+         */
+        $translation = $entity->getTranslation($language);
+        $this->export($request, $translation, $request, $action);
       }
 
       $request->changeTranslationLanguage();

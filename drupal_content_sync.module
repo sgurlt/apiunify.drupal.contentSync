@@ -147,7 +147,7 @@ function drupal_content_sync_entity_update(EntityInterface $entity) {
   // before the synchronization was created or the entity could not be
   // exported before for any reason, using ::ACTION_UPDATE would lead to
   // errors. Thus we're just using ::ACTION_CREATE which always works.
-  _drupal_content_sync_export_entity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_CREATE);
+  _drupal_content_sync_export_entity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_UPDATE);
 }
 
 /**
@@ -157,6 +157,13 @@ function drupal_content_sync_entity_update(EntityInterface $entity) {
  */
 function drupal_content_sync_entity_delete(EntityInterface $entity) {
   _drupal_content_sync_export_entity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_DELETE);
+}
+
+/**
+ * Implements hook_entity_translation_delete().
+ */
+function drupal_content_sync_entity_translation_delete(\Drupal\Core\Entity\EntityInterface $translation) {
+  _drupal_content_sync_export_entity($translation, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_DELETE_TRANSLATION);
 }
 
 /**

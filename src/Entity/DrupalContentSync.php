@@ -3,8 +3,10 @@
 namespace Drupal\drupal_content_sync\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
+use Drupal\Core\Entity\EntityChangedInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\drupal_content_sync\ApiUnifyConfig;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Exception\SyncException;
@@ -131,6 +133,17 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *   export/import the deletion of this entity.
    */
   const ACTION_DELETE = 'delete';
+
+  /**
+   * @var string ACTION_DELETE_TRANSLATION
+   *   Drupal doesn't update the ->getTranslationStatus($langcode) to
+   *   TRANSLATION_REMOVED before calling hook_entity_translation_delete, so we
+   *   need to use a custom action to circumvent deletions of translations of
+   *   entities not being handled. This is only used for calling the
+   *   ->exportEntity function. It will then be replaced by a simple
+   *   ::ACTION_UPDATE.
+   */
+  const ACTION_DELETE_TRANSLATION = 'delete translation';
 
 
   /**
@@ -653,9 +666,32 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @return bool Whether or not the entity has actually been exported.
    */
   public function exportEntity(FieldableEntityInterface $entity, $reason, $action = self::ACTION_UPDATE) {
-    $export = time();
-    if (method_exists($entity, 'getUntranslated')) {
+    /**
+     * @var array $deletedTranslations
+     *   The translations that have been deleted. Important to notice when
+     *   updates must be performed (see self::ACTION_DELETE_TRANSLATION).
+     */
+    static $deletedTranslations = [];
+
+    if($action==self::ACTION_DELETE_TRANSLATION) {
+      $deletedTranslations[$entity->getEntityTypeId()][$entity->uuid()] = TRUE;
+      return FALSE;
+    }
+
+    if ($entity instanceof TranslatableInterface) {
       $entity = $entity->getUntranslated();
+    }
+    $export = time();
+    if($entity instanceof EntityChangedInterface) {
+      $export = $entity->getChangedTime();
+      if($entity instanceof TranslatableInterface) {
+        foreach($entity->getTranslationLanguages(FALSE) as $language) {
+          $translation = $entity->getTranslation($language->getId());
+          if($translation->getChangedTime()>$export) {
+            $export = $translation->getChangedTime();
+          }
+        }
+      }
     }
 
     // If this very request was sent to delete/create this entity, ignore the
@@ -692,16 +728,11 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         $action = self::ACTION_CREATE;
       }
     }
+
     // If the entity didn't change, it doesn't have to be re-exported
-    $interface = 'Drupal\Core\Entity\EntityChangedInterface';
-    if( $exported && in_array($interface, class_implements($entity)) ) {
-      /**
-       * @var \Drupal\Core\Entity\EntityChangedInterface $changeable
-       */
-      $changeable = $entity;
-      if($exported>=$changeable->getChangedTime() && $reason!=self::EXPORT_FORCED) {
-        return TRUE;
-      }
+    if( $exported && $exported>=$export && $reason!=self::EXPORT_FORCED &&
+      empty($deletedTranslations[$entity->getEntityTypeId()][$entity->uuid()]) ) {
+      return TRUE;
     }
 
     /** @var \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository */
