@@ -22,7 +22,19 @@ class DefaultEntityHandler extends EntityHandlerBase {
    * @inheritdoc
    */
   public static function supports($entity_type, $bundle) {
-    return $entity_type != 'user';
+    $forbidden = [
+      // Handling sensitive data like passwords via synchronization is not
+      // supported by default. We suggest using LDAP or similar approaches
+      // instead.
+      'user',
+      // These entities all have a separate default handler that handles
+      // specific aspects in more detail than this general handler. So
+      // we don't suggest using this general handler in that cases.
+      'file',
+      'media',
+      'node',
+    ];
+    return !in_array($entity_type, $forbidden );
   }
 
   /**
