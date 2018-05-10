@@ -119,17 +119,24 @@ class DrupalContentSyncPushChangesConfirm extends ConfirmFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     if ($form_state->getValue('confirm')) {
 
+      $ignored = 0;
+
       /** @var \Drupal\node\NodeInterface[] $nodes */
       foreach ($this->nodes as $node) {
-        _drupal_content_sync_export_entity(
+        if( !_drupal_content_sync_export_entity(
           $node,
           DrupalContentSync::EXPORT_MANUALLY,
-          DrupalContentSync::ACTION_CREATE
-        );
+          DrupalContentSync::ACTION_UPDATE
+        ) ) {
+          $ignored++;
+        }
       }
 
-      drupal_set_message('Pushed @count content.', ['@count' => count($this->nodes)]);
-      $this->logger('drupal_content_sync')->notice('Pushed @count content.', ['@count' => count($this->nodes)]);
+      drupal_set_message(t('Pushed @count content.', ['@count' => count($this->nodes)-$ignored]));
+      if($ignored) {
+        drupal_set_message(t('@count have been ignored as they\'re not configured to be exported.', ['@count' => $ignored]),'warn');
+      }
+      $this->logger('drupal_content_sync')->notice('Pushed @count content, ignored @ignored.', ['@count' => count($this->nodes)-$ignored,'@ignored'=>$ignored]);
       $this->tempStoreFactory->get('node_drupal_content_sync_push_changes_confirm')->delete('nodes');
     }
     $form_state->setRedirect('system.admin_content');

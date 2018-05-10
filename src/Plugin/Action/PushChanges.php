@@ -76,7 +76,6 @@ class PushChanges extends ActionBase implements ContainerFactoryPluginInterface 
    * {@inheritdoc}
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
-    // TODO return 'publish drupal content sync changes' permission instead.
     /** @var \Drupal\node\NodeInterface $object */
     $result = $object
       ->access('update', $account, TRUE)
