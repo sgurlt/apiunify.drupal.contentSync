@@ -312,7 +312,15 @@ class DrupalContentSyncForm extends EntityForm {
           $row_default_values = [
             'id' => $type_key . '-' . $entity_bundle_name,
             'export' => FALSE,
+            'export_deletion_settings' => [
+              'export_deletion' => FALSE
+            ],
             'import' => NULL,
+            'import_deletion_settings' => [
+              'import_deletion' => FALSE,
+              'allow_local_deletion_of_import' => FALSE,
+            ],
+            'import_updates' => 'force',
             'import_clone' => FALSE,
             'preview' => NULL,
             'display_name' => $this->t('@bundle', [
@@ -320,7 +328,6 @@ class DrupalContentSyncForm extends EntityForm {
             ])->render(),
             'entity_type' => $type_key,
             'entity_bundle' => $entity_bundle_name,
-            'delete_entity' => NULL,
           ];
         }
         else {
@@ -479,9 +486,6 @@ class DrupalContentSyncForm extends EntityForm {
           }
         }
 
-        // Add row class.
-        $entity_bundle_row['#attributes'] = ['class' => ['row-' . $entity_bundle_row['id']['#default_value']]];
-
         $entity_table[$type_key . '-' . $entity_bundle_name] = $entity_bundle_row;
 
         if ($handler_id != 'ignore') {
@@ -524,7 +528,6 @@ class DrupalContentSyncForm extends EntityForm {
                 'preview' => NULL,
                 'entity_type' => $type_key,
                 'entity_bundle' => $entity_bundle_name,
-                'delete_entity' => NULL,
               ];
             }
             else {
@@ -601,6 +604,10 @@ class DrupalContentSyncForm extends EntityForm {
               '#default_value' => $field_default_values['export'] ? $field_default_values['export'] : (isset($export_options[DrupalContentSync::EXPORT_AUTOMATICALLY]) ? DrupalContentSync::EXPORT_AUTOMATICALLY : DrupalContentSync::EXPORT_DISABLED),
             ];
 
+            $field_row['export_deletion_settings']['export_deletion'] = [
+              '#markup' => '',
+            ];
+
             if ($handler_id == 'ignore') {
               $import_options = [
                 DrupalContentSync::IMPORT_DISABLED => $this->t('No')->render(),
@@ -621,22 +628,35 @@ class DrupalContentSyncForm extends EntityForm {
               '#disabled' => count($import_options) < 2,
               '#default_value' => $field_default_values['import'] ? $field_default_values['import'] : (isset($import_options[DrupalContentSync::IMPORT_AUTOMATICALLY]) ? DrupalContentSync::IMPORT_AUTOMATICALLY : DrupalContentSync::IMPORT_DISABLED),
             ];
+
+            $entity_bundle_row['import_deletion_settings']['import_deletion'] = [
+              '#markup' => '',
+            ];
+
+            $entity_bundle_row['import_deletion_settings']['allow_local_deletion_of_import'] = [
+              '#markup' => '',
+            ];
+
+            $entity_bundle_row['import_updates'] = [
+              '#markup' => '',
+            ];
+
             $field_row['import_clone'] = [
               '#markup' => '',
             ];
+
             $field_row['has_preview'] = [
               '#markup' => '',
             ];
+
             $field_row['preview'] = [
-              '#markup' => '',
-            ];
-            $field_row['delete_entity'] = [
               '#markup' => '',
             ];
 
             $field_row['handler_settings'] = [
               '#markup' => '',
             ];
+
             if ($handler_id != 'ignore') {
               $advanced_settings = $handler->getHandlerSettings($field_default_values);
               if (count($advanced_settings)) {
@@ -646,7 +666,6 @@ class DrupalContentSyncForm extends EntityForm {
               }
             }
 
-            $field_row['#attributes'] = ['class' => ['row-' . $entity_bundle_row['id']['#default_value']]];
             $entity_table[$field_id] = $field_row;
           }
         }
