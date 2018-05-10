@@ -23,3 +23,14 @@ drupal_content_sync.sync.*:
     local_connections:
       type: map
       label: 'Local Drupal Content Sync Connections'
+
+drupal_content_sync.pool.*:
+  type: config_entity
+  label: 'Drupal Content Sync Pool'
+  mapping:
+    id:
+      type: string
+      label: 'ID'
+    label:
+      type: label
+      label: 'Label'

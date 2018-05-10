@@ -3,3 +3,9 @@ entity.drupal_content_sync.add_form:
   title: 'Add synchronization'
   appears_on:
     - entity.drupal_content_sync.collection
+
+entity.dcs_pool.add_form:
+  route_name: 'entity.dcs_pool.add_form'
+  title: 'Add pool'
+  appears_on:
+    - entity.dcs_pool.collection

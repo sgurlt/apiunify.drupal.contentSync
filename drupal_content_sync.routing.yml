@@ -47,6 +47,41 @@ entity.drupal_content_sync.delete_form:
 #  requirements:
 #    _permission: 'access drupal content sync content overview'
 
+# Pool
+entity.dcs_pool.collection:
+  path: '/admin/config/services/drupal_content_sync/pool'
+  defaults:
+    _entity_list: 'dcs_pool'
+    _title: 'Example configuration'
+  requirements:
+    _permission: 'administer site configuration'
+
+entity.dcs_pool.add_form:
+  path: '/admin/config/services/drupal_content_sync/pool/add'
+  defaults:
+    _entity_form: 'dcs_pool.add'
+    _title: 'Add pool'
+  requirements:
+    _permission: 'administer site configuration'
+
+entity.dcs_pool.edit_form:
+  path: '/admin/config/services/drupal_content_sync/pool/{dcs_pool}/edit'
+  defaults:
+    _entity_form: 'dcs_pool.edit'
+    _title: 'Edit example'
+  requirements:
+    _permission: 'administer site configuration'
+
+entity.dcs_pool.delete_form:
+  path: '/admin/config/services/drupal_content_sync/synchronizations/{dcs_pool}/delete'
+  defaults:
+    _entity_form: 'dcs_pool.delete'
+    _title: 'Delete example'
+  requirements:
+    _permission: 'administer site configuration'
+
+
+
 drupal_content_sync.publish_changes:
   path: '/drupal-content-sync/publish-changes/{sync_id}/{entity_type}/{entity}'
   defaults:
