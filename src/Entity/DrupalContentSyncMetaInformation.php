@@ -120,13 +120,22 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
   /**
    * Get the entity this meta information belongs to.
    *
-   * @return \Drupal\Core\Entity\Entity
+   * @return \Drupal\Core\Entity\EntityInterface
    */
   public function getEntity() {
     return \Drupal::service('entity.repository')->loadEntityByUuid(
       $this->getEntityTypeName(),
       $this->getUuid()
     );
+  }
+
+  /**
+   * Get the configuration instance this meta information belongs to.
+   *
+   * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync
+   */
+  public function getSync() {
+    return DrupalContentSync::getAll()[$this->getEntityTypeConfig()];
   }
 
   /**

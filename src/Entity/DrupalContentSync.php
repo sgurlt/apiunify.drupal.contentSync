@@ -118,9 +118,27 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   const IMPORT_FORCED = 'forced';
 
 
+  /**
+   * @var string IMPORT_UPDATE_IGNORE
+   *   Ignore all incoming updates.
+   */
   const IMPORT_UPDATE_IGNORE = 'ignore';
+  /**
+   * @var string IMPORT_UPDATE_FORCE
+   *   Overwrite any local changes on all updates.
+   */
   const IMPORT_UPDATE_FORCE = 'force';
+  /**
+   * @var string IMPORT_UPDATE_FORCE_AND_FORBID_EDITING
+   *   Import all changes and forbid local editors to change the content.
+   */
   const IMPORT_UPDATE_FORCE_AND_FORBID_EDITING  = 'force_and_forbid_editing';
+  /**
+   * @var string IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN
+   *   Import all changes and forbid local editors to change the content unless
+   *   they check the "override" checkbox. As long as that is checked, we
+   *   ignore any incoming updates in favor of the local changes.
+   */
   const IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN = 'allow_override';
 
 
@@ -320,6 +338,32 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   /**
+   * Check whether the local deletion of the given entity is allowed.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *
+   * @return bool
+   */
+  public static function isLocalDeletionAllowed($entity) {
+    $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity(
+      $entity->getEntityTypeId(),
+      $entity->uuid()
+    );
+    foreach ($meta_infos as $id=>$info) {
+      if(!$info || !$info->getLastImport() || $info->isSourceEntity()) {
+        continue;
+      }
+      $sync = $info->getSync();
+      $config = $sync->getEntityTypeConfig($entity->getEntityTypeId(),$entity->bundle());
+      if(!boolval($config['import_deletion_settings']['allow_local_deletion_of_import'])) {
+        return FALSE;
+        break;
+      }
+    }
+    return TRUE;
+  }
+
+  /**
    * Get the correct synchronization for a specific action on a given entity.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
@@ -355,7 +399,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       return FALSE;
     }
 
-    if ($action == self::ACTION_DELETE && !$config['delete_entity']) {
+    if ($action == self::ACTION_DELETE && !boolval($config['export_deletion_settings']['export_deletion'])) {
       return FALSE;
     }
 
@@ -482,7 +526,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     if ($config['import_clone'] != $is_clone) {
       return FALSE;
     }
-    if ($action == self::ACTION_DELETE && !$config['delete_entity']) {
+    if ($action == self::ACTION_DELETE && !boolval($config['import_deletion_settings']['import_deletion'])) {
       return FALSE;
     }
     // If any handler is available, we can import this entity.
@@ -737,6 +781,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
     // If the entity didn't change, it doesn't have to be re-exported
     if( $exported && $exported>=$export && $reason!=self::EXPORT_FORCED &&
+      $action!=self::ACTION_DELETE &&
       empty($deletedTranslations[$entity->getEntityTypeId()][$entity->uuid()]) ) {
       return TRUE;
     }

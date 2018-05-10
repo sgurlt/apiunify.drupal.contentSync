@@ -637,7 +637,7 @@ class ApiUnifyConfig {
               'dependency_connection_id'  => self::DEPENDENCY_CONNECTION_ID,
               'create_entities' => $type['import'] != DrupalContentSync::IMPORT_DISABLED,
               'update_entities' => $type['import'] != DrupalContentSync::IMPORT_DISABLED && !$type['import_clone'],
-              'delete_entities' => $type['import'] != DrupalContentSync::IMPORT_DISABLED && boolval($type['delete_entity']),
+              'delete_entities' => $type['import'] != DrupalContentSync::IMPORT_DISABLED && boolval($type['import_deletion_settings']['import_deletion']),
               'clone_entities'  => boolval($type['import_clone']),
               'dependent_entities_only'  => $type['import'] == DrupalContentSync::IMPORT_AS_DEPENDENCY,
               'update_none_when_loading' => TRUE,
@@ -667,7 +667,7 @@ class ApiUnifyConfig {
               // 'dependent_entities_only'  => FALSE,.
               'create_entities' => $type['export'] != DrupalContentSync::EXPORT_DISABLED,
               'update_entities' => $type['export'] != DrupalContentSync::EXPORT_DISABLED,
-              'delete_entities' => $type['export'] != DrupalContentSync::EXPORT_DISABLED && boolval($type['delete_entity']),
+              'delete_entities' => $type['export'] != DrupalContentSync::EXPORT_DISABLED && boolval($type['export_deletion_settings']['export_deletion']),
               'dependent_entities_only'  => $type['export'] == DrupalContentSync::EXPORT_AS_DEPENDENCY,
               'update_none_when_loading' => TRUE,
               'exclude_reference_properties' => [
