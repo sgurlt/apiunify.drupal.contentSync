@@ -101,6 +101,8 @@ class ApiUnifyConfig {
    */
   public function __construct(DrupalContentSync $sync) {
     // Check if the site id got set within the settings*.php.
+    // @ToDo: POOL_REFACTOR
+    return;
     $dcs_settings = Settings::get('drupal_content_sync');
     if (!is_null($dcs_settings) && isset($dcs_settings[$sync->id])) {
       $sync->site_id = $dcs_settings[$sync->id];

@@ -257,6 +257,9 @@ class DrupalContentSyncForm extends EntityForm {
         $current_display_mode = $type_key . '.' . $entity_bundle_name . '.' . self::DRUPAL_CONTENT_SYNC_PREVIEW_FIELD;
         $has_preview_mode = in_array($current_display_mode, $display_modes_ids) || $type_key == 'file';
 
+        // Get all pool entities.
+        $pool_entities = Pool::getAll();
+
         if (!isset($def_sync_entities[$type_key . '-' . $entity_bundle_name])) {
           $row_default_values = [
             'id' => $type_key . '-' . $entity_bundle_name,
@@ -278,6 +281,10 @@ class DrupalContentSyncForm extends EntityForm {
             'entity_type' => $type_key,
             'entity_bundle' => $entity_bundle_name,
           ];
+          foreach ($pool_entities as $pool) {
+            $row_default_values['export_pools'][$pool->id()] = 'force';
+            $row_default_values['import_pools'][$pool->id()] = 'force';
+          }
         }
         else {
           $row_default_values = $def_sync_entities[$type_key . '-' . $entity_bundle_name];
@@ -354,9 +361,6 @@ class DrupalContentSyncForm extends EntityForm {
           }
         }
 
-        // Get all pool entities.
-        $pool_entities = Pool::getAll();
-
         $entity_bundle_row['export'] = [
           '#type' => 'select',
           '#title' => $this->t('Export'),
@@ -387,7 +391,7 @@ class DrupalContentSyncForm extends EntityForm {
               'allow' => $this->t('Allow'),
               'forbid' => $this->t('Forbid'),
             ],
-            '#default_value' => 'force',
+            '#default_value' => $row_default_values['export_pools'][$pool->id()],
           ];
         }
 
@@ -414,7 +418,7 @@ class DrupalContentSyncForm extends EntityForm {
               'allow' => $this->t('Allow'),
               'forbid' => $this->t('Forbid'),
             ],
-            '#default_value' => 'force',
+            '#default_value' => $row_default_values['import_pools'][$pool->id()],
           ];
         }
 
@@ -695,6 +699,13 @@ class DrupalContentSyncForm extends EntityForm {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
 
+    // Reference fields are only allowed to have "Force" or "Forbid" for their
+    // pool configurations.
+
+
+
+    // @ToDO: POOL_REFACTOR
+    return;
     $api = $form_state->getValue('api');
     if (!preg_match('@^([a-z0-9\-]+)$@', $api)) {
       $form_state->setErrorByName('api', $this->t('Please only use letters, numbers and dashes.'));

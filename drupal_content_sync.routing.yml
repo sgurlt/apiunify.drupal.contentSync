@@ -80,8 +80,6 @@ entity.dcs_pool.delete_form:
   requirements:
     _permission: 'administer site configuration'
 
-
-
 drupal_content_sync.publish_changes:
   path: '/drupal-content-sync/publish-changes/{sync_id}/{entity_type}/{entity}'
   defaults:

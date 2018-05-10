@@ -265,6 +265,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   public function preSave(EntityStorageInterface $storage) {
     parent::preSave($storage);
 
+    // @ToDo: POOL_REFACTOR
+    return;
     $exporter = new ApiUnifyConfig($this);
     $exporter->deleteConfig(TRUE);
 
