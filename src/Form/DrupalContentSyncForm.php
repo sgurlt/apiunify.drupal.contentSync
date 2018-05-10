@@ -273,6 +273,7 @@ class DrupalContentSyncForm extends EntityForm {
       '#header' => array_merge([
         $this->t('Bundle'),
         $this->t('Handler'),
+        $this->t('Handler settings'),
         $this->t('Export'),
         $this->t('Export deletion settings'),
         $this->t('Import'),
@@ -281,7 +282,6 @@ class DrupalContentSyncForm extends EntityForm {
         $this->t('Clone'),
         '',
         $this->t('Preview'),
-        $this->t('Handler settings'),
       ]),
     ];
 
@@ -393,6 +393,18 @@ class DrupalContentSyncForm extends EntityForm {
           }
         }
 
+        $entity_bundle_row['handler_settings'] = [
+          '#markup' => '-',
+        ];
+        if ($handler_id != 'ignore') {
+          $advanced_settings = $handler->getHandlerSettings();
+          if (count($advanced_settings)) {
+            $entity_bundle_row['handler_settings'] = array_merge([
+              '#type' => 'container',
+            ], $advanced_settings);
+          }
+        }
+
         $entity_bundle_row['export'] = [
           '#type' => 'select',
           '#title' => $this->t('Export'),
@@ -473,18 +485,6 @@ class DrupalContentSyncForm extends EntityForm {
           ], $handler_id == 'ignore' ? ['table' => $this->t('Table')->render()] : $handler->getAllowedPreviewOptions()),
           '#default_value' => $row_default_values['preview'],
         ];
-
-        $entity_bundle_row['handler_settings'] = [
-          '#markup' => '',
-        ];
-        if ($handler_id != 'ignore') {
-          $advanced_settings = $handler->getHandlerSettings();
-          if (count($advanced_settings)) {
-            $entity_bundle_row['handler_settings'] = array_merge([
-              '#type' => 'container',
-            ], $advanced_settings);
-          }
-        }
 
         $entity_table[$type_key . '-' . $entity_bundle_name] = $entity_bundle_row;
 
@@ -595,6 +595,19 @@ class DrupalContentSyncForm extends EntityForm {
               }
             }
 
+            $field_row['handler_settings'] = [
+              '#markup' => '-',
+            ];
+
+            if ($handler_id != 'ignore') {
+              $advanced_settings = $handler->getHandlerSettings($field_default_values);
+              if (count($advanced_settings)) {
+                $field_row['handler_settings'] = array_merge([
+                  '#type' => 'container',
+                ], $advanced_settings);
+              }
+            }
+
             $field_row['export'] = [
               '#type' => 'select',
               '#title' => $this->t('Export'),
@@ -652,19 +665,6 @@ class DrupalContentSyncForm extends EntityForm {
             $field_row['preview'] = [
               '#markup' => '',
             ];
-
-            $field_row['handler_settings'] = [
-              '#markup' => '',
-            ];
-
-            if ($handler_id != 'ignore') {
-              $advanced_settings = $handler->getHandlerSettings($field_default_values);
-              if (count($advanced_settings)) {
-                $field_row['handler_settings'] = array_merge([
-                  '#type' => 'container',
-                ], $advanced_settings);
-              }
-            }
 
             $entity_table[$field_id] = $field_row;
           }
