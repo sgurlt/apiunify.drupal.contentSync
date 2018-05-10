@@ -223,6 +223,7 @@ class DrupalContentSyncForm extends EntityForm {
         $this->t('Handler settings'),
         $this->t('Export'),
         $this->t('Export pool configuration'),
+        $this->t('Pool export widget type'),
         $this->t('Export deletion settings'),
         $this->t('Import'),
         $this->t('Import pool configuration'),
@@ -280,6 +281,7 @@ class DrupalContentSyncForm extends EntityForm {
             ])->render(),
             'entity_type' => $type_key,
             'entity_bundle' => $entity_bundle_name,
+            'pool_export_widget_type' => 'checkboxes'
           ];
           foreach ($pool_entities as $pool) {
             $row_default_values['export_pools'][$pool->id()] = 'force';
@@ -394,6 +396,17 @@ class DrupalContentSyncForm extends EntityForm {
             '#default_value' => $row_default_values['export_pools'][$pool->id()],
           ];
         }
+
+        $entity_bundle_row['pool_export_widget_type'] = [
+          '#type' => 'select',
+          '#options' => [
+            'checkboxes' => $this->t('Checkboxes'),
+            'radio_boxes' => $this->t('Radio boxes'),
+            'single_select' => $this->t('Single select'),
+            'multi_select' => $this->t('Multi select'),
+          ],
+          '#default_value' => $row_default_values['pool_export_widget_type'],
+        ];
 
         $entity_bundle_row['export_deletion_settings']['export_deletion'] = [
           '#type' => 'checkbox',
@@ -597,6 +610,10 @@ class DrupalContentSyncForm extends EntityForm {
               '#disabled' => count($export_options) < 2,
               '#options' => $export_options,
               '#default_value' => $field_default_values['export'] ? $field_default_values['export'] : (isset($export_options[DrupalContentSync::EXPORT_AUTOMATICALLY]) ? DrupalContentSync::EXPORT_AUTOMATICALLY : DrupalContentSync::EXPORT_DISABLED),
+            ];
+
+            $field_row['pool_export_widget_type'] = [
+              '#markup' => '',
             ];
 
             $field_row['export_deletion_settings']['export_deletion'] = [
