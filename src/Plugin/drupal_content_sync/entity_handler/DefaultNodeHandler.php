@@ -83,7 +83,7 @@ class DefaultNodeHandler extends EntityHandlerBase {
     // Not published? Ignore this revision then.
     if (empty($request->getField('status')) && $this->settings['handler_settings']['ignore_unpublished']) {
       // Unless it's a delete, then it won't have a status and is independent
-      // of published state, so we don't ignore it.
+      // of published state, so we don't ignore the import.
       if ($action != DrupalContentSync::ACTION_DELETE) {
         return TRUE;
       }

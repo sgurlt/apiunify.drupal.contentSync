@@ -313,7 +313,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         }
 
         $request->changeTranslationLanguage($language);
-        $this->setEntityValues($request, $translation, $is_clone, $reason, $action);
+        if(!$this->ignoreImport($request,$is_clone,$reason,$action)) {
+          $this->setEntityValues($request, $translation, $is_clone, $reason, $action);
+        }
       }
 
       // Delete translations that were deleted on master site
