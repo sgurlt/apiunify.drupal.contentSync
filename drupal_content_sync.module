@@ -255,30 +255,108 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
     $entity->getEntityTypeId(),
     $entity->uuid()
   );
-  $restrict = FALSE;
+  $behavior = NULL;
+  $overridden = FALSE;
   foreach ($meta_infos as $info) {
     if(!$info || !$info->getLastImport() || $info->isCloned()) {
       continue;
     }
     $config = DrupalContentSync::load($info->getEntityTypeConfig())
     ->getEntityTypeConfig($entity->getEntityTypeId(),$entity->bundle());
-    if (!empty($config['handler_settings']['restrict_editing'])) {
-      $restrict = TRUE;
+    if ($config['import_updates']==DrupalContentSync::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING ||
+      $config['import_updates']==DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+      $behavior = $config['import_updates'];
+      $overridden = $info->isOverriddenLocally();
       break;
     }
   }
 
-  if (!$restrict) {
+  if (!$behavior) {
     return;
   }
 
+  $id = bin2hex(random_bytes(4));
+
+  $allow_overrides = $behavior==DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN;
+
+  $hide_elements = ['container','vertical_tabs','details'];
   foreach ($form as $key => $form_item) {
-    if (0 === strpos($key, 'field_') || (is_array($form_item) && isset($form_item['#type']) && 'container' === $form_item['#type'])) {
-      $form[$key]['#disabled'] = TRUE;
+    if(!is_array($form_item))
+      continue;
+    if(!isset($form_item['#type']))
+      continue;
+    if (0 === strpos($key, 'field_') || in_array($form_item['#type'],$hide_elements)) {
+      if($allow_overrides) {
+        // If we used the DISABLED attribute, we couldn't reliably remove it
+        // from all elements, as some should still have the attribute from other
+        // circumstances and we would also have to apply it nested.
+        // Otherwise we'd have to either submit the form and redirect to the
+        // edit page or reload the whole form via AJAX, conflicting with
+        // embedded forms.
+        // So instead we hide and show the elements via JavaScript, leading
+        // to the best usability and overall simplest / most reliable
+        // implementation from the options available-
+        $form[$key]['#attributes']['class'][] = 'dcs-edit-override-id-' . $id;
+        if(!$overridden) {
+          $form[$key]['#attributes']['class'][] = 'dcs-edit-override-hide';
+        }
+      }
+      else {
+        $form[$key]['#disabled'] = TRUE;
+      }
     }
   }
-  $messenger = \Drupal::messenger();
-  $messenger->addWarning(t('The entity cannot be edited because it has been synced.'));
+
+  if($allow_overrides) {
+    $form['dcs_edit_override'] = [
+      '#type' => 'checkbox',
+      '#default_value' => $overridden,
+      '#weight' => -10000,
+      '#title' => t('Overwrite locally and ignore future remote updates'),
+      '#description' => t('%label has been imported and future remote updates would overwrite local changes. Checking this will make sure that future remote updates will be ignored so your local changes persist.',[
+        '%label' => $entity->label(),
+      ]),
+      '#attributes' => [
+        'class' => ['dcs-edit-override'],
+        'data-dcs-edit-override-id' => $id,
+      ],
+    ];
+    $form['#attached']['library'][] = 'drupal_content_sync/entity-form';
+    $form['actions']['submit']['#submit'][] = '_drupal_content_sync_override_entity_submit';
+  }
+  else {
+    $messenger = \Drupal::messenger();
+    $messenger->addWarning(t('%label cannot be edited as it has been imported.',[
+      '%label' => $entity->label(),
+    ]));
+  }
+}
+
+function _drupal_content_sync_override_entity_submit(array $form, FormStateInterface $form_state) {
+  $value = boolval($form_state->getValue('dcs_edit_override'));
+
+  $entity = $form_state
+    ->getFormObject()
+    ->getEntity();
+
+  $meta_infos = \Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation::getInfoForEntity(
+    $entity->getEntityTypeId(),
+    $entity->uuid()
+  );
+  foreach ($meta_infos as $info) {
+    if (!$info || !$info->getLastImport() || $info->isCloned()) {
+      continue;
+    }
+    $config = DrupalContentSync::load($info->getEntityTypeConfig())
+      ->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
+    if ($config['import_updates'] == DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+      if($value!=$info->isOverriddenLocally()) {
+        $info->isOverriddenLocally($value);
+        $info->save();
+      }
+      break;
+    }
+  }
 }
 
 /**

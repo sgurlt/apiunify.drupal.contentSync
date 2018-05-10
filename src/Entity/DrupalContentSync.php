@@ -118,6 +118,12 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   const IMPORT_FORCED = 'forced';
 
 
+  const IMPORT_UPDATE_IGNORE = 'ignore';
+  const IMPORT_UPDATE_FORCE = 'force';
+  const IMPORT_UPDATE_FORCE_AND_FORBID_EDITING  = 'force_and_forbid_editing';
+  const IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN = 'allow_override';
+
+
   /**
    * @var string ACTION_CREATE
    *   export/import the creation of this entity.

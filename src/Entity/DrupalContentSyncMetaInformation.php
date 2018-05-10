@@ -32,9 +32,10 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
 
   use EntityChangedTrait;
 
-  const FLAG_CLONED              = 0x00000001;
-  const FLAG_DELETED             = 0x00000002;
-  const FLAG_USER_ALLOWED_EXPORT = 0x00000004;
+  const FLAG_CLONED               = 0x00000001;
+  const FLAG_DELETED              = 0x00000002;
+  const FLAG_USER_ALLOWED_EXPORT  = 0x00000004;
+  const FLAG_EDIT_OVERRIDE        = 0x00000008;
 
   /**
    * {@inheritdoc}
@@ -132,6 +133,26 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
       $this->save();
     }
     return (bool) ($this->get('flags')->value & self::FLAG_CLONED);
+  }
+
+  /**
+   * Returns the information if the user override the entity locally.
+   *
+   * @param bool $set
+   *   Optional parameter to set the value for EditOverride.
+   *
+   * @return bool
+   */
+  public function isOverriddenLocally($set = NULL) {
+    if ($set === TRUE) {
+      $this->set('flags', $this->get('flags')->value | self::FLAG_EDIT_OVERRIDE);
+      $this->save();
+    }
+    elseif ($set === FALSE) {
+      $this->set('flags', $this->get('flags')->value & ~self::FLAG_EDIT_OVERRIDE);
+      $this->save();
+    }
+    return (bool) ($this->get('flags')->value & self::FLAG_EDIT_OVERRIDE);
   }
 
   /**

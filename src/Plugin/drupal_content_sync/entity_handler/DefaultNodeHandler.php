@@ -67,15 +67,11 @@ class DefaultNodeHandler extends EntityHandlerBase {
    */
   public function getHandlerSettings() {
     return [
+      // TODO Move to default handler for all entities that can be published
       'ignore_unpublished' => [
         '#type' => 'checkbox',
         '#title' => 'Ignore unpublished content',
         '#default_value' => $this->settings['handler_settings']['ignore_unpublished'] === 0 ? 0 : 1,
-      ],
-      'restrict_editing' => [
-        '#type' => 'checkbox',
-        '#title' => 'Restrict editing of imported content',
-        '#default_value' => isset($this->settings['handler_settings']['restrict_editing']) ? $this->settings['handler_settings']['restrict_editing'] == 1 : 0,
       ],
     ];
   }
