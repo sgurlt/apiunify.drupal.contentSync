@@ -46,6 +46,62 @@ class Pool extends ConfigEntityBase implements PoolInterface {
    */
   public $label;
 
+  /**
+   * The Example label.
+   *
+   * @var string
+   */
+  public $backend_url;
+
+  /**
+   * The Example label.
+   *
+   * @var string
+   */
+  public $site_id;
+
+  /**
+   *
+   */
+  public static $all = NULL;
+
+  /**
+   * Returns the Drupal Content Sync Backend URL for this pool.
+   *
+   * @return string
+   */
+  public function getBackendUrl() {
+    return $this->backend_url;
+  }
+
+  /**
+   * Returns the site id this pool.
+   *
+   * @return string
+   */
+  public function getSiteId() {
+    return $this->site_id;
+  }
+
+  /**
+   *
+   * Load all dcs_pool entities.
+   *
+   * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
+   */
+  public static function getAll() {
+
+
+    /**
+     * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync[] $configurations
+     */
+    $configurations = \Drupal::entityTypeManager()
+      ->getStorage('dcs_pool')
+      ->loadMultiple();
+
+    return self::$all = $configurations;
+  }
+
   // Your specific configuration property get/set methods go here,
   // implementing the interface.
 }

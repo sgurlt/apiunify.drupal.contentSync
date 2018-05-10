@@ -23,7 +23,7 @@ class PoolDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return new Url('entity.example.collection');
+    return new Url('entity.dcs_pool.collection');
   }
 
   /**

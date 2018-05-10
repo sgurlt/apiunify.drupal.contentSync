@@ -8,15 +8,6 @@ drupal_content_sync.sync.*:
     name:
       type: label
       label: 'Name'
-    api:
-      type: string
-      label: 'API'
-    url:
-      type: uri
-      label: 'Drupal Content Sync URL'
-    site_id:
-      type: string
-      label: 'Site Identifier'
     sync_entities:
       type: map
       label: 'Sync entities'
@@ -34,3 +25,9 @@ drupal_content_sync.pool.*:
     label:
       type: label
       label: 'Label'
+    backend_url:
+      type: uri
+      label: 'Drupal Content Sync URL'
+    site_id:
+      type: string
+      label: 'Site Identifier'

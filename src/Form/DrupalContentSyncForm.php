@@ -10,6 +10,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Drupal\drupal_content_sync\ApiUnifyConfig;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Pool;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Messenger\MessengerInterface;
@@ -198,60 +199,6 @@ class DrupalContentSyncForm extends EntityForm {
       '#disabled' => !$sync_entity->isNew(),
     ];
 
-    $form['api'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('API'),
-      '#maxlength' => 255,
-      '#default_value' => isset($sync_entity->{'api'}) ? $sync_entity->{'api'} : '',
-      '#description' => $this->t("The API identifies the content pool to work with. All sites which should be connected need to have the same API value."),
-      '#required' => TRUE,
-    ];
-
-    $form['url'] = [
-      '#type' => 'url',
-      '#title' => $this->t('Drupal Content Sync URL'),
-      '#maxlength' => 255,
-      '#default_value' => isset($sync_entity->{'url'}) ? $sync_entity->{'url'} : '',
-      '#description' => $this->t("The entity types selected below will be exposed to this synchronization backend. Make sure to include the rest path of the app (usually /rest)."),
-      '#required' => TRUE,
-    ];
-
-    // Check if the site id got set within the settings*.php.
-    if (!is_null($sync_entity->id)) {
-      $config_machine_name = $sync_entity->id;
-      $dcs_settings = Settings::get('drupal_content_sync');
-      if (!is_null($dcs_settings) && isset($dcs_settings[$sync_entity->id])) {
-        $site_id = $dcs_settings[$sync_entity->id];
-      }
-    }
-    if (!isset($config_machine_name)) {
-      $config_machine_name = '<machine_name_of_the_configuration>';
-    }
-
-    $form['site_id'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Site identifier'),
-      '#maxlength' => 255,
-      '#default_value' => isset($sync_entity->{'site_id'}) ? $sync_entity->{'site_id'} : '',
-      '#description' => $this->t("This identifier will be used to identify the origin of entities on other sites and is used as a machine name for identification. 
-      Once connected, you cannot change this identifier anylonger. Typicall you want to use the fully qualified domain name of this website as an identifier.<br>
-      The Site identifier can be overridden within your environment specific settings.php file by using <i>@settings</i>.<br>
-      If you do so, you should exclude the Site identifier for this configuration from the configuration import/export by using the module <a href='https://www.drupal.org/project/config_ignore' target='_blank'>Config ignore</a>.
-      The exclude could for example look like this: <i>drupal_content_sync.sync.@config_machine_name:site_id</i><br>
-      <i>Hint: If this configuration is saved before the value with the settings.php got set, you need to resave this configuration once the value within the settings.php got set.</i>", [
-        '@settings' => '$settings["drupal_content_sync"]["' . $config_machine_name . '"] = "my-site-identifier"',
-        '@config_machine_name' => $config_machine_name,
-      ]),
-      '#required' => TRUE,
-    ];
-
-    // If the site id is set within the settings.php, the form field is disabled.
-    if (isset($site_id)) {
-      $form['site_id']['#disabled'] = TRUE;
-      $form['site_id']['#default_value'] = $site_id;
-      $form['site_id']['#description'] = $this->t('Site identifier ist set with the environment specific settings.php file.');
-    }
-
     $entity_types = $this->bundleInfoService->getAllBundleInfo();
 
     // Remove the Drupal Content Sync Meta Info entity type form the array.
@@ -275,8 +222,10 @@ class DrupalContentSyncForm extends EntityForm {
         $this->t('Handler'),
         $this->t('Handler settings'),
         $this->t('Export'),
+        $this->t('Export pool configuration'),
         $this->t('Export deletion settings'),
         $this->t('Import'),
+        $this->t('Import pool configuration'),
         $this->t('Import deletion settings'),
         $this->t('Import updates'),
         $this->t('Clone'),
@@ -405,6 +354,9 @@ class DrupalContentSyncForm extends EntityForm {
           }
         }
 
+        // Get all pool entities.
+        $pool_entities = Pool::getAll();
+
         $entity_bundle_row['export'] = [
           '#type' => 'select',
           '#title' => $this->t('Export'),
@@ -426,6 +378,19 @@ class DrupalContentSyncForm extends EntityForm {
           ];
         }
 
+        foreach ($pool_entities as $pool) {
+          $entity_bundle_row['export_pools'][$pool->id()] = [
+            '#type' => 'select',
+            '#title' => $this->t($pool->label()),
+            '#options' => [
+              'force' => $this->t('Force'),
+              'allow' => $this->t('Allow'),
+              'forbid' => $this->t('Forbid'),
+            ],
+            '#default_value' => 'force',
+          ];
+        }
+
         $entity_bundle_row['export_deletion_settings']['export_deletion'] = [
           '#type' => 'checkbox',
           '#title' => $this->t('Export deletion'),
@@ -439,6 +404,19 @@ class DrupalContentSyncForm extends EntityForm {
           '#options' => $import_options,
           '#default_value' => $row_default_values['import'],
         ];
+
+        foreach ($pool_entities as $pool) {
+          $entity_bundle_row['import_pools'][$pool->id()] = [
+            '#type' => 'select',
+            '#title' => $this->t($pool->label()),
+            '#options' => [
+              'force' => $this->t('Force'),
+              'allow' => $this->t('Allow'),
+              'forbid' => $this->t('Forbid'),
+            ],
+            '#default_value' => 'force',
+          ];
+        }
 
         $entity_bundle_row['import_deletion_settings']['import_deletion'] = [
           '#type' => 'checkbox',
