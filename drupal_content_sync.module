@@ -261,6 +261,9 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
     if(!$info || !$info->getLastImport() || $info->isCloned()) {
       continue;
     }
+    if($info->isSourceEntity()) {
+      continue;
+    }
     $config = DrupalContentSync::load($info->getEntityTypeConfig())
     ->getEntityTypeConfig($entity->getEntityTypeId(),$entity->bundle());
     if ($config['import_updates']==DrupalContentSync::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING ||
@@ -332,6 +335,13 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
   }
 }
 
+/**
+ * Update the DrupalContentSyncMetaInformation for the given entity, setting
+ * the DrupalContentSyncMetaInformation::FLAG_EDIT_OVERRIDE flag accordingly.
+ *
+ * @param array $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ */
 function _drupal_content_sync_override_entity_submit(array $form, FormStateInterface $form_state) {
   $value = boolval($form_state->getValue('dcs_edit_override'));
 

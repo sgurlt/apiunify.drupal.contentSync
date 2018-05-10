@@ -7,6 +7,7 @@ use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Driver\Exception\Exception;
 
 /**
  * Defines the Sync entity entity.
@@ -36,6 +37,7 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
   const FLAG_DELETED              = 0x00000002;
   const FLAG_USER_ALLOWED_EXPORT  = 0x00000004;
   const FLAG_EDIT_OVERRIDE        = 0x00000008;
+  const FLAG_IS_SOURCE_ENTITY     = 0x00000010;
 
   /**
    * {@inheritdoc}
@@ -116,6 +118,18 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
   }
 
   /**
+   * Get the entity this meta information belongs to.
+   *
+   * @return \Drupal\Core\Entity\Entity
+   */
+  public function getEntity() {
+    return \Drupal::service('entity.repository')->loadEntityByUuid(
+      $this->getEntityTypeName(),
+      $this->getUuid()
+    );
+  }
+
+  /**
    * Returns the information if the entity is cloned or not.
    *
    * @param bool $set
@@ -133,6 +147,27 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
       $this->save();
     }
     return (bool) ($this->get('flags')->value & self::FLAG_CLONED);
+  }
+
+  /**
+   * Returns the information if the entity has originally been created on this
+   * site.
+   *
+   * @param bool $set
+   *   Optional parameter to set the value for IsSourceEntity.
+   *
+   * @return bool
+   */
+  public function isSourceEntity($set = NULL) {
+    if ($set === TRUE) {
+      $this->set('flags', $this->get('flags')->value | self::FLAG_IS_SOURCE_ENTITY);
+      $this->save();
+    }
+    elseif ($set === FALSE) {
+      $this->set('flags', $this->get('flags')->value & ~self::FLAG_IS_SOURCE_ENTITY);
+      $this->save();
+    }
+    return (bool) ($this->get('flags')->value & self::FLAG_IS_SOURCE_ENTITY);
   }
 
   /**
@@ -212,6 +247,24 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
   public function setLastImport($timestamp) {
     $this->set('last_import', $timestamp);
     $this->save();
+  }
+
+  /**
+   * Returns the UUID of the entity this information belongs to.
+   *
+   * @return string
+   */
+  public function getUuid() {
+    return $this->get('entity_uuid')->value;
+  }
+
+  /**
+   * Returns the entity type name of the entity this information belongs to.
+   *
+   * @return string
+   */
+  public function getEntityTypeName() {
+    return $this->get('entity_type')->value;
   }
 
   /**

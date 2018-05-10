@@ -870,6 +870,9 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         if($action==self::ACTION_DELETE) {
           $info->isDeleted(TRUE);
         }
+        if($action==self::ACTION_CREATE) {
+          $info->isSourceEntity(TRUE);
+        }
         $info->save();
       }
     }
