@@ -48,6 +48,11 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
         '#title' => 'Export referenced entities',
         '#default_value' => !empty($this->settings['handler_settings']['export_referenced_entities']) && $this->settings['handler_settings']['export_referenced_entities'] === 0 ? 0 : 1,
       ],
+      'merge_local_changes' => [
+        '#type' => 'checkbox',
+        '#title' => 'Merge local changes',
+        '#default_value' => !empty($this->settings['handler_settings']['merge_local_changes']) && $this->settings['handler_settings']['merge_local_changes'] === 0 ? 0 : 1,
+      ],
     ];
   }
 
