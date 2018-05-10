@@ -455,10 +455,10 @@ class DrupalContentSyncForm extends EntityForm {
         $entity_bundle_row['import_updates'] = [
           '#type' => 'select',
           '#options' => [
-            'force' => $this->t('Dismiss local changes'),
-            'ignore' => $this->t('Ignore updates completely'),
-            'force_forbid_edit' => $this->t('Forbid local changes and update'),
-            'allow_override' => $this->t('Update unless overwritten locally'),
+            DrupalContentSync::IMPORT_UPDATE_FORCE => $this->t('Dismiss local changes'),
+            DrupalContentSync::IMPORT_UPDATE_IGNORE => $this->t('Ignore updates completely'),
+            DrupalContentSync::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING => $this->t('Forbid local changes and update'),
+            DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN => $this->t('Update unless overwritten locally'),
           ],
           '#default_value' => $row_default_values['import_updates'],
         ];

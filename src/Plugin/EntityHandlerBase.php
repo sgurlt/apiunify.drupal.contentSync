@@ -6,6 +6,7 @@ use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation;
 use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\menu_link_content\Plugin\Menu\MenuLinkContent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -147,6 +148,22 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     if ($reason == DrupalContentSync::IMPORT_AUTOMATICALLY || $reason == DrupalContentSync::IMPORT_MANUALLY) {
       if ($this->settings['import'] != $reason) {
         return TRUE;
+      }
+    }
+
+    if($action==DrupalContentSync::ACTION_UPDATE) {
+      $behavior = $this->settings['import_updates'];
+      if($behavior==DrupalContentSync::IMPORT_UPDATE_IGNORE) {
+        return TRUE;
+      }
+      if($behavior==DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+        $meta_info = DrupalContentSyncMetaInformation::getInfoForEntity(
+          $request->getEntityType(),
+          $request->getUuid(),
+          $this->sync->api)[$this->sync->id];
+        if($meta_info && $meta_info->isOverriddenLocally()) {
+          return TRUE;
+        }
       }
     }
 
@@ -366,6 +383,20 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     if ($reason == DrupalContentSync::EXPORT_AUTOMATICALLY || $reason == DrupalContentSync::EXPORT_MANUALLY) {
       if ($this->settings['export'] != $reason) {
         return TRUE;
+      }
+    }
+
+    if($action==DrupalContentSync::ACTION_UPDATE) {
+      $behavior = $this->settings['import_updates'];
+      if($behavior==DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+        $meta_info = DrupalContentSyncMetaInformation::getInfoForEntity(
+          $request->getEntityType(),
+          $request->getUuid(),
+          $this->sync->api)[$this->sync->id];
+        // The flag means to overwrite locally, so changes should not be pushed
+        if($meta_info && !$meta_info->isSourceEntity()) {
+          return TRUE;
+        }
       }
     }
 
