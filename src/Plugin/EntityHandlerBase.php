@@ -317,7 +317,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       }
 
       // Delete translations that were deleted on master site
-      if($this->settings['delete_entity']) {
+      if(boolval($this->settings['import_deletion_settings']['import_deletion'])) {
         $existing = $entity->getTranslationLanguages(FALSE);
         foreach($existing as &$language) {
           $language = $language->getId();

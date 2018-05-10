@@ -16,6 +16,7 @@ use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\Core\Url;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Entity\ContentEntityDeleteForm;
+use Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation;
 
 /**
  * @var int DRUPAL_CONTENT_SYNC_USER_ID The user to perform updates with.
@@ -53,20 +54,50 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
     }
 
     $entity = $form_object->getEntity();
-    $sync   = DrupalContentSync::getExportSynchronizationForEntity(
-      $entity,
-      DrupalContentSync::EXPORT_AUTOMATICALLY,
-      DrupalContentSync::ACTION_DELETE
-    );
 
-    if ($sync) {
+    if( !DrupalContentSync::isLocalDeletionAllowed($entity) ) {
       $messenger = \Drupal::messenger();
       $messenger->addWarning(
         t(
-          'This will delete %label from all sites using it.',
+          '%label cannot be deleted as it has been imported.',
           ['%label' => $entity->label()]
         )
       );
+      // ['actions']['submit']
+      $form['#disabled'] = TRUE;
+    }
+    else {
+      $sync = DrupalContentSync::getExportSynchronizationForEntity(
+        $entity,
+        DrupalContentSync::EXPORT_AUTOMATICALLY,
+        DrupalContentSync::ACTION_DELETE
+      );
+      if(!$sync) {
+        $sync = DrupalContentSync::getExportSynchronizationForEntity(
+          $entity,
+          DrupalContentSync::EXPORT_AS_DEPENDENCY,
+          DrupalContentSync::ACTION_DELETE
+        );
+        if($sync) {
+          $info = DrupalContentSyncMetaInformation::getInfoForEntity(
+            $entity->getEntityTypeId(),
+            $entity->uuid()
+          )[$sync->id];
+          if(!$info || !$info->getLastExport()) {
+            $sync = NULL;
+          }
+        }
+      }
+
+      if ($sync) {
+        $messenger = \Drupal::messenger();
+        $messenger->addWarning(
+          t(
+            'This will delete %label from all sites using it.',
+            ['%label' => $entity->label()]
+          )
+        );
+      }
     }
   }
 
@@ -95,8 +126,32 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
 function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $action, DrupalContentSync $sync = NULL) {
   if (!$sync) {
     $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, $reason, $action);
-    if (!$sync) {
-      return;
+    if(!$sync) {
+      // If this entity has been exported as a dependency, we want to export the
+      // Update and deletion automatically as well.
+      if($reason==DrupalContentSync::EXPORT_AUTOMATICALLY &&
+        $action!=DrupalContentSync::ACTION_CREATE) {
+        $sync = DrupalContentSync::getExportSynchronizationForEntity(
+          $entity,
+          DrupalContentSync::EXPORT_AS_DEPENDENCY,
+          $action
+        );
+        if($sync) {
+          $info = DrupalContentSyncMetaInformation::getInfoForEntity(
+            $entity->getEntityTypeId(),
+            $entity->uuid()
+          )[$sync->id];
+          if(!$info || !$info->getLastExport()) {
+            return;
+          }
+        }
+        else {
+          return;
+        }
+      }
+      else {
+        return;
+      }
     }
   }
 
@@ -154,8 +209,16 @@ function drupal_content_sync_entity_update(EntityInterface $entity) {
  * Export the entity deletion automatically if configured to do so.
  *
  * @param \Drupal\Core\Entity\EntityInterface $entity
+ *
+ * @throws \Exception If this entity has been imported and local deletion is
+ *   forbidden, this will throw an error.
  */
 function drupal_content_sync_entity_delete(EntityInterface $entity) {
+  if( !DrupalContentSync::isLocalDeletionAllowed($entity) &&
+    !DrupalContentSync::entityHasBeenImportedByRemote($entity) ) {
+    throw new \Exception($entity->label().' cannot be deleted as it has been imported.');
+  }
+
   _drupal_content_sync_export_entity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_DELETE);
 }
 
