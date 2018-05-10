@@ -272,7 +272,6 @@ class DrupalContentSyncForm extends EntityForm {
       '#sticky' => TRUE,
       '#header' => array_merge([
         $this->t('Bundle'),
-        $this->t('Identifier'),
         $this->t('Handler'),
         $this->t('Export'),
         $this->t('Import'),
@@ -335,15 +334,6 @@ class DrupalContentSyncForm extends EntityForm {
             '@machine_name' => $entity_bundle_name,
           ]) . '<br><small>version: ' . $version . '</small>' .
           (empty($row_default_values['version'])||$version == $row_default_values['version'] ? '' : '<br><strong>Changed from ' . $row_default_values['version'] . '</strong>'),
-        ];
-
-        $entity_bundle_row['id'] = [
-          '#type' => 'textfield',
-          '#default_value' => $row_default_values['id'],
-          '#title' => $this->t('Identifier'),
-          '#disabled' => TRUE,
-          '#size' => 24,
-          '#title_display' => 'invisible',
         ];
 
         $entity_handlers = $this->entityPluginManager->getHandlerOptions($type_key, $entity_bundle_name, TRUE);
@@ -517,15 +507,6 @@ class DrupalContentSyncForm extends EntityForm {
             if (!empty($input[$field_id])) {
               $field_default_values = array_merge($field_default_values, $input[$field_id]);
             }
-
-            $field_row['id'] = [
-              '#type' => 'textfield',
-              '#default_value' => $field_default_values['id'],
-              '#title' => $this->t('Identifier'),
-              '#disabled' => TRUE,
-              '#size' => 24,
-              '#title_display' => 'invisible',
-            ];
 
             if (in_array($key, $forbidden_fields) !== FALSE) {
               $handler_id = 'ignore';
