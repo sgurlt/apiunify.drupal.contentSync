@@ -272,12 +272,13 @@ class DrupalContentSyncForm extends EntityForm {
       '#sticky' => TRUE,
       '#header' => array_merge([
         $this->t('Bundle'),
-        $this->t('Identifier'),
         $this->t('Handler'),
         $this->t('Export'),
+        $this->t('Export deletion settings'),
         $this->t('Import'),
+        $this->t('Import deletion settings'),
+        $this->t('Import updates'),
         $this->t('Clone'),
-        $this->t('Delete'),
         '',
         $this->t('Preview'),
         $this->t('Handler settings'),
@@ -311,7 +312,15 @@ class DrupalContentSyncForm extends EntityForm {
           $row_default_values = [
             'id' => $type_key . '-' . $entity_bundle_name,
             'export' => FALSE,
+            'export_deletion_settings' => [
+              'export_deletion' => FALSE
+            ],
             'import' => NULL,
+            'import_deletion_settings' => [
+              'import_deletion' => FALSE,
+              'allow_local_deletion_of_import' => FALSE,
+            ],
+            'import_updates' => 'force',
             'import_clone' => FALSE,
             'preview' => NULL,
             'display_name' => $this->t('@bundle', [
@@ -319,7 +328,6 @@ class DrupalContentSyncForm extends EntityForm {
             ])->render(),
             'entity_type' => $type_key,
             'entity_bundle' => $entity_bundle_name,
-            'delete_entity' => NULL,
           ];
         }
         else {
@@ -335,15 +343,6 @@ class DrupalContentSyncForm extends EntityForm {
             '@machine_name' => $entity_bundle_name,
           ]) . '<br><small>version: ' . $version . '</small>' .
           (empty($row_default_values['version'])||$version == $row_default_values['version'] ? '' : '<br><strong>Changed from ' . $row_default_values['version'] . '</strong>'),
-        ];
-
-        $entity_bundle_row['id'] = [
-          '#type' => 'textfield',
-          '#default_value' => $row_default_values['id'],
-          '#title' => $this->t('Identifier'),
-          '#disabled' => TRUE,
-          '#size' => 24,
-          '#title_display' => 'invisible',
         ];
 
         $entity_handlers = $this->entityPluginManager->getHandlerOptions($type_key, $entity_bundle_name, TRUE);
@@ -415,6 +414,12 @@ class DrupalContentSyncForm extends EntityForm {
           ];
         }
 
+        $entity_bundle_row['export_deletion_settings']['export_deletion'] = [
+          '#type' => 'checkbox',
+          '#title' => $this->t('Export deletion'),
+          '#default_value' => $row_default_values['export_deletion_settings']['export_deletion'] == 1,
+        ];
+
         $entity_bundle_row['import'] = [
           '#type' => 'select',
           '#title' => $this->t('Synchronized Import'),
@@ -423,16 +428,33 @@ class DrupalContentSyncForm extends EntityForm {
           '#default_value' => $row_default_values['import'],
         ];
 
+        $entity_bundle_row['import_deletion_settings']['import_deletion'] = [
+          '#type' => 'checkbox',
+          '#title' => $this->t('Import deletion'),
+          '#default_value' => $row_default_values['import_deletion_settings']['import_deletion'] == 1,
+        ];
+
+        $entity_bundle_row['import_deletion_settings']['allow_local_deletion_of_import'] = [
+          '#type' => 'checkbox',
+          '#title' => $this->t('Allow deletion of imported content'),
+          '#default_value' => $row_default_values['import_deletion_settings']['allow_local_deletion_of_import'] == 1,
+        ];
+
+        $entity_bundle_row['import_updates'] = [
+          '#type' => 'select',
+          '#options' => [
+            'force' => $this->t('Dismiss local changes'),
+            'ignore' => $this->t('Ignore updates completely'),
+            'force_forbid_edit' => $this->t('Forbid local changes and update'),
+            'allow_override' => $this->t('Update unless overwritten locally'),
+          ],
+          '#default_value' => $row_default_values['import_updates'],
+        ];
+
         $entity_bundle_row['import_clone'] = [
           '#type' => 'checkbox',
           '#title' => $this->t('Clone'),
           '#default_value' => $row_default_values['import_clone'],
-        ];
-
-        $entity_bundle_row['delete_entity'] = [
-          '#type' => 'checkbox',
-          '#title' => $this->t('Delete'),
-          '#default_value' => $row_default_values['delete_entity'] == 1,
         ];
 
         $entity_bundle_row['has_preview_mode'] = [
@@ -441,6 +463,7 @@ class DrupalContentSyncForm extends EntityForm {
           '#title' => $this->t('Has preview mode'),
           '#title_display' => 'invisible',
         ];
+
         $entity_bundle_row['preview'] = [
           '#type' => 'select',
           '#title' => $this->t('Preview'),
@@ -462,9 +485,6 @@ class DrupalContentSyncForm extends EntityForm {
             ], $advanced_settings);
           }
         }
-
-        // Add row class.
-        $entity_bundle_row['#attributes'] = ['class' => ['row-' . $entity_bundle_row['id']['#default_value']]];
 
         $entity_table[$type_key . '-' . $entity_bundle_name] = $entity_bundle_row;
 
@@ -508,7 +528,6 @@ class DrupalContentSyncForm extends EntityForm {
                 'preview' => NULL,
                 'entity_type' => $type_key,
                 'entity_bundle' => $entity_bundle_name,
-                'delete_entity' => NULL,
               ];
             }
             else {
@@ -517,15 +536,6 @@ class DrupalContentSyncForm extends EntityForm {
             if (!empty($input[$field_id])) {
               $field_default_values = array_merge($field_default_values, $input[$field_id]);
             }
-
-            $field_row['id'] = [
-              '#type' => 'textfield',
-              '#default_value' => $field_default_values['id'],
-              '#title' => $this->t('Identifier'),
-              '#disabled' => TRUE,
-              '#size' => 24,
-              '#title_display' => 'invisible',
-            ];
 
             if (in_array($key, $forbidden_fields) !== FALSE) {
               $handler_id = 'ignore';
@@ -594,6 +604,10 @@ class DrupalContentSyncForm extends EntityForm {
               '#default_value' => $field_default_values['export'] ? $field_default_values['export'] : (isset($export_options[DrupalContentSync::EXPORT_AUTOMATICALLY]) ? DrupalContentSync::EXPORT_AUTOMATICALLY : DrupalContentSync::EXPORT_DISABLED),
             ];
 
+            $field_row['export_deletion_settings']['export_deletion'] = [
+              '#markup' => '',
+            ];
+
             if ($handler_id == 'ignore') {
               $import_options = [
                 DrupalContentSync::IMPORT_DISABLED => $this->t('No')->render(),
@@ -614,22 +628,35 @@ class DrupalContentSyncForm extends EntityForm {
               '#disabled' => count($import_options) < 2,
               '#default_value' => $field_default_values['import'] ? $field_default_values['import'] : (isset($import_options[DrupalContentSync::IMPORT_AUTOMATICALLY]) ? DrupalContentSync::IMPORT_AUTOMATICALLY : DrupalContentSync::IMPORT_DISABLED),
             ];
+
+            $entity_bundle_row['import_deletion_settings']['import_deletion'] = [
+              '#markup' => '',
+            ];
+
+            $entity_bundle_row['import_deletion_settings']['allow_local_deletion_of_import'] = [
+              '#markup' => '',
+            ];
+
+            $entity_bundle_row['import_updates'] = [
+              '#markup' => '',
+            ];
+
             $field_row['import_clone'] = [
               '#markup' => '',
             ];
+
             $field_row['has_preview'] = [
               '#markup' => '',
             ];
+
             $field_row['preview'] = [
-              '#markup' => '',
-            ];
-            $field_row['delete_entity'] = [
               '#markup' => '',
             ];
 
             $field_row['handler_settings'] = [
               '#markup' => '',
             ];
+
             if ($handler_id != 'ignore') {
               $advanced_settings = $handler->getHandlerSettings($field_default_values);
               if (count($advanced_settings)) {
@@ -639,7 +666,6 @@ class DrupalContentSyncForm extends EntityForm {
               }
             }
 
-            $field_row['#attributes'] = ['class' => ['row-' . $entity_bundle_row['id']['#default_value']]];
             $entity_table[$field_id] = $field_row;
           }
         }
