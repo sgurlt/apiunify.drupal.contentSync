@@ -149,9 +149,9 @@ class DefaultFileHandler extends EntityHandlerBase {
         if (!$is_clone) {
           $entity->set('uuid', $request->getUuid());
         }
-        $entity->save();
       }
 
+      $entity->save();
       return TRUE;
     }
     if ($action == DrupalContentSync::ACTION_UPDATE) {
@@ -160,7 +160,14 @@ class DefaultFileHandler extends EntityHandlerBase {
         throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST);
       }
 
-      if (file_save_data(base64_decode($content), $uri, FILE_EXISTS_REPLACE)) {
+      if ($file=file_save_data(base64_decode($content), $uri, FILE_EXISTS_REPLACE)) {
+        // Drupal will re-use the existing file entity and keep it's ID, but
+        // *change the UUID* of the file entity to a new random value
+        // So we have to tell Drupal we actually want to keep it so references
+        // to it keep working for us.
+        $entity->setPermanent();
+        $entity->set('uuid', $request->getUuid());
+        $entity->save();
         return TRUE;
       };
       throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE);
