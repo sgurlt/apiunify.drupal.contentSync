@@ -763,6 +763,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
     // If the entity didn't change, it doesn't have to be re-exported
     if( $exported && $exported>=$export && $reason!=self::EXPORT_FORCED &&
+      $action!=self::ACTION_DELETE &&
       empty($deletedTranslations[$entity->getEntityTypeId()][$entity->uuid()]) ) {
       return TRUE;
     }
