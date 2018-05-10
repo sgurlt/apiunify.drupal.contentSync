@@ -274,9 +274,11 @@ class DrupalContentSyncForm extends EntityForm {
         $this->t('Bundle'),
         $this->t('Handler'),
         $this->t('Export'),
+        $this->t('Export deletion settings'),
         $this->t('Import'),
+        $this->t('Import deletion settings'),
+        $this->t('Import updates'),
         $this->t('Clone'),
-        $this->t('Delete'),
         '',
         $this->t('Preview'),
         $this->t('Handler settings'),
@@ -405,6 +407,12 @@ class DrupalContentSyncForm extends EntityForm {
           ];
         }
 
+        $entity_bundle_row['export_deletion_settings']['export_deletion'] = [
+          '#type' => 'checkbox',
+          '#title' => $this->t('Export deletion'),
+          '#default_value' => $row_default_values['export_deletion_settings']['export_deletion'] == 1,
+        ];
+
         $entity_bundle_row['import'] = [
           '#type' => 'select',
           '#title' => $this->t('Synchronized Import'),
@@ -413,16 +421,33 @@ class DrupalContentSyncForm extends EntityForm {
           '#default_value' => $row_default_values['import'],
         ];
 
+        $entity_bundle_row['import_deletion_settings']['import_deletion'] = [
+          '#type' => 'checkbox',
+          '#title' => $this->t('Import deletion'),
+          '#default_value' => $row_default_values['import_deletion_settings']['import_deletion'] == 1,
+        ];
+
+        $entity_bundle_row['import_deletion_settings']['allow_local_deletion_of_import'] = [
+          '#type' => 'checkbox',
+          '#title' => $this->t('Allow deletion of imported content'),
+          '#default_value' => $row_default_values['import_deletion_settings']['allow_local_deletion_of_import'] == 1,
+        ];
+
+        $entity_bundle_row['import_updates'] = [
+          '#type' => 'select',
+          '#options' => [
+            'force' => $this->t('Dismiss local changes'),
+            'ignore' => $this->t('Ignore updates completely'),
+            'force_forbid_edit' => $this->t('Forbid local changes and update'),
+            'allow_override' => $this->t('Update unless overwritten locally'),
+          ],
+          '#default_value' => $row_default_values['import_updates'],
+        ];
+
         $entity_bundle_row['import_clone'] = [
           '#type' => 'checkbox',
           '#title' => $this->t('Clone'),
           '#default_value' => $row_default_values['import_clone'],
-        ];
-
-        $entity_bundle_row['delete_entity'] = [
-          '#type' => 'checkbox',
-          '#title' => $this->t('Delete'),
-          '#default_value' => $row_default_values['delete_entity'] == 1,
         ];
 
         $entity_bundle_row['has_preview_mode'] = [
@@ -431,6 +456,7 @@ class DrupalContentSyncForm extends EntityForm {
           '#title' => $this->t('Has preview mode'),
           '#title_display' => 'invisible',
         ];
+
         $entity_bundle_row['preview'] = [
           '#type' => 'select',
           '#title' => $this->t('Preview'),
