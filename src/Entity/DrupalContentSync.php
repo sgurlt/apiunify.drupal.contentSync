@@ -118,9 +118,27 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   const IMPORT_FORCED = 'forced';
 
 
+  /**
+   * @var string IMPORT_UPDATE_IGNORE
+   *   Ignore all incoming updates.
+   */
   const IMPORT_UPDATE_IGNORE = 'ignore';
+  /**
+   * @var string IMPORT_UPDATE_FORCE
+   *   Overwrite any local changes on all updates.
+   */
   const IMPORT_UPDATE_FORCE = 'force';
+  /**
+   * @var string IMPORT_UPDATE_FORCE_AND_FORBID_EDITING
+   *   Import all changes and forbid local editors to change the content.
+   */
   const IMPORT_UPDATE_FORCE_AND_FORBID_EDITING  = 'force_and_forbid_editing';
+  /**
+   * @var string IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN
+   *   Import all changes and forbid local editors to change the content unless
+   *   they check the "override" checkbox. As long as that is checked, we
+   *   ignore any incoming updates in favor of the local changes.
+   */
   const IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN = 'allow_override';
 
 
