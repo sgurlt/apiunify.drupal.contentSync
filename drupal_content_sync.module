@@ -353,6 +353,8 @@ function _drupal_content_sync_override_entity_submit(array $form, FormStateInter
       if($value!=$info->isOverriddenLocally()) {
         $info->isOverriddenLocally($value);
         $info->save();
+        // TODO: If changed to "Don't override", we should re-import the entity
+        // from API Unify.
       }
       break;
     }
