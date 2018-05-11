@@ -705,6 +705,33 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   protected $exported;
 
   /**
+   * Check whether the given entity is currently being exported. Useful to check
+   * against hierarchical references as for nodes and menu items for example.
+   *
+   * @param string $entity_type The entity type to check for.
+   * @param string $uuid The UUID of the entity in question.
+   * @param null|string $action See self::ACTION_*
+   * @return bool
+   */
+  public function isExporting($entity_type,$uuid,$action=NULL) {
+    foreach($this->exported as $do=>$types) {
+      if($action ? $do!=$action : $do==self::ACTION_DELETE) {
+        continue;
+      }
+      if(!isset($types[$entity_type])) {
+        continue;
+      }
+      foreach($types[$entity_type] as $bundle=>$entities) {
+        if(!empty($entities[$uuid])) {
+          return TRUE;
+        }
+      }
+    }
+
+    return FALSE;
+  }
+
+  /**
    * Export the given entity.
    *
    * @param \Drupal\Core\Entity\FieldableEntityInterface $entity

@@ -143,7 +143,7 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
           }
           $exported = TRUE;
         }
-        if(!$exported) {
+        if(!$exported && !$this->sync->isExporting($link_entity_type,$reference->uuid())) {
           return TRUE;
         }
       }
