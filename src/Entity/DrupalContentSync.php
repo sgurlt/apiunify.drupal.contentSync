@@ -34,8 +34,8 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  *     "label" = "name",
  *   },
  *   links = {
- *     "edit-form" = "/admin/config/system/drupal_content_sync/synchronizations/{drupal_content_sync}",
- *     "delete-form" = "/admin/config/system/drupal_content_sync/synchronizations/{drupal_content_sync}/delete",
+ *     "edit-form" = "/admin/config/services/drupal_content_sync/synchronizations/{drupal_content_sync}",
+ *     "delete-form" = "/admin/config/services/drupal_content_sync/synchronizations/{drupal_content_sync}/delete",
  *   }
  * )
  */
