@@ -356,7 +356,7 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
       continue;
     if(!isset($form_item['#type']))
       continue;
-    if (0 === strpos($key, 'field_') || in_array($form_item['#type'],$hide_elements)) {
+    if($key!='actions') {
       if($allow_overrides) {
         // If we used the DISABLED attribute, we couldn't reliably remove it
         // from all elements, as some should still have the attribute from other

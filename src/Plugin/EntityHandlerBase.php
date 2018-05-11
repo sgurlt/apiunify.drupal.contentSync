@@ -227,6 +227,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
        * @var \Drupal\menu_link_content\Entity\MenuLinkContent $item
        */
       $item->set('link', 'entity:' . $this->entityTypeName . '/' . $entity->id());
+      $item->set( 'enabled', 1 );
       $item->save();
     }
 
