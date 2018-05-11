@@ -33,6 +33,7 @@ class DefaultEntityHandler extends EntityHandlerBase {
       'file',
       'media',
       'node',
+      'menu_link_content',
     ];
     return !in_array($entity_type, $forbidden );
   }

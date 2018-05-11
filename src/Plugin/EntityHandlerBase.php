@@ -227,6 +227,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
        * @var \Drupal\menu_link_content\Entity\MenuLinkContent $item
        */
       $item->set('link', 'entity:' . $this->entityTypeName . '/' . $entity->id());
+      $item->set( 'enabled', 1 );
       $item->save();
     }
 
@@ -313,7 +314,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         }
 
         $request->changeTranslationLanguage($language);
-        $this->setEntityValues($request, $translation, $is_clone, $reason, $action);
+        if(!$this->ignoreImport($request,$is_clone,$reason,$action)) {
+          $this->setEntityValues($request, $translation, $is_clone, $reason, $action);
+        }
       }
 
       // Delete translations that were deleted on master site

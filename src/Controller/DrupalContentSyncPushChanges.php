@@ -23,12 +23,15 @@ class DrupalContentSyncPushChanges extends ControllerBase {
    */
   public function pushChanges($sync_id, FieldableEntityInterface $entity) {
     $sync = DrupalContentSync::load($sync_id);
-    _drupal_content_sync_export_entity(
+    if( !_drupal_content_sync_export_entity(
       $entity,
       DrupalContentSync::EXPORT_MANUALLY,
-      DrupalContentSync::ACTION_CREATE,
+      DrupalContentSync::ACTION_UPDATE,
       $sync
-    );
+    ) ) {
+      $messenger = \Drupal::messenger();
+      $messenger->addWarning(t('%label is not configured to be exported with Drupal Content Sync.', ['%label' => $entity->label()]));
+    }
 
     return new RedirectResponse('/');
   }

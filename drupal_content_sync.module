@@ -122,6 +122,8 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
  *   {@see DrupalContentSync::ACTION_*}.
  * @param \Drupal\drupal_content_sync\Entity\DrupalContentSync $sync
  *   The sync to be used. First matching sync will be used if none is given.
+ *
+ * @return bool Whether the entity is configured to be exported or not.
  */
 function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $action, DrupalContentSync $sync = NULL) {
   if (!$sync) {
@@ -142,15 +144,15 @@ function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $a
             $entity->uuid()
           )[$sync->id];
           if(!$info || !$info->getLastExport()) {
-            return;
+            return FALSE;
           }
         }
         else {
-          return;
+          return FALSE;
         }
       }
       else {
-        return;
+        return FALSE;
       }
     }
   }
@@ -161,7 +163,9 @@ function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $a
 
     if ($status) {
       $messenger->addMessage(t('%label has been exported with Drupal Content Sync.', ['%label' => $entity->label()]));
+      return TRUE;
     }
+    return FALSE;
   }
   catch (SyncException $e) {
     $message = $e->parentException ? $e->parentException->getMessage() : (
@@ -180,6 +184,7 @@ function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $a
         '%code' => $e->errorCode,
       ]));
     }
+    return TRUE;
   }
 }
 
@@ -351,7 +356,7 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
       continue;
     if(!isset($form_item['#type']))
       continue;
-    if (0 === strpos($key, 'field_') || in_array($form_item['#type'],$hide_elements)) {
+    if($key!='actions') {
       if($allow_overrides) {
         // If we used the DISABLED attribute, we couldn't reliably remove it
         // from all elements, as some should still have the attribute from other
