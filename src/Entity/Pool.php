@@ -3,6 +3,7 @@
 namespace Drupal\drupal_content_sync\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
+use \Drupal\drupal_content_sync\Form\DrupalContentSyncForm;
 
 /**
  * Defines the Example entity.
@@ -133,7 +134,7 @@ class Pool extends ConfigEntityBase implements PoolInterface {
         foreach ($config['flow']['export_pools'] as $pool_id => $export_pool) {
 
           // Filter out all pools with configuration "allow".
-          if ($export_pool == 'allow') {
+          if ($export_pool == DrupalContentSyncForm::POOL_ALLOW) {
             $pool_entity = \Drupal::entityTypeManager()->getStorage('dcs_pool')->loadByProperties(['id' => $pool_id]);
             $pool_entity = reset($pool_entity);
             $selectable_pools[$config_id]['pools'][$pool_id] = $pool_entity->label();
