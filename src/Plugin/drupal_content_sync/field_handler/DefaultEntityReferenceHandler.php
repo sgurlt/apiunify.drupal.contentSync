@@ -43,19 +43,23 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
    * @inheritdoc
    */
   public function getHandlerSettings() {
-    return [
+    $options = [
       'export_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Export referenced entities',
         '#default_value' => !empty($this->settings['handler_settings']['export_referenced_entities']) && $this->settings['handler_settings']['export_referenced_entities'] === 0 ? 0 : 1,
       ],
-      // TODO: Only allow for "unlimited" field handlers.
-      'merge_local_changes' => [
+    ];
+
+    if($this->fieldDefinition->getFieldStorageDefinition()->isMultiple()) {
+      $options['merge_local_changes'] = [
         '#type' => 'checkbox',
         '#title' => 'Merge local changes',
         '#default_value' => !empty($this->settings['handler_settings']['merge_local_changes']) && $this->settings['handler_settings']['merge_local_changes'] === 0 ? 0 : 1,
-      ],
-    ];
+      ];
+    }
+
+    return $options;
   }
 
   /**
@@ -113,7 +117,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       }
       $overwrite_ids = $reference_ids;
 
-      if($merge) {
+      if($merge && $merge_only) {
         $last_overwrite_values  = $request->getMetaData(['field',$this->fieldName,'last_overwrite_values']);
         $last_imported_order    = $request->getMetaData(['field',$this->fieldName,'last_imported_values']);
         $previous = $entity->get($this->fieldName)->getValue();
