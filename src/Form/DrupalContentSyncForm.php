@@ -509,6 +509,9 @@ class DrupalContentSyncForm extends EntityForm {
             ]);
 
           $entityFieldManager = $this->entityFieldManager;
+          /**
+           * @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields
+           */
           $fields = $entityFieldManager->getFieldDefinitions($type_key, $entity_bundle_name);
           foreach ($fields as $key => $field) {
             $field_id = $type_key . '-' . $entity_bundle_name . '-' . $key;
@@ -558,7 +561,7 @@ class DrupalContentSyncForm extends EntityForm {
               '#type' => 'select',
               '#title' => $this->t('Handler'),
               '#title_display' => 'invisible',
-              '#options' => count($field_handlers) ? array_merge(['ignore' => $this->t('Ignore')->render()], $field_handlers) : [
+              '#options' => count($field_handlers) ? ($field->isRequired() ? $field_handlers : array_merge(['ignore' => $this->t('Ignore')->render()], $field_handlers)) : [
                 'ignore' => $this->t('Not supported')->render(),
               ],
               '#disabled' => !count($field_handlers) || (count($field_handlers) == 1 && isset($field_handlers['ignore'])),
