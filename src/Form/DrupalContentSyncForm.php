@@ -31,6 +31,10 @@ class DrupalContentSyncForm extends EntityForm {
    */
   const DRUPAL_CONTENT_SYNC_PREVIEW_FIELD = 'drupal_content_sync_preview';
 
+  const POOL_FORBID = 'forbid';
+  const POOL_ALLOW = 'allow';
+  const POOL_FORCE = 'force';
+
   /**
    * @var \Drupal\Core\Entity\EntityTypeManager
    */
@@ -389,9 +393,9 @@ class DrupalContentSyncForm extends EntityForm {
             '#type' => 'select',
             '#title' => $this->t($pool->label()),
             '#options' => [
-              'force' => $this->t('Force'),
-              'allow' => $this->t('Allow'),
-              'forbid' => $this->t('Forbid'),
+              self::POOL_FORCE => $this->t('Force'),
+              self::POOL_ALLOW => $this->t('Allow'),
+              self::POOL_FORBID => $this->t('Forbid'),
             ],
             '#default_value' => $row_default_values['export_pools'][$pool->id()],
           ];
@@ -427,9 +431,9 @@ class DrupalContentSyncForm extends EntityForm {
             '#type' => 'select',
             '#title' => $this->t($pool->label()),
             '#options' => [
-              'force' => $this->t('Force'),
-              'allow' => $this->t('Allow'),
-              'forbid' => $this->t('Forbid'),
+              self::POOL_FORCE => $this->t('Force'),
+              self::POOL_ALLOW => $this->t('Allow'),
+              self::POOL_FORBID => $this->t('Forbid'),
             ],
             '#default_value' => $row_default_values['import_pools'][$pool->id()],
           ];
