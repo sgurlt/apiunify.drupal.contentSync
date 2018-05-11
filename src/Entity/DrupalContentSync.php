@@ -598,13 +598,6 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       }
     }
 
-    /** @var \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository */
-    $entity_repository = \Drupal::service('entity.repository');
-    /**
-     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
-     */
-    $entity = $entity_repository->loadEntityByUuid($entity_type_name,$uuid);
-
     $info     = $meta_infos[$this->id];
     if(!$info) {
       $info = DrupalContentSyncMetaInformation::create([
