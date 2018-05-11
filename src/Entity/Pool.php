@@ -91,7 +91,6 @@ class Pool extends ConfigEntityBase implements PoolInterface {
    */
   public static function getAll() {
 
-
     /**
      * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync[] $configurations
      */
@@ -99,9 +98,34 @@ class Pool extends ConfigEntityBase implements PoolInterface {
       ->getStorage('dcs_pool')
       ->loadMultiple();
 
-    return self::$all = $configurations;
+    return $configurations;
   }
 
-  // Your specific configuration property get/set methods go here,
-  // implementing the interface.
+  /**
+   * Returns an list of pools that can be selected for an entity type.
+   *
+   * @param null $entity_type
+   */
+  public static function getSelectablePools($entity_type, $bundle) {
+
+    // Get all available flows.
+    $flows = DrupalContentSync::getAll();
+    $configs = [];
+    $selectable_pools = [];
+    foreach ($flows as $flow_id => $flow) {
+      $configs[$flow_id] = $flow->getEntityTypeConfig($entity_type, $bundle);
+    }
+    foreach ($configs as $config_id => $config) {
+      foreach ($config['export_pools'] as $pool_id => $export_pool) {
+
+        // Filter out all pools with configuration "allow".
+        if ($export_pool == 'allow') {
+          $pool_entity = \Drupal::entityTypeManager()->getStorage('dcs_pool')->loadByProperties(['id' => $pool_id]);
+          $pool_entity = reset($pool_entity);
+          $selectable_pools[$config_id][$pool_id] = $pool_entity->label();
+        }
+      }
+
+    }
+  }
 }
