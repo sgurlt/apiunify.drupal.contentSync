@@ -90,6 +90,9 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    *   {@see DrupalContentSync::IMPORT_*}.
    * @param string $action
    *   {@see DrupalContentSync::ACTION_*}.
+   * @param bool $merge_only
+   *   TRUE if the content is overridden locally. In this case only merge
+   *   updates are allowed, no overwrite updates.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
@@ -97,7 +100,7 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    *   Whether or not the content has been imported. FALSE is a desired state,
    *   meaning the entity should not be imported according to config.
    */
-  public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action);
+  public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action, $merge_only);
 
   /**
    * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request

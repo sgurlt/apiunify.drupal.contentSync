@@ -33,9 +33,13 @@ class DefaultLinkHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action) {
+  public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action, $merge_only) {
     // Deletion doesn't require any action on field basis for static data.
     if ($action == DrupalContentSync::ACTION_DELETE) {
+      return FALSE;
+    }
+
+    if($merge_only) {
       return FALSE;
     }
 
