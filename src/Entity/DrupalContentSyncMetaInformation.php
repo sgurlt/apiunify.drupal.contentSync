@@ -21,7 +21,6 @@ use Drupal\Driver\Exception\Exception;
  *   entity_keys = {
  *     "id" = "id",
  *     "entity_type_config" = "entity_type_config",
- *     "entity_id" = "entity_id",
  *     "entity_uuid" = "entity_uuid",
  *     "entity_type" = "entity_type",
  *     "entity_type_version" = "entity_type_version",
@@ -54,25 +53,9 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
     /**
      * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
      */
-    // Set the uuid if the entity_id is given and the entity_uuid is not given.
-    if (isset($values['entity_id']) && !isset($values['entity_uuid'])) {
-      $entity = \Drupal::entityTypeManager()->getStorage($values['entity_type'])->load($values['entity_id']);
-      $values['entity_uuid'] = $entity->uuid();
-    }
-    // Set the id if the entity_uuid is given and the entity_id is not given.
-    elseif (!isset($values['entity_id']) && isset($values['entity_uuid'])) {
-      $entity = \Drupal::service('entity.repository')->loadEntityByUuid($values['entity_type'], $values['entity_uuid']);
-      $values['entity_id'] = $entity->id();
-    }
-    // Throw and exception if neither the id or the uuid is given.
-    elseif (!isset($values['entity_id']) && !isset($values['entity_uuid'])) {
-      throw new \Exception(t('Either the entity_id or the entity_uuid must be given.'));
-    }
+    $entity = \Drupal::service('entity.repository')->loadEntityByUuid($values['entity_type'], $values['entity_uuid']);
 
-    // Set the Entity Version ID if it is not given.
-    $entity = \Drupal::entityTypeManager()->getStorage($values['entity_type'])->load($values['entity_id']);
     if (!isset($values['entity_type_version'])) {
-
       $values['entity_type_version'] = DrupalContentSync::getEntityTypeVersion($entity->getEntityType()->id(), $entity->bundle());
       return;
     }
@@ -343,14 +326,63 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
   }
 
   /**
+   * Get a previously saved key=>value pair.
+   * @see self::setData()
+   *
+   * @param string|string[] $key The key to retrieve
+   * @return mixed Whatever you previously stored here or NULL if the key
+   *   doesn't exist.
+   */
+  public function getData($key) {
+    $data     = $this->get('data')->getValue()[0];
+    $storage = &$data;
+
+    if(!is_array($key)) {
+      $key  = [$key];
+    }
+
+    foreach($key as $index) {
+      if(!isset($storage[$index])) {
+        return NULL;
+      }
+      $storage  = &$storage[$index];
+    }
+
+    return $storage;
+  }
+
+  /**
+   * Set a key=>value pair.
+   *
+   * @param string|string[] $key The key to set (for hierarchical usage, provide
+   *   an array of indices.
+   * @param mixed $value The value to set. Must be a valid value for Drupal's
+   *   "map" storage (so basic types that can be serialized).
+   */
+  public function setData($key,$value) {
+    $data     = $this->get('data')->getValue()[0];
+    $storage = &$data;
+
+    if(!is_array($key)) {
+      $key  = [$key];
+    }
+
+    foreach($key as $index) {
+      if(!isset($storage[$index])) {
+        $storage[$index]  = [];
+      }
+      $storage  = &$storage[$index];
+    }
+
+    $storage  = $value;
+    $this->set('data',$data);
+  }
+
+  /**
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
-
-    $fields['entity_id'] = BaseFieldDefinition::create('integer')
-      ->setLabel(t('Entity ID'))
-      ->setDescription(t('The ID of the entity that is synchronized.'));
 
     $fields['entity_type_config'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Entity type config'))
@@ -387,9 +419,14 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
 
     $fields['flags'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Flags'))
-      ->setDescription(t('Stores further information about the exported/imported entity.'))
+      ->setDescription(t('Stores boolean information about the exported/imported entity.'))
       ->setSetting('unsigned', TRUE)
       ->setDefaultValue(0);
+
+    $fields['data'] = BaseFieldDefinition::create('map')
+      ->setLabel(t('Data'))
+      ->setDescription(t('Stores further information about the exported/imported entity that can also be used by entity and field handlers.'))
+      ->setRequired(FALSE);
 
     return $fields;
   }

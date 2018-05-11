@@ -597,7 +597,31 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         $action = self::ACTION_UPDATE;
       }
     }
-    $request = new ApiUnifyRequest($this, $entity_type_name, $entity_bundle, $uuid, $data);
+
+    /** @var \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository */
+    $entity_repository = \Drupal::service('entity.repository');
+    /**
+     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
+     */
+    $entity = $entity_repository->loadEntityByUuid($entity_type_name,$uuid);
+
+    $info     = $meta_infos[$this->id];
+    if(!$info) {
+      $info = DrupalContentSyncMetaInformation::create([
+        'entity_type_config' => $this->id,
+        'entity_type' => $entity_type_name,
+        'entity_uuid' => $uuid,
+        'last_import' => 0,
+        'entity_type_version' => self::getEntityTypeVersion($entity_type_name,$entity_bundle),
+        'flags' => 0,
+        'source_url' => $data['url'],
+      ]);
+      if($is_clone) {
+        $info->isCloned(TRUE);
+      }
+      $meta_infos[$this->id]  = $info;
+    }
+    $request  = new ApiUnifyRequest($this, $entity_type_name, $entity_bundle, $uuid, $info, $data);
 
     $config = $this->getEntityTypeConfig($entity_type_name, $entity_bundle);
     $handler = $this->getEntityTypeHandler($config);
@@ -622,36 +646,11 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       return FALSE;
     }
 
-    /** @var \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository */
-    $entity_repository = \Drupal::service('entity.repository');
-    /**
-     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
-     */
-    $entity = $entity_repository->loadEntityByUuid($entity_type_name,$uuid);
-
     foreach($meta_infos as $id=>$info) {
       if($info) {
         $info->setLastImport($import);
         if($action==self::ACTION_DELETE) {
           $info->isDeleted(TRUE);
-        }
-        $info->save();
-      }
-      else if($id==$this->id) {
-        $info = DrupalContentSyncMetaInformation::create([
-          'entity_type_config' => $this->id,
-          'entity_type' => $entity_type_name,
-          'entity_id' => $entity->id(),
-          'last_import' => $import,
-          'entity_type_version' => self::getEntityTypeVersion($entity_type_name,$entity_bundle),
-          'flags' => 0,
-          'source_url' => $request->getField('url'),
-        ]);
-        if($action==self::ACTION_DELETE) {
-          $info->isDeleted(TRUE);
-        }
-        if($is_clone) {
-          $info->isCloned(TRUE);
         }
         $info->save();
       }
@@ -669,13 +668,14 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    * @param string $reason
    * @param string $action
+   * @param DrupalContentSyncMetaInformation $meta The meta information for this entity and sync, if any.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
    * @return bool
    *   Whether or not the export could be gotten.
    */
-  public function getSerializedEntity(array &$result, FieldableEntityInterface $entity, $reason, $action = self::ACTION_UPDATE) {
+  public function getSerializedEntity(array &$result, FieldableEntityInterface $entity, $reason, $action = self::ACTION_UPDATE, $meta=NULL) {
     $entity_type   = $entity->getEntityTypeId();
     $entity_bundle = $entity->bundle();
     $entity_uuid   = $entity->uuid();
@@ -683,7 +683,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $config   = $this->getEntityTypeConfig($entity_type, $entity_bundle);
     $handler  = $this->getEntityTypeHandler($config);
 
-    $request  = new ApiUnifyRequest($this, $entity_type, $entity_bundle, $entity_uuid);
+    $request  = new ApiUnifyRequest($this, $entity_type, $entity_bundle, $entity_uuid, $meta);
 
     $status   = $handler->export($request, $entity, $reason, $action);
 
@@ -795,6 +795,23 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
         }
       }
     }
+
+    $info = $meta_infos[$this->id];
+    if(!$info) {
+      $info = DrupalContentSyncMetaInformation::create([
+        'entity_type_config' => $this->id,
+        'entity_type' => $entity_type,
+        'entity_uuid' => $entity_uuid,
+        'last_export' => 0,
+        'entity_type_version' => self::getEntityTypeVersion($entity_type,$entity_bundle),
+        'flags' => 0,
+      ]);
+      if($action==self::ACTION_CREATE) {
+        $info->isSourceEntity(TRUE);
+      }
+      $meta_infos[$this->id]  = $info;
+    }
+
     if($exported) {
       if($action==self::ACTION_CREATE) {
         $action = self::ACTION_UPDATE;
@@ -830,7 +847,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
     if ($action != self::ACTION_DELETE) {
       $body    = [];
-      $proceed = $this->getSerializedEntity($body, $entity, $reason, $action);
+      $proceed = $this->getSerializedEntity($body, $entity, $reason, $action, $info);
 
       if ($proceed) {
         if (!empty($body['embed_entities'])) {
@@ -923,27 +940,14 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
 
     foreach($meta_infos as $id=>$info) {
       if($info) {
+        if($id==$this->id) {
+          if(!$info->getLastExport() && !$info->getLastImport()) {
+            $info->set('source_url', $body['url']);
+          }
+        }
         $info->setLastExport($export);
         if($action==self::ACTION_DELETE) {
           $info->isDeleted(TRUE);
-        }
-        $info->save();
-      }
-      else if($id==$this->id) {
-        $info = DrupalContentSyncMetaInformation::create([
-          'entity_type_config' => $this->id,
-          'entity_type' => $entity_type,
-          'entity_id' => $entity->id(),
-          'last_export' => $export,
-          'entity_type_version' => self::getEntityTypeVersion($entity_type,$entity_bundle),
-          'flags' => 0,
-          'source_url' => $body['url'],
-        ]);
-        if($action==self::ACTION_DELETE) {
-          $info->isDeleted(TRUE);
-        }
-        if($action==self::ACTION_CREATE) {
-          $info->isSourceEntity(TRUE);
         }
         $info->save();
       }

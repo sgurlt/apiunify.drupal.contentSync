@@ -156,15 +156,6 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       if($behavior==DrupalContentSync::IMPORT_UPDATE_IGNORE) {
         return TRUE;
       }
-      if($behavior==DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
-        $meta_info = DrupalContentSyncMetaInformation::getInfoForEntity(
-          $request->getEntityType(),
-          $request->getUuid(),
-          $this->sync->api)[$this->sync->id];
-        if($meta_info && $meta_info->isOverriddenLocally()) {
-          return TRUE;
-        }
-      }
     }
 
     return FALSE;
@@ -192,6 +183,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       return FALSE;
     }
 
+    $merge_only = FALSE;
+
     if ($is_clone || !$entity) {
       $entity_type = \Drupal::entityTypeManager()->getDefinition($request->getEntityType());
 
@@ -211,8 +204,20 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE);
       }
     }
+    else {
+      $behavior = $this->settings['import_updates'];
+      if($behavior==DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+        $meta_info = DrupalContentSyncMetaInformation::getInfoForEntity(
+          $request->getEntityType(),
+          $request->getUuid(),
+          $this->sync->api)[$this->sync->id];
+        if($meta_info && $meta_info->isOverriddenLocally()) {
+          $merge_only = TRUE;
+        }
+      }
+    }
 
-    if (!$this->setEntityValues($request, $entity, $is_clone, $reason, $action)) {
+    if (!$this->setEntityValues($request, $entity, $is_clone, $reason, $action, $merge_only)) {
       return FALSE;
     }
 
@@ -275,7 +280,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    * @return bool
    *   Returns TRUE when the values are set.
    */
-  protected function setEntityValues(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action) {
+  protected function setEntityValues(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action, $merge_only) {
     /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
     $entityFieldManager = \Drupal::service('entity_field.manager');
     $type = $entity->getEntityTypeId();
@@ -284,7 +289,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
 
     $entity_type = \Drupal::entityTypeManager()->getDefinition($request->getEntityType());
     $label       = $entity_type->getKey('label');
-    if ($label) {
+    if ($label && !$merge_only) {
       $entity->set($label, $request->getField('title'));
     }
 
@@ -295,7 +300,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         continue;
       }
 
-      $handler->import($request, $entity, $is_clone, $reason, $action);
+      $handler->import($request, $entity, $is_clone, $reason, $action, $merge_only);
     }
 
     if ($entity instanceof TranslatableInterface && !$request->getActiveLanguage()) {
@@ -315,7 +320,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
 
         $request->changeTranslationLanguage($language);
         if(!$this->ignoreImport($request,$is_clone,$reason,$action)) {
-          $this->setEntityValues($request, $translation, $is_clone, $reason, $action);
+          $this->setEntityValues($request, $translation, $is_clone, $reason, $action, $merge_only);
         }
       }
 
