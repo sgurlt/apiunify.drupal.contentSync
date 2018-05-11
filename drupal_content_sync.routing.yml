@@ -73,7 +73,7 @@ entity.dcs_pool.edit_form:
     _permission: 'administer site configuration'
 
 entity.dcs_pool.delete_form:
-  path: '/admin/config/services/drupal_content_sync/synchronizations/{dcs_pool}/delete'
+  path: '/admin/config/services/drupal_content_sync/pool/{dcs_pool}/delete'
   defaults:
     _entity_form: 'dcs_pool.delete'
     _title: 'Delete example'
