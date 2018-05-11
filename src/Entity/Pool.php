@@ -112,20 +112,36 @@ class Pool extends ConfigEntityBase implements PoolInterface {
     $flows = DrupalContentSync::getAll();
     $configs = [];
     $selectable_pools = [];
+    $selectable_flows = [];
     foreach ($flows as $flow_id => $flow) {
-      $configs[$flow_id] = $flow->getEntityTypeConfig($entity_type, $bundle);
+      $flow_entity_config = $flow->getEntityTypeConfig($entity_type, $bundle);
+      if ($flow_entity_config['handler'] != 'ignore' && $flow_entity_config['export'] != 'disabled') {
+
+        $selectable_flows[$flow_id] = $flow;
+
+        $configs[$flow_id] = [
+          'flow_label' => $flow->label(),
+          'flow' => $flow->getEntityTypeConfig($entity_type, $bundle)
+        ];
+
+      }
     }
     foreach ($configs as $config_id => $config) {
-      foreach ($config['export_pools'] as $pool_id => $export_pool) {
+      if (in_array('allow', $config['flow']['export_pools'])) {
+        $selectable_pools[$config_id]['flow_label'] = $config['flow_label'];
+        $selectable_pools[$config_id]['widget_type'] = $config['flow']['pool_export_widget_type'];
+        foreach ($config['flow']['export_pools'] as $pool_id => $export_pool) {
 
-        // Filter out all pools with configuration "allow".
-        if ($export_pool == 'allow') {
-          $pool_entity = \Drupal::entityTypeManager()->getStorage('dcs_pool')->loadByProperties(['id' => $pool_id]);
-          $pool_entity = reset($pool_entity);
-          $selectable_pools[$config_id][$pool_id] = $pool_entity->label();
+          // Filter out all pools with configuration "allow".
+          if ($export_pool == 'allow') {
+            $pool_entity = \Drupal::entityTypeManager()->getStorage('dcs_pool')->loadByProperties(['id' => $pool_id]);
+            $pool_entity = reset($pool_entity);
+            $selectable_pools[$config_id]['pools'][$pool_id] = $pool_entity->label();
+          }
         }
       }
 
     }
+    return $selectable_pools;
   }
 }

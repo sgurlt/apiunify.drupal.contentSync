@@ -401,7 +401,7 @@ class DrupalContentSyncForm extends EntityForm {
           '#type' => 'select',
           '#options' => [
             'checkboxes' => $this->t('Checkboxes'),
-            'radio_boxes' => $this->t('Radio boxes'),
+            'radios' => $this->t('Radio boxes'),
             'single_select' => $this->t('Single select'),
             'multi_select' => $this->t('Multi select'),
           ],
