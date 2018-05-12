@@ -247,12 +247,23 @@ class DrupalContentSyncForm extends EntityForm {
         continue;
       }
 
+      // Add information text for paragraphs that a specific commit is required.
+      if($type_key == 'paragraph') {
+        $markup = '<h2>' . str_replace('_', ' ', ucfirst($type_key)) . '</h2><i>In order to make it possible to select pools while exporting Paragraphs (Export Pool Configuration = Allow) Drupal Content Sync is relying on this commit <a target="_blank" href="https://www.drupal.org/project/paragraphs/issues/2868155#comment-12610258">https://www.drupal.org/project/paragraphs/issues/2868155#comment-12610258</a>.
+                   The commit for now just exists within the Paragrahs dev Branch.<br>As soon as the commit got merged into the stable branch, it is no longer required to use the Paragraphs dev branch.</i>';
+      } else {
+        $markup = '<h2>' . str_replace('_', ' ', ucfirst($type_key)) . '</h2>';
+      }
+
+
       $entity_table[$type_key]['title'] = [
-        '#markup' => '<h2>' . str_replace('_', ' ', ucfirst($type_key)) . '</h2>',
+        '#markup' => $markup,
         '#wrapper_attributes' => [
           'colspan' => count($entity_table['#header']),
         ],
       ];
+
+
 
       foreach ($entity_type as $entity_bundle_name => $entity_bundle) {
         $entity_bundle_row = [];
