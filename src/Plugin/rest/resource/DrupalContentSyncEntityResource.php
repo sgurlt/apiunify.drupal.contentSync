@@ -284,7 +284,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *
    * @return \Symfony\Component\HttpFoundation\Response The result (error, ignorance or success).
    */
-  private function handleIncomingEntity($api, $entity_type_name, $entity_bundle, $entity_type_version, $data, $action) {
+  private function handleIncomingEntity($api, $entity_type_name, $entity_bundle, $entity_type_version, array $data, $action) {
     $entity_types = $this->entityTypeBundleInfo->getAllBundleInfo();
 
     if (empty($entity_types[$entity_type_name])) {

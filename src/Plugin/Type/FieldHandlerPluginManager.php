@@ -5,6 +5,7 @@ namespace Drupal\drupal_content_sync\Plugin\Type;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
+use Drupal\Core\Field\FieldDefinitionInterface;
 
 /**
  * Manages discovery and instantiation of field handler plugins.
@@ -79,7 +80,7 @@ class FieldHandlerPluginManager extends DefaultPluginManager {
    * @return array
    *   An associative array $id=>$label|$handlerDefinition to display options
    */
-  public function getHandlerOptions($entity_type, $bundle, $field_name, $field, $labels_only = FALSE) {
+  public function getHandlerOptions($entity_type, $bundle, $field_name, FieldDefinitionInterface $field, $labels_only = FALSE) {
     $options = [];
 
     foreach ($this->getDefinitions() as $id => $definition) {

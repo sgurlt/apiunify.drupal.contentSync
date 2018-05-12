@@ -92,7 +92,8 @@ class PoolForm extends EntityForm {
       '#required' => TRUE,
     ];
 
-    // If the site id is set within the settings.php, the form field is disabled.
+    // If the site id is set within the settings.php,
+    // the form field is disabled.
     if (isset($site_id)) {
       $form['site_id']['#disabled'] = TRUE;
       $form['site_id']['#default_value'] = $site_id;

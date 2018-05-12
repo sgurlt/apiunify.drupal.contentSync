@@ -38,15 +38,16 @@ define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
  * 3) Disabled node forms if the content has been imported and the
  * synchronization is configured to disable imported content.
  *
- * @see _drupal_content_sync_form_alter_disabled_fields
- *
  * @param array $form
  *   The form definition.
  * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   The form state.
  * @param string $form_id
  *   he ID of the form.
+ *
+ * @see _drupal_content_sync_form_alter_disabled_fields
  */
-function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+function drupal_content_sync_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
   $form_object = $form_state->getFormObject();
 
   if ($form_object instanceof ContentEntityDeleteForm) {
@@ -128,7 +129,8 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
  */
 function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter(&$element, &$form_state, $context) {
 
-  // This code is based on: https://www.drupal.org/project/paragraphs/issues/2868155#comment-12610258
+  // This code is based on:
+  // https://www.drupal.org/project/paragraphs/issues/2868155#comment-12610258
   $entity_type = 'paragraph';
   $bundle = $element['#paragraph_type'];
   $selectable_exportable_flows = Pool::getSelectablePools($entity_type, $bundle);
@@ -415,7 +417,7 @@ function drupal_content_sync_encrypt_values(array $values) {
  * @param \Drupal\Core\Form\FormStateInterface $form_state
  * @param string $form_id
  */
-function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterface $form_state, $form_id) {
+function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormStateInterface $form_state, $form_id) {
   $form_object = $form_state
     ->getFormObject();
 
@@ -466,7 +468,7 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
 
   $allow_overrides = $behavior == Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN;
 
-  $hide_elements = ['container', 'vertical_tabs', 'details'];
+  // $hide_elements = ['container', 'vertical_tabs', 'details'];.
   foreach ($form as $key => $form_item) {
     if (!is_array($form_item)) {
       continue;
@@ -522,6 +524,8 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
 }
 
 /**
+ * Meta Information update.
+ *
  * Update the MetaInformation for the given entity, setting
  * the MetaInformation::FLAG_EDIT_OVERRIDE flag accordingly.
  *

@@ -803,7 +803,7 @@ class FlowForm extends EntityForm {
       $sync_entities[$key]['bundle_name'] = $bundle_key;
     }
 
-    $is_new = !$this->exists($config->id());
+    //  $is_new = !$this->exists($config->id());
     $status = $config->save();
 
     if ($status) {

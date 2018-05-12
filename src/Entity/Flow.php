@@ -12,7 +12,7 @@ use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Exception\SyncException;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-
+use Drupal\Core\Entity\EntityInterface;
 /**
  * Defines the Flow entity.
  *
@@ -241,7 +241,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    *
    * @return bool
    */
-  public static function entityHasBeenImportedByRemote($entity, $set_entity_type = NULL, $set_entity_uuid = NULL) {
+  public static function entityHasBeenImportedByRemote(FieldableEntityInterface $entity, $set_entity_type = NULL, $set_entity_uuid = NULL) {
     static $entities = [];
 
     if ($set_entity_type && $set_entity_uuid) {
@@ -346,12 +346,12 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    *
    * @return bool
    */
-  public static function isLocalDeletionAllowed($entity) {
+  public static function isLocalDeletionAllowed(EntityInterface $entity) {
     $meta_infos = MetaInformation::getInfoForEntity(
       $entity->getEntityTypeId(),
       $entity->uuid()
     );
-    foreach ($meta_infos as $id => $info) {
+    foreach ($meta_infos as $info) {
       if (!$info || !$info->getLastImport() || $info->isSourceEntity()) {
         continue;
       }
@@ -374,7 +374,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    *
    * @return \Drupal\drupal_content_sync\Entity\Flow|null
    */
-  public static function getExportSynchronizationForEntity($entity, $reason, $action = self::ACTION_CREATE) {
+  public static function getExportSynchronizationForEntity(EntityInterface $entity, $reason, $action = self::ACTION_CREATE) {
     $drupal_content_syncs = self::getAll();
 
     foreach ($drupal_content_syncs as $sync) {
@@ -395,7 +395,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    *
    * @return bool
    */
-  public function canExportEntity($entity, $reason, $action = self::ACTION_CREATE) {
+  public function canExportEntity(EntityInterface $entity, $reason, $action = self::ACTION_CREATE) {
     $config = $this->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
     if (empty($config) || $config['handler'] == self::HANDLER_IGNORE) {
       return FALSE;
@@ -547,7 +547,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    *
    * @return bool
    */
-  public function supportsEntity($entity) {
+  public function supportsEntity(EntityInterface $entity) {
     return $this->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle())['handler'] != self::HANDLER_IGNORE;
   }
 
@@ -642,7 +642,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
       return FALSE;
     }
 
-    foreach ($meta_infos as $id => $info) {
+    foreach ($meta_infos as $info) {
       if ($info) {
         $info->setLastImport($import);
         if ($action == self::ACTION_DELETE) {
@@ -672,7 +672,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    * @return bool
    *   Whether or not the export could be gotten.
    */
-  public function getSerializedEntity(array &$result, FieldableEntityInterface $entity, $reason, $action = self::ACTION_UPDATE, $meta = NULL) {
+  public function getSerializedEntity(array &$result, FieldableEntityInterface $entity, $reason, $action = self::ACTION_UPDATE, MetaInformation $meta = NULL) {
     $entity_type   = $entity->getEntityTypeId();
     $entity_bundle = $entity->bundle();
     $entity_uuid   = $entity->uuid();
