@@ -9,7 +9,7 @@ use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityTypeInterface;
 
 /**
- * Defines meta information entity type.
+ * Defines the meta information entity type.
  *
  * @ingroup dcs_meta_info
  *
@@ -115,7 +115,7 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   }
 
   /**
-   * Get the configuration instance this meta information belongs to.
+   * Get the flow this meta information belongs to.
    *
    * @return \Drupal\drupal_content_sync\Entity\Flow
    */
