@@ -13,7 +13,7 @@ use Drupal\drupal_content_sync\ApiUnifyRequest;
  * @see \Drupal\drupal_content_sync\Annotation\EntityHandler
  * @see \Drupal\drupal_content_sync\Plugin\EntityHandlerBase
  * @see \Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager
- * @see \Drupal\drupal_content_sync\Entity\DrupalContentSync
+ * @see \Drupal\drupal_content_sync\Entity\Flow
  * @see plugin_api
  *
  * @ingroup third_party
@@ -35,7 +35,7 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    *
    * Get a list of all allowed export options for this entity.
    *
-   * @see DrupalContentSync::EXPORT_*
+   * @see Flow::EXPORT_*
    *
    * @return string[]
    */
@@ -46,7 +46,7 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    *
    * Get a list of all allowed import options for this field.
    *
-   * @see DrupalContentSync::IMPORT_*
+   * @see Flow::IMPORT_*
    *
    * @return string[]
    */
@@ -98,9 +98,9 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    * @param bool $is_clone
    *   Whether or not the entity should be clone'd or sync'd.
    * @param string $reason
-   *   {@see DrupalContentSync::IMPORT_*}.
+   *   {@see Flow::IMPORT_*}.
    * @param string $action
-   *   {@see DrupalContentSync::ACTION_*}.
+   *   {@see Flow::ACTION_*}.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
@@ -116,9 +116,9 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    *   The entity to export.
    * @param string $reason
-   *   {@see DrupalContentSync::EXPORT_*}.
+   *   {@see Flow::EXPORT_*}.
    * @param string $action
-   *   {@see DrupalContentSync::ACTION_*}.
+   *   {@see Flow::ACTION_*}.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *

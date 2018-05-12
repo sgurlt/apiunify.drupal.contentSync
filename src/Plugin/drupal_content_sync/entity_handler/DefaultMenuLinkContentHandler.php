@@ -4,7 +4,7 @@ namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 
@@ -66,7 +66,7 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
     if ((empty($request->getField('enabled')) || !$request->getField('enabled')[0]['value']) && $this->settings['handler_settings']['ignore_unpublished']) {
       // Unless it's a delete, then it won't have a status and is independent
       // of published state, so we don't ignore the import.
-      if ($action != DrupalContentSync::ACTION_DELETE) {
+      if ($action != Flow::ACTION_DELETE) {
         return TRUE;
       }
     }

@@ -2,7 +2,7 @@
 
 namespace Drupal\drupal_content_sync;
 
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Exception\SyncException;
 
 /**
@@ -18,7 +18,7 @@ use Drupal\drupal_content_sync\Exception\SyncException;
  */
 class ApiUnifyRequest {
   /**
-   * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync
+   * @var \Drupal\drupal_content_sync\Entity\Flow
    *   The synchronization this request spawned at.
    * @var string            $entityType             Entity type of the processed entity.
    * @var string            $bundle                 Bundle of the processed entity.
@@ -56,7 +56,7 @@ class ApiUnifyRequest {
   /**
    * ApiUnifyRequest constructor.
    *
-   * @param \Drupal\drupal_content_sync\Entity\DrupalContentSync $sync
+   * @param \Drupal\drupal_content_sync\Entity\Flow $sync
    *   {@see ApiUnifyRequest::$sync}.
    * @param string $entity_type
    *   {@see ApiUnifyRequest::$entityType}.
@@ -70,7 +70,7 @@ class ApiUnifyRequest {
    *   NULL for exports or the data provided from API Unify for imports.
    *   Format is the same as in self::getData.
    */
-  public function __construct(DrupalContentSync $sync, $entity_type, $bundle, $uuid, $meta = NULL, $data = NULL) {
+  public function __construct(Flow $sync, $entity_type, $bundle, $uuid, $meta = NULL, $data = NULL) {
     $this->sync       = $sync;
     $this->entityType = $entity_type;
     $this->bundle     = $bundle;
@@ -191,7 +191,7 @@ class ApiUnifyRequest {
    * @return array The definition to be exported.
    */
   public function getEmbedEntityDefinition($entity_type, $bundle, $uuid, $details = NULL) {
-    $version = DrupalContentSync::getEntityTypeVersion($entity_type, $bundle);
+    $version = Flow::getEntityTypeVersion($entity_type, $bundle);
 
     return array_merge([
       self::API_KEY           => $this->sync->api,
@@ -292,7 +292,7 @@ class ApiUnifyRequest {
    * @return \Drupal\Core\Entity\EntityInterface The restored entity.
    */
   public function loadEmbeddedEntity($definition) {
-    $version = DrupalContentSync::getEntityTypeVersion(
+    $version = Flow::getEntityTypeVersion(
       $definition[self::ENTITY_TYPE_KEY],
       $definition[self::BUNDLE_KEY]
     );

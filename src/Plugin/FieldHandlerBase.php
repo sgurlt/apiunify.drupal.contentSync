@@ -4,7 +4,7 @@ namespace Drupal\drupal_content_sync\Plugin;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Flow;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\PluginBase;
@@ -56,7 +56,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   protected $settings;
 
   /**
-   * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync
+   * @var \Drupal\drupal_content_sync\Entity\Flow
    */
   protected $sync;
 
@@ -102,8 +102,8 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
    */
   public function getAllowedExportOptions() {
     return [
-      DrupalContentSync::EXPORT_DISABLED,
-      DrupalContentSync::EXPORT_AUTOMATICALLY,
+      Flow::EXPORT_DISABLED,
+      Flow::EXPORT_AUTOMATICALLY,
     ];
   }
 
@@ -112,8 +112,8 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
    */
   public function getAllowedImportOptions() {
     return [
-      DrupalContentSync::IMPORT_DISABLED,
-      DrupalContentSync::IMPORT_AUTOMATICALLY,
+      Flow::IMPORT_DISABLED,
+      Flow::IMPORT_AUTOMATICALLY,
     ];
   }
 
@@ -155,7 +155,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
    */
   public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action, $merge_only) {
     // Deletion doesn't require any action on field basis for static data.
-    if ($action == DrupalContentSync::ACTION_DELETE) {
+    if ($action == Flow::ACTION_DELETE) {
       return FALSE;
     }
 
@@ -163,7 +163,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
       return FALSE;
     }
 
-    if ($this->settings['import'] != DrupalContentSync::IMPORT_AUTOMATICALLY) {
+    if ($this->settings['import'] != Flow::IMPORT_AUTOMATICALLY) {
       return FALSE;
     }
 
@@ -183,12 +183,12 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
    * @inheritdoc
    */
   public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
-    if ($this->settings['export'] != DrupalContentSync::EXPORT_AUTOMATICALLY) {
+    if ($this->settings['export'] != Flow::EXPORT_AUTOMATICALLY) {
       return FALSE;
     }
 
     // Deletion doesn't require any action on field basis for static data.
-    if ($action == DrupalContentSync::ACTION_DELETE) {
+    if ($action == Flow::ACTION_DELETE) {
       return FALSE;
     }
 

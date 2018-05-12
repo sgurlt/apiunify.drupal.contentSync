@@ -4,21 +4,21 @@ namespace Drupal\drupal_content_sync\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\drupal_content_sync\ApiUnifyConfig;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Flow;
 
 /**
- * Provides a listing of DrupalContentSync.
+ * Provides a listing of Flow.
  */
 class DrupalContentSynchronizationController extends ControllerBase {
 
   /**
    * Render the content synchronization Angular frontend.
    *
-   * @param \Drupal\drupal_content_sync\Entity\DrupalContentSync $drupal_content_sync
+   * @param \Drupal\drupal_content_sync\Entity\Flow $drupal_content_sync
    *
    * @return array
    */
-  public function content(DrupalContentSync $drupal_content_sync) {
+  public function content(Flow $drupal_content_sync) {
     $config = [
       'api' => $drupal_content_sync->get('api') . '-' . ApiUnifyConfig::CUSTOM_API_VERSION,
       'url' => $drupal_content_sync->get('url'),
@@ -28,7 +28,7 @@ class DrupalContentSynchronizationController extends ControllerBase {
     ];
 
     foreach ($drupal_content_sync->get('sync_entities') as $type) {
-      if ($type['handler'] == DrupalContentSync::HANDLER_IGNORE || $type['handler'] == 'drupal_content_sync_default_field_handler') {
+      if ($type['handler'] == Flow::HANDLER_IGNORE || $type['handler'] == 'drupal_content_sync_default_field_handler') {
         continue;
       }
       if (isset($type['preview']) && $type['preview'] == 'excluded') {

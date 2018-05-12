@@ -2,7 +2,7 @@
 
 namespace Drupal\drupal_content_sync;
 
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\Url;
 use Drupal\user\Entity\User;
@@ -40,7 +40,7 @@ class ApiUnifyConfig {
   /**
    * @var string CUSTOM_API_VERSION
    *   The API version used to identify APIs as. Breaking changes in
-   *   DrupalContentSync will require this version to be increased and all
+   *   Flow will require this version to be increased and all
    *   synchronization entities to be re-saved via update hook.
    */
   const CUSTOM_API_VERSION = '1.0';
@@ -60,7 +60,7 @@ class ApiUnifyConfig {
   const DEPENDENCY_CONNECTION_ID = 'drupal-[api.name]-[instance.id]-[entity_type.name_space]-[entity_type.name]-[entity_type.version]';
   /**
    * @var string POOL_DEPENDENCY_CONNECTION_ID
-   *   Same as {@see DrupalContentSync::DEPENDENCY_CONNECTION_ID} but for the
+   *   Same as {@see Flow::DEPENDENCY_CONNECTION_ID} but for the
    *   pool connection.
    */
   const POOL_DEPENDENCY_CONNECTION_ID = 'drupal-[api.name]-' . self::POOL_SITE_ID . '-[entity_type.name_space]-[entity_type.name]-[entity_type.version]';
@@ -71,7 +71,7 @@ class ApiUnifyConfig {
   protected $client;
 
   /**
-   * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync
+   * @var \Drupal\drupal_content_sync\Entity\Flow
    */
   protected $sync;
 
@@ -96,10 +96,10 @@ class ApiUnifyConfig {
   /**
    * ApiUnifyConfig constructor.
    *
-   * @param \Drupal\drupal_content_sync\Entity\DrupalContentSync $sync
+   * @param \Drupal\drupal_content_sync\Entity\Flow $sync
    *   The sync this exporter is used for.
    */
-  public function __construct(DrupalContentSync $sync) {
+  public function __construct(Flow $sync) {
     // Check if the site id got set within the settings*.php.
     // @ToDo: POOL_REFACTOR
     return;
@@ -123,7 +123,7 @@ class ApiUnifyConfig {
    * @param string $bundle_name
    *   The bundle.
    * @param string $version
-   *   The version. {@see DrupalContentSync::getEntityTypeVersion}.
+   *   The version. {@see Flow::getEntityTypeVersion}.
    *
    * @return string A unique connection ID.
    */
@@ -147,7 +147,7 @@ class ApiUnifyConfig {
    * @param string $bundle_name
    *   The bundle.
    * @param string $version
-   *   The version. {@see DrupalContentSync::getEntityTypeVersion}.
+   *   The version. {@see Flow::getEntityTypeVersion}.
    *
    * @return string A unique entity type ID.
    */
@@ -172,7 +172,7 @@ class ApiUnifyConfig {
    * @param string $bundle_name
    *   The bundle.
    * @param string $version
-   *   The version. {@see DrupalContentSync::getEntityTypeVersion}.
+   *   The version. {@see Flow::getEntityTypeVersion}.
    *
    * @return string A unique connection path.
    */
@@ -216,7 +216,7 @@ class ApiUnifyConfig {
   }
 
   /**
-   * Wrapper for {@see DrupalContentSync::getInternalUrl} for the "create_item"
+   * Wrapper for {@see Flow::getInternalUrl} for the "create_item"
    * operation.
    *
    * @param $api_id
@@ -231,7 +231,7 @@ class ApiUnifyConfig {
   }
 
   /**
-   * Wrapper for {@see DrupalContentSync::getInternalUrl} for the "update_item"
+   * Wrapper for {@see Flow::getInternalUrl} for the "update_item"
    * operation.
    *
    * @param $api_id
@@ -246,7 +246,7 @@ class ApiUnifyConfig {
   }
 
   /**
-   * Wrapper for {@see DrupalContentSync::getInternalUrl} for the "delete_item"
+   * Wrapper for {@see Flow::getInternalUrl} for the "delete_item"
    * operation.
    *
    * @param $api_id
@@ -261,7 +261,7 @@ class ApiUnifyConfig {
   }
 
   /**
-   * Wrapper for {@see DrupalContentSync::getInternalUrl} for the "read_list"
+   * Wrapper for {@see Flow::getInternalUrl} for the "read_list"
    * operation.
    *
    * @param $api_id
@@ -367,7 +367,7 @@ class ApiUnifyConfig {
       $bundle_name      = $type['bundle_name'];
       $version          = $type['version'];
 
-      if ($type['handler'] == DrupalContentSync::HANDLER_IGNORE) {
+      if ($type['handler'] == Flow::HANDLER_IGNORE) {
         continue;
       }
       $handler = $this->sync->getEntityTypeHandler($type);
@@ -507,7 +507,7 @@ class ApiUnifyConfig {
       $handler->updateEntityTypeDefinition($entity_type);
 
       foreach ($fields as $key => $field) {
-        if (!isset($entity_types[$id . '-' . $key]) || $entity_types[$id . '-' . $key]['handler'] == DrupalContentSync::HANDLER_IGNORE) {
+        if (!isset($entity_types[$id . '-' . $key]) || $entity_types[$id . '-' . $key]['handler'] == Flow::HANDLER_IGNORE) {
           continue;
         }
 
@@ -610,7 +610,7 @@ class ApiUnifyConfig {
           'crud' => &$crud_operations,
         ];
 
-        if ($type['export'] == DrupalContentSync::EXPORT_AUTOMATICALLY) {
+        if ($type['export'] == Flow::EXPORT_AUTOMATICALLY) {
           $crud_operations['read_list']['url'] = self::getInternalReadListUrl($api, $entity_type_name, $bundle_name, $version);
         }
 
@@ -637,11 +637,11 @@ class ApiUnifyConfig {
             'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from Pool -> ' . $site_id,
             'options' => [
               'dependency_connection_id'  => self::DEPENDENCY_CONNECTION_ID,
-              'create_entities' => $type['import'] != DrupalContentSync::IMPORT_DISABLED,
-              'update_entities' => $type['import'] != DrupalContentSync::IMPORT_DISABLED && !$type['import_clone'],
-              'delete_entities' => $type['import'] != DrupalContentSync::IMPORT_DISABLED && boolval($type['import_deletion_settings']['import_deletion']),
+              'create_entities' => $type['import'] != Flow::IMPORT_DISABLED,
+              'update_entities' => $type['import'] != Flow::IMPORT_DISABLED && !$type['import_clone'],
+              'delete_entities' => $type['import'] != Flow::IMPORT_DISABLED && boolval($type['import_deletion_settings']['import_deletion']),
               'clone_entities'  => boolval($type['import_clone']),
-              'dependent_entities_only'  => $type['import'] == DrupalContentSync::IMPORT_AS_DEPENDENCY,
+              'dependent_entities_only'  => $type['import'] == Flow::IMPORT_AS_DEPENDENCY,
               'update_none_when_loading' => TRUE,
               'exclude_reference_properties' => [
                 'pSource',
@@ -667,10 +667,10 @@ class ApiUnifyConfig {
               // 'delete_entities' => TRUE,
               // 'clone_entities'  => FALSE,
               // 'dependent_entities_only'  => FALSE,.
-              'create_entities' => $type['export'] != DrupalContentSync::EXPORT_DISABLED,
-              'update_entities' => $type['export'] != DrupalContentSync::EXPORT_DISABLED,
-              'delete_entities' => $type['export'] != DrupalContentSync::EXPORT_DISABLED && boolval($type['export_deletion_settings']['export_deletion']),
-              'dependent_entities_only'  => $type['export'] == DrupalContentSync::EXPORT_AS_DEPENDENCY,
+              'create_entities' => $type['export'] != Flow::EXPORT_DISABLED,
+              'update_entities' => $type['export'] != Flow::EXPORT_DISABLED,
+              'delete_entities' => $type['export'] != Flow::EXPORT_DISABLED && boolval($type['export_deletion_settings']['export_deletion']),
+              'dependent_entities_only'  => $type['export'] == Flow::EXPORT_AS_DEPENDENCY,
               'update_none_when_loading' => TRUE,
               'exclude_reference_properties' => [
                 'pSource',
@@ -736,10 +736,10 @@ class ApiUnifyConfig {
           $config['bundle_name'],
           $config['version']
         );
-        if ($config['export'] != DrupalContentSync::EXPORT_DISABLED) {
+        if ($config['export'] != Flow::EXPORT_DISABLED) {
           $existingExport[] = $id;
         }
-        if ($config['import'] != DrupalContentSync::IMPORT_DISABLED) {
+        if ($config['import'] != Flow::IMPORT_DISABLED) {
           $existingImport[] = $id;
         }
       }

@@ -4,7 +4,7 @@ namespace Drupal\drupal_content_sync\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\FieldableEntityInterface;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Flow;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -22,11 +22,11 @@ class DrupalContentSyncPushChanges extends ControllerBase {
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
    */
   public function pushChanges($sync_id, FieldableEntityInterface $entity) {
-    $sync = DrupalContentSync::load($sync_id);
+    $sync = Flow::load($sync_id);
     if (!_drupal_content_sync_export_entity(
       $entity,
-      DrupalContentSync::EXPORT_MANUALLY,
-      DrupalContentSync::ACTION_UPDATE,
+      Flow::EXPORT_MANUALLY,
+      Flow::ACTION_UPDATE,
       $sync
     )) {
       $messenger = \Drupal::messenger();

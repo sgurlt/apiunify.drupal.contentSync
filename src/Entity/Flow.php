@@ -14,32 +14,32 @@ use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
- * Defines the DrupalContentSync entity.
+ * Defines the Flow entity.
  *
  * @ConfigEntityType(
- *   id = "drupal_content_sync",
- *   label = @Translation("DrupalContentSync Synchronization"),
+ *   id = "dcs_flow",
+ *   label = @Translation("Flow"),
  *   handlers = {
- *     "list_builder" = "Drupal\drupal_content_sync\Controller\DrupalContentSyncListBuilder",
+ *     "list_builder" = "Drupal\drupal_content_sync\Controller\FlowListBuilder",
  *     "form" = {
- *       "add" = "Drupal\drupal_content_sync\Form\DrupalContentSyncForm",
- *       "edit" = "Drupal\drupal_content_sync\Form\DrupalContentSyncForm",
- *       "delete" = "Drupal\drupal_content_sync\Form\DrupalContentSyncDeleteForm",
+ *       "add" = "Drupal\drupal_content_sync\Form\FlowForm",
+ *       "edit" = "Drupal\drupal_content_sync\Form\FlowForm",
+ *       "delete" = "Drupal\drupal_content_sync\Form\FlowDeleteForm",
  *     }
  *   },
- *   config_prefix = "sync",
+ *   config_prefix = "flow",
  *   admin_permission = "administer site configuration",
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "name",
  *   },
  *   links = {
- *     "edit-form" = "/admin/config/services/drupal_content_sync/synchronizations/{drupal_content_sync}",
- *     "delete-form" = "/admin/config/services/drupal_content_sync/synchronizations/{drupal_content_sync}/delete",
+ *     "edit-form" = "/admin/config/services/drupal_content_sync/synchronizations/{dcs_flow}/edit",
+ *     "delete-form" = "/admin/config/services/drupal_content_sync/synchronizations/{dcs_flow}/delete",
  *   }
  * )
  */
-class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInterface {
+class Flow extends ConfigEntityBase implements FlowInterface {
   /**
    * @var string EXPORT_DISABLED
    *   Disable export completely for this entity type, unless forced.
@@ -177,21 +177,21 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   const HANDLER_IGNORE = 'ignore';
 
   /**
-   * The DrupalContentSync ID.
+   * The Flow ID.
    *
    * @var string
    */
   public $id;
 
   /**
-   * The DrupalContentSync name.
+   * The Flow name.
    *
    * @var string
    */
   public $name;
 
   /**
-   * The DrupalContentSync entities.
+   * The Flow entities.
    *
    * @var array
    */
@@ -372,7 +372,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @param string $reason
    * @param string $action
    *
-   * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync|null
+   * @return \Drupal\drupal_content_sync\Entity\Flow|null
    */
   public static function getExportSynchronizationForEntity($entity, $reason, $action = self::ACTION_CREATE) {
     $drupal_content_syncs = self::getAll();
@@ -416,8 +416,8 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   /**
-   * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
-   *   All content synchronization configs. Use {@see DrupalContentSync::getAll}
+   * @var \Drupal\drupal_content_sync\Entity\Flow[]
+   *   All content synchronization configs. Use {@see Flow::getAll}
    *   to request them.
    */
   public static $all = NULL;
@@ -425,9 +425,9 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    * Load all entities.
    *
-   * Load all drupal_content_sync entities and add overrides from global $config.
+   * Load all dcs_flow entities and add overrides from global $config.
    *
-   * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
+   * @return \Drupal\drupal_content_sync\Entity\Flow[]
    */
   public static function getAll() {
     if (self::$all !== NULL) {
@@ -435,15 +435,15 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     }
 
     /**
-     * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync[] $configurations
+     * @var \Drupal\drupal_content_sync\Entity\Flow[] $configurations
      */
     $configurations = \Drupal::entityTypeManager()
-      ->getStorage('drupal_content_sync')
+      ->getStorage('dcs_flow')
       ->loadMultiple();
 
     foreach ($configurations as $id => &$configuration) {
       global $config;
-      $config_name = 'drupal_content_sync.drupal_content_sync.' . $id;
+      $config_name = 'drupal_content_sync.flow.' . $id;
       if (!isset($config[$config_name]) || empty($config[$config_name])) {
         continue;
       }
@@ -465,14 +465,14 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @param string $action
    * @param bool $is_clone
    *
-   * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
+   * @return \Drupal\drupal_content_sync\Entity\Flow[]
    */
   public static function getImportSynchronizationsForEntityType($entity_type_name, $bundle_name, $reason, $action = self::ACTION_CREATE, $is_clone = FALSE) {
-    $drupal_content_syncs = self::getAll();
+    $flows = self::getAll();
 
     $result = [];
 
-    foreach ($drupal_content_syncs as $sync) {
+    foreach ($flows as $sync) {
       if ($sync->canImportEntity($entity_type_name, $bundle_name, $reason, $action, $is_clone)) {
         $result[] = $sync;
       }
@@ -492,12 +492,12 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @param string $action
    * @param bool $is_clone
    *
-   * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync|null
+   * @return \Drupal\drupal_content_sync\Entity\Flow|null
    */
   public static function getImportSynchronizationForApiAndEntityType($api, $entity_type_name, $bundle_name, $reason, $action = self::ACTION_CREATE, $is_clone = FALSE) {
-    $drupal_content_syncs = self::getAll();
+    $flows = self::getAll();
 
-    foreach ($drupal_content_syncs as $sync) {
+    foreach ($flows as $sync) {
       if ($api && $sync->api != $api) {
         continue;
       }
@@ -541,7 +541,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   /**
    * Ask this synchronization whether it supports the provided entity.
    * Returns false if either the entity type is not known or the config handler
-   * is set to {@see DrupalContentSync::HANDLER_IGNORE}.
+   * is set to {@see Flow::HANDLER_IGNORE}.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *
@@ -556,7 +556,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    *
    * @param string $api_id
    *
-   * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
+   * @return \Drupal\drupal_content_sync\Entity\Flow[]
    */
   public static function getSynchronizationsByApi($api_id) {
     $all = self::getAll();
@@ -990,7 +990,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       // If this is called before being saved, we want to have version etc.
       // available still.
       if (empty($type['version'])) {
-        $type['version']          = DrupalContentSync::getEntityTypeVersion($entity_type_name, $bundle_name);
+        $type['version']          = Flow::getEntityTypeVersion($entity_type_name, $bundle_name);
         $type['entity_type_name'] = $entity_type_name;
         $type['bundle_name']      = $bundle_name;
       }
@@ -1009,7 +1009,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * The the entity type handler for the given config.
    *
    * @param $config
-   *   {@see DrupalContentSync::getEntityTypeConfig()}
+   *   {@see Flow::getEntityTypeConfig()}
    *
    * @return \Drupal\drupal_content_sync\Plugin\EntityHandlerInterface
    */
@@ -1070,7 +1070,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   }
 
   /**
-   * Wrapper for {@see DrupalContentSync::getExternalConnectionPath}.
+   * Wrapper for {@see Flow::getExternalConnectionPath}.
    *
    * @param string $entity_type_name
    * @param string $bundle_name

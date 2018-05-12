@@ -9,7 +9,7 @@ use Drupal\Core\Url;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Flow;
 
 /**
  * Provides a node deletion confirmation form.
@@ -125,8 +125,8 @@ class DrupalContentSyncPushChangesConfirm extends ConfirmFormBase {
       foreach ($this->nodes as $node) {
         if (!_drupal_content_sync_export_entity(
           $node,
-          DrupalContentSync::EXPORT_MANUALLY,
-          DrupalContentSync::ACTION_UPDATE
+          Flow::EXPORT_MANUALLY,
+          Flow::ACTION_UPDATE
         )) {
           $ignored++;
         }

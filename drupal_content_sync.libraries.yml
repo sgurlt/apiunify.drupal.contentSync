@@ -1,7 +1,10 @@
-drupal-content-sync-form:
+flow-form:
   version: 1.x
   js:
-    js/drupal-content-sync-form.js: {}
+    js/flow-form.js: {}
+  css:
+    layout:
+      css/flow-form.css: {}
 
 entity-form:
   version: 1.x

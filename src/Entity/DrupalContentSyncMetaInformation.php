@@ -55,7 +55,7 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
     $entity = \Drupal::service('entity.repository')->loadEntityByUuid($values['entity_type'], $values['entity_uuid']);
 
     if (!isset($values['entity_type_version'])) {
-      $values['entity_type_version'] = DrupalContentSync::getEntityTypeVersion($entity->getEntityType()->id(), $entity->bundle());
+      $values['entity_type_version'] = Flow::getEntityTypeVersion($entity->getEntityType()->id(), $entity->bundle());
       return;
     }
   }
@@ -78,8 +78,8 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
     // Fill with NULL values by default.
     $result = [];
     $configs = $api_id ?
-      DrupalContentSync::getSynchronizationsByApi($api_id) :
-      DrupalContentSync::getAll();
+      Flow::getSynchronizationsByApi($api_id) :
+      Flow::getAll();
     foreach ($configs as $sync) {
       $result[$sync->id] = NULL;
     }
@@ -117,10 +117,10 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
   /**
    * Get the configuration instance this meta information belongs to.
    *
-   * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync
+   * @return \Drupal\drupal_content_sync\Entity\Flow
    */
   public function getSync() {
-    return DrupalContentSync::getAll()[$this->getEntityTypeConfig()];
+    return Flow::getAll()[$this->getEntityTypeConfig()];
   }
 
   /**

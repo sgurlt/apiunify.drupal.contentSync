@@ -5,7 +5,7 @@ namespace Drupal\drupal_content_sync\Plugin;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation;
 use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\menu_link_content\Plugin\Menu\MenuLinkContent;
@@ -40,7 +40,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   /**
    * A sync instance.
    *
-   * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync
+   * @var \Drupal\drupal_content_sync\Entity\Flow
    */
   protected $sync;
 
@@ -82,9 +82,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    */
   public function getAllowedExportOptions() {
     return [
-      DrupalContentSync::EXPORT_DISABLED,
-      DrupalContentSync::EXPORT_AUTOMATICALLY,
-      DrupalContentSync::EXPORT_AS_DEPENDENCY,
+      Flow::EXPORT_DISABLED,
+      Flow::EXPORT_AUTOMATICALLY,
+      Flow::EXPORT_AS_DEPENDENCY,
       // Not manually as that requires UI and is not available for all entity
       // types. Advanced handlers will provide this.
     ];
@@ -95,10 +95,10 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    */
   public function getAllowedImportOptions() {
     return [
-      DrupalContentSync::IMPORT_DISABLED,
-      DrupalContentSync::IMPORT_AUTOMATICALLY,
-      DrupalContentSync::IMPORT_AS_DEPENDENCY,
-      DrupalContentSync::IMPORT_MANUALLY,
+      Flow::IMPORT_DISABLED,
+      Flow::IMPORT_AUTOMATICALLY,
+      Flow::IMPORT_AS_DEPENDENCY,
+      Flow::IMPORT_MANUALLY,
     ];
   }
 
@@ -145,15 +145,15 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    *   Whether or not to ignore this import request.
    */
   protected function ignoreImport(ApiUnifyRequest $request, $is_clone, $reason, $action) {
-    if ($reason == DrupalContentSync::IMPORT_AUTOMATICALLY || $reason == DrupalContentSync::IMPORT_MANUALLY) {
+    if ($reason == Flow::IMPORT_AUTOMATICALLY || $reason == Flow::IMPORT_MANUALLY) {
       if ($this->settings['import'] != $reason) {
         return TRUE;
       }
     }
 
-    if ($action == DrupalContentSync::ACTION_UPDATE) {
+    if ($action == Flow::ACTION_UPDATE) {
       $behavior = $this->settings['import_updates'];
-      if ($behavior == DrupalContentSync::IMPORT_UPDATE_IGNORE) {
+      if ($behavior == Flow::IMPORT_UPDATE_IGNORE) {
         return TRUE;
       }
     }
@@ -176,7 +176,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
      */
     $entity = $this->loadEntity($request);
 
-    if ($action == DrupalContentSync::ACTION_DELETE) {
+    if ($action == Flow::ACTION_DELETE) {
       if ($entity) {
         return $this->deleteEntity($entity);
       }
@@ -206,7 +206,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     }
     else {
       $behavior = $this->settings['import_updates'];
-      if ($behavior == DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+      if ($behavior == Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
         $meta_info = DrupalContentSyncMetaInformation::getInfoForEntity(
           $request->getEntityType(),
           $request->getUuid(),
@@ -270,10 +270,10 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    * @param bool $is_clone
    *   The clone parameter of the imported entity.
    * @param string $reason
-   *   The reason why the values should be set. @see DrupalContentSync::REASON_*.
+   *   The reason why the values should be set. @see Flow::REASON_*.
    * @param string $action
    *
-   * @see DrupalContentSync::IMPORT_*
+   * @see Flow::IMPORT_*
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
@@ -388,15 +388,15 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    *   Whether or not to ignore this export request.
    */
   protected function ignoreExport(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
-    if ($reason == DrupalContentSync::EXPORT_AUTOMATICALLY || $reason == DrupalContentSync::EXPORT_MANUALLY) {
+    if ($reason == Flow::EXPORT_AUTOMATICALLY || $reason == Flow::EXPORT_MANUALLY) {
       if ($this->settings['export'] != $reason) {
         return TRUE;
       }
     }
 
-    if ($action == DrupalContentSync::ACTION_UPDATE) {
+    if ($action == Flow::ACTION_UPDATE) {
       $behavior = $this->settings['import_updates'];
-      if ($behavior == DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+      if ($behavior == Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
         $meta_info = DrupalContentSyncMetaInformation::getInfoForEntity(
           $request->getEntityType(),
           $request->getUuid(),
@@ -474,7 +474,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         continue;
       }
 
-      if (!$this->sync->canExportEntity($item, DrupalContentSync::EXPORT_AS_DEPENDENCY)) {
+      if (!$this->sync->canExportEntity($item, Flow::EXPORT_AS_DEPENDENCY)) {
         continue;
       }
 

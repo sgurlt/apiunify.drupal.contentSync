@@ -6,7 +6,7 @@ use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\Core\Field\FieldDefinitionInterface;
 
@@ -67,7 +67,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
    */
   public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action, $merge_only) {
     // Deletion doesn't require any action on field basis for static data.
-    if ($action == DrupalContentSync::ACTION_DELETE) {
+    if ($action == Flow::ACTION_DELETE) {
       return FALSE;
     }
 
@@ -223,7 +223,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
    */
   public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
     // Deletion doesn't require any action on field basis for static data.
-    if ($action == DrupalContentSync::ACTION_DELETE) {
+    if ($action == Flow::ACTION_DELETE) {
       return FALSE;
     }
 

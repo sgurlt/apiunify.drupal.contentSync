@@ -6,9 +6,9 @@ use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 
 /**
- * Provides a listing of DrupalContentSync.
+ * Provides a listing of Flow.
  */
-class DrupalContentSyncListBuilder extends ConfigEntityListBuilder {
+class FlowListBuilder extends ConfigEntityListBuilder {
 
   /**
    * {@inheritdoc}

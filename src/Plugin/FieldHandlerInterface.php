@@ -14,7 +14,7 @@ use Drupal\Core\Field\FieldDefinitionInterface;
  * @see \Drupal\drupal_content_sync\Annotation\FieldHandler
  * @see \Drupal\drupal_content_sync\Plugin\FieldHandlerBase
  * @see \Drupal\drupal_content_sync\Plugin\Type\FieldHandlerPluginManager
- * @see \Drupal\drupal_content_sync\Entity\DrupalContentSync
+ * @see \Drupal\drupal_content_sync\Entity\Flow
  * @see plugin_api
  *
  * @ingroup third_party
@@ -37,9 +37,9 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    * Get the allowed export options.
    *
    * Get a list of all allowed export options for this field. You can
-   * either allow {@see DrupalContentSync::EXPORT_DISABLED} or
-   * {@see DrupalContentSync::EXPORT_DISABLED} and
-   * {@see DrupalContentSync::EXPORT_AUTOMATICALLY}.
+   * either allow {@see Flow::EXPORT_DISABLED} or
+   * {@see Flow::EXPORT_DISABLED} and
+   * {@see Flow::EXPORT_AUTOMATICALLY}.
    *
    * @return string[]
    */
@@ -49,9 +49,9 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    * Get the allowed import options.
    *
    * Get a list of all allowed import options for this field. You can
-   * either allow {@see DrupalContentSync::IMPORT_DISABLED} or
-   * {@see DrupalContentSync::IMPORT_DISABLED} and
-   * {@see DrupalContentSync::IMPORT_AUTOMATICALLY}.
+   * either allow {@see Flow::IMPORT_DISABLED} or
+   * {@see Flow::IMPORT_DISABLED} and
+   * {@see Flow::IMPORT_AUTOMATICALLY}.
    *
    * @return string[]
    */
@@ -87,9 +87,9 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    * @param bool $is_clone
    *   Whether or not the entity should be clone'd or sync'd.
    * @param string $reason
-   *   {@see DrupalContentSync::IMPORT_*}.
+   *   {@see Flow::IMPORT_*}.
    * @param string $action
-   *   {@see DrupalContentSync::ACTION_*}.
+   *   {@see Flow::ACTION_*}.
    * @param bool $merge_only
    *   TRUE if the content is overridden locally. In this case only merge
    *   updates are allowed, no overwrite updates.
@@ -108,9 +108,9 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
    * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    *   The entity to export.
    * @param string $reason
-   *   {@see DrupalContentSync::EXPORT_*}.
+   *   {@see Flow::EXPORT_*}.
    * @param string $action
-   *   {@see DrupalContentSync::ACTION_*}.
+   *   {@see Flow::ACTION_*}.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *

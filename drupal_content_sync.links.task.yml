@@ -3,9 +3,9 @@ entity.drupal_content_sync.introduction:
   route_name: entity.drupal_content_sync.introduction
   base_route: entity.drupal_content_sync.introduction
 
-entity.drupal_content_sync.collection:
-  title: Configuration
-  route_name: entity.drupal_content_sync.collection
+entity.dcs_flow.collection:
+  title: Flows
+  route_name: entity.dcs_flow.collection
   base_route: entity.drupal_content_sync.introduction
 
 entity.dcs_pool.collection:

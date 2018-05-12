@@ -4,7 +4,7 @@ namespace Drupal\drupal_content_sync\Exception;
 
 /**
  * Class SyncException, thrown if anything goes wrong during import / export
- * of entities for Drupal Content Sync. Will be caught by the DrupalContentSync
+ * of entities for Drupal Content Sync. Will be caught by the Flow
  * synchronization class, saved to the logs, presented to the user and returned
  * to API Unify.
  */

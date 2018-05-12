@@ -6,48 +6,40 @@ entity.drupal_content_sync.introduction:
   requirements:
     _permission: 'administer site configuration'
 
-entity.drupal_content_sync.collection:
-  path: '/admin/config/services/drupal_content_sync/synchronizations'
+# DCS Flows
+entity.dcs_flow.collection:
+  path: '/admin/config/services/drupal_content_sync/flow'
   defaults:
-    _entity_list: 'drupal_content_sync'
-    _title: 'Drupal Content Sync - Configuration'
+    _entity_list: 'dcs_flow'
+    _title: 'Flow - Configuration'
   requirements:
     _permission: 'administer site configuration'
 
-entity.drupal_content_sync.add_form:
-  path: '/admin/config/services/drupal_content_sync/synchronizations/add'
+entity.dcs_flow.add_form:
+  path: '/admin/config/services/drupal_content_sync/flow/add'
   defaults:
-    _entity_form: 'drupal_content_sync.add'
-    _title: 'Add synchronization'
+    _entity_form: 'dcs_flow.add'
+    _title: 'Add flow'
   requirements:
     _permission: 'administer site configuration'
 
-entity.drupal_content_sync.edit_form:
-  path: '/admin/config/services/drupal_content_sync/synchronizations/{drupal_content_sync}'
+entity.dcs_flow.edit_form:
+  path: '/admin/config/services/drupal_content_sync/flow/{dcs_flow}/edit'
   defaults:
-    _entity_form: 'drupal_content_sync.edit'
-    _title: 'Edit synchronization'
+    _entity_form: 'dcs_flow.edit'
+    _title: 'Edit flow'
   requirements:
     _permission: 'administer site configuration'
 
-entity.drupal_content_sync.delete_form:
-  path: '/admin/config/services/drupal_content_sync/synchronizations/{drupal_content_sync}/delete'
+entity.dcs_flow.delete_form:
+  path: '/admin/config/services/drupal_content_sync/flow/{dcs_flow}/delete'
   defaults:
-    _entity_form: 'drupal_content_sync.delete'
-    _title: 'Delete synchronization'
+    _entity_form: 'dcs_flow.delete'
+    _title: 'Delete flow'
   requirements:
     _permission: 'administer site configuration'
 
-# @ToDo: The dashboard for manual content import is currently not working and needs to be refactored.
-#entity.drupal_content_sync.content:
-#  path: '/admin/content/drupal_content_synchronization/{drupal_content_sync}'
-#  defaults:
-#    _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSynchronizationController::content'
-#    _title: 'Drupal Content Synchronization'
-#  requirements:
-#    _permission: 'access drupal content sync content overview'
-
-# Pool Entity
+# DCS Pools
 entity.dcs_pool.collection:
   path: '/admin/config/services/drupal_content_sync/pool'
   defaults:
@@ -104,3 +96,13 @@ node.drupal_content_sync_export_publish_changes_confirm:
     _form: '\Drupal\drupal_content_sync\Form\DrupalContentSyncPushChangesConfirm'
   requirements:
     _permission: 'publish drupal content sync changes'
+
+
+# @ToDo: The dashboard for manual content import is currently not working and needs to be refactored.
+#entity.drupal_content_sync.content:
+#  path: '/admin/content/drupal_content_synchronization/{drupal_content_sync}'
+#  defaults:
+#    _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSynchronizationController::content'
+#    _title: 'Drupal Content Synchronization'
+#  requirements:
+#    _permission: 'access drupal content sync content overview'

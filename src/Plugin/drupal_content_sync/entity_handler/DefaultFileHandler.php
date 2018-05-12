@@ -5,7 +5,7 @@ namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 
 /**
@@ -33,10 +33,10 @@ class DefaultFileHandler extends EntityHandlerBase {
    */
   public function getAllowedExportOptions() {
     return [
-      DrupalContentSync::EXPORT_DISABLED,
-      DrupalContentSync::EXPORT_AUTOMATICALLY,
-      DrupalContentSync::EXPORT_AS_DEPENDENCY,
-      DrupalContentSync::EXPORT_MANUALLY,
+      Flow::EXPORT_DISABLED,
+      Flow::EXPORT_AUTOMATICALLY,
+      Flow::EXPORT_AS_DEPENDENCY,
+      Flow::EXPORT_MANUALLY,
     ];
   }
 
@@ -45,10 +45,10 @@ class DefaultFileHandler extends EntityHandlerBase {
    */
   public function getAllowedImportOptions() {
     return [
-      DrupalContentSync::IMPORT_DISABLED,
-      DrupalContentSync::IMPORT_AUTOMATICALLY,
-      DrupalContentSync::IMPORT_AS_DEPENDENCY,
-      DrupalContentSync::IMPORT_MANUALLY,
+      Flow::IMPORT_DISABLED,
+      Flow::IMPORT_AUTOMATICALLY,
+      Flow::IMPORT_AS_DEPENDENCY,
+      Flow::IMPORT_MANUALLY,
     ];
   }
 
@@ -110,7 +110,7 @@ class DefaultFileHandler extends EntityHandlerBase {
      */
     $entity = $this->loadEntity($request);
 
-    if ($action == DrupalContentSync::ACTION_DELETE) {
+    if ($action == Flow::ACTION_DELETE) {
       if ($entity) {
         return $this->deleteEntity($entity);
       }
@@ -130,7 +130,7 @@ class DefaultFileHandler extends EntityHandlerBase {
       throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST);
     }
 
-    if ($action == DrupalContentSync::ACTION_CREATE) {
+    if ($action == Flow::ACTION_CREATE) {
       if (!$is_clone) {
         if ($entity) {
           if (file_save_data(base64_decode($content), $entity->getFileUri(), FILE_EXISTS_REPLACE)) {
@@ -154,7 +154,7 @@ class DefaultFileHandler extends EntityHandlerBase {
       $entity->save();
       return TRUE;
     }
-    if ($action == DrupalContentSync::ACTION_UPDATE) {
+    if ($action == Flow::ACTION_UPDATE) {
       $content = $request->getField('apiu_file_content');
       if (!$content) {
         throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST);

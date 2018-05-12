@@ -12,7 +12,7 @@ use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\Core\Url;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Entity\ContentEntityDeleteForm;
@@ -56,7 +56,7 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
 
     $entity = $form_object->getEntity();
 
-    if (!DrupalContentSync::isLocalDeletionAllowed($entity)) {
+    if (!Flow::isLocalDeletionAllowed($entity)) {
       $messenger = \Drupal::messenger();
       $messenger->addWarning(
         t(
@@ -68,16 +68,16 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
       $form['#disabled'] = TRUE;
     }
     else {
-      $sync = DrupalContentSync::getExportSynchronizationForEntity(
+      $sync = Flow::getExportSynchronizationForEntity(
         $entity,
-        DrupalContentSync::EXPORT_AUTOMATICALLY,
-        DrupalContentSync::ACTION_DELETE
+        Flow::EXPORT_AUTOMATICALLY,
+        Flow::ACTION_DELETE
       );
       if (!$sync) {
-        $sync = DrupalContentSync::getExportSynchronizationForEntity(
+        $sync = Flow::getExportSynchronizationForEntity(
           $entity,
-          DrupalContentSync::EXPORT_AS_DEPENDENCY,
-          DrupalContentSync::ACTION_DELETE
+          Flow::EXPORT_AS_DEPENDENCY,
+          Flow::ACTION_DELETE
         );
         if ($sync) {
           $info = DrupalContentSyncMetaInformation::getInfoForEntity(
@@ -233,25 +233,25 @@ function _drupal_content_sync_update_pool_selector(array $form, FormStateInterfa
  * @param \Drupal\Core\Entity\EntityInterface $entity
  *   The entity to export.
  * @param string $reason
- *   {@see DrupalContentSync::EXPORT_*}.
+ *   {@see Flow::EXPORT_*}.
  * @param string $action
- *   {@see DrupalContentSync::ACTION_*}.
- * @param \Drupal\drupal_content_sync\Entity\DrupalContentSync $sync
+ *   {@see Flow::ACTION_*}.
+ * @param \Drupal\drupal_content_sync\Entity\Flow $sync
  *   The sync to be used. First matching sync will be used if none is given.
  *
  * @return bool Whether the entity is configured to be exported or not.
  */
-function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $action, DrupalContentSync $sync = NULL) {
+function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $action, Flow $sync = NULL) {
   if (!$sync) {
-    $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, $reason, $action);
+    $sync = Flow::getExportSynchronizationForEntity($entity, $reason, $action);
     if (!$sync) {
       // If this entity has been exported as a dependency, we want to export the
       // Update and deletion automatically as well.
-      if ($reason == DrupalContentSync::EXPORT_AUTOMATICALLY &&
-        $action != DrupalContentSync::ACTION_CREATE) {
-        $sync = DrupalContentSync::getExportSynchronizationForEntity(
+      if ($reason == Flow::EXPORT_AUTOMATICALLY &&
+        $action != Flow::ACTION_CREATE) {
+        $sync = Flow::getExportSynchronizationForEntity(
           $entity,
-          DrupalContentSync::EXPORT_AS_DEPENDENCY,
+          Flow::EXPORT_AS_DEPENDENCY,
           $action
         );
         if ($sync) {
@@ -310,7 +310,7 @@ function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $a
  * @param \Drupal\Core\Entity\EntityInterface $entity
  */
 function drupal_content_sync_entity_insert(EntityInterface $entity) {
-  _drupal_content_sync_export_entity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_CREATE);
+  _drupal_content_sync_export_entity($entity, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_CREATE);
 }
 
 /**
@@ -323,7 +323,7 @@ function drupal_content_sync_entity_update(EntityInterface $entity) {
   // before the synchronization was created or the entity could not be
   // exported before for any reason, using ::ACTION_UPDATE would lead to
   // errors. Thus we're just using ::ACTION_CREATE which always works.
-  _drupal_content_sync_export_entity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_UPDATE);
+  _drupal_content_sync_export_entity($entity, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_UPDATE);
 }
 
 /**
@@ -335,19 +335,19 @@ function drupal_content_sync_entity_update(EntityInterface $entity) {
  *   forbidden, this will throw an error.
  */
 function drupal_content_sync_entity_delete(EntityInterface $entity) {
-  if (!DrupalContentSync::isLocalDeletionAllowed($entity) &&
-    !DrupalContentSync::entityHasBeenImportedByRemote($entity)) {
+  if (!Flow::isLocalDeletionAllowed($entity) &&
+    !Flow::entityHasBeenImportedByRemote($entity)) {
     throw new \Exception($entity->label() . ' cannot be deleted as it has been imported.');
   }
 
-  _drupal_content_sync_export_entity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_DELETE);
+  _drupal_content_sync_export_entity($entity, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_DELETE);
 }
 
 /**
  * Implements hook_entity_translation_delete().
  */
 function drupal_content_sync_entity_translation_delete(EntityInterface $translation) {
-  _drupal_content_sync_export_entity($translation, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_DELETE_TRANSLATION);
+  _drupal_content_sync_export_entity($translation, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_DELETE_TRANSLATION);
 }
 
 /**
@@ -377,7 +377,7 @@ function drupal_content_sync_user_password_submit(&$form, FormStateInterface $fo
 
     $userData->set('drupal_content_sync', $userId, 'sync_data', $new_data);
 
-    $synchronisations = DrupalContentSync::getAll();
+    $synchronisations = Flow::getAll();
 
     foreach ($synchronisations as $synchronisation) {
       $synchronisation->save();
@@ -448,10 +448,10 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
     if ($info->isSourceEntity()) {
       continue;
     }
-    $config = DrupalContentSync::load($info->getEntityTypeConfig())
+    $config = Flow::load($info->getEntityTypeConfig())
       ->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
-    if ($config['import_updates'] == DrupalContentSync::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING ||
-      $config['import_updates'] == DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+    if ($config['import_updates'] == Flow::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING ||
+      $config['import_updates'] == Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
       $behavior = $config['import_updates'];
       $overridden = $info->isOverriddenLocally();
       break;
@@ -464,7 +464,7 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
 
   $id = bin2hex(random_bytes(4));
 
-  $allow_overrides = $behavior == DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN;
+  $allow_overrides = $behavior == Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN;
 
   $hide_elements = ['container', 'vertical_tabs', 'details'];
   foreach ($form as $key => $form_item) {
@@ -543,9 +543,9 @@ function _drupal_content_sync_override_entity_submit(array $form, FormStateInter
     if (!$info || !$info->getLastImport() || $info->isCloned()) {
       continue;
     }
-    $config = DrupalContentSync::load($info->getEntityTypeConfig())
+    $config = Flow::load($info->getEntityTypeConfig())
       ->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
-    if ($config['import_updates'] == DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+    if ($config['import_updates'] == Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
       if ($value != $info->isOverriddenLocally()) {
         $info->isOverriddenLocally($value);
         $info->save();
@@ -590,7 +590,7 @@ function drupal_content_sync_get_publish_changes_operations(EntityInterface $ent
   /** @var \Drupal\Core\Routing\RedirectDestinationInterface $redirect_destination */
   $redirect_destination = Drupal::service('redirect.destination');
 
-  $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_MANUALLY);
+  $sync = Flow::getExportSynchronizationForEntity($entity, Flow::EXPORT_MANUALLY);
 
   if (!$sync) {
     return [];

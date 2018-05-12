@@ -10,9 +10,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation;
 
 /**
- * Builds the form to delete an DrupalContentSync.
+ * Builds the form to delete an Flow.
  */
-class DrupalContentSyncDeleteForm extends EntityConfirmFormBase {
+class FlowDeleteForm extends EntityConfirmFormBase {
 
   /**
    * The Messenger service.
@@ -22,7 +22,7 @@ class DrupalContentSyncDeleteForm extends EntityConfirmFormBase {
   protected $messenger;
 
   /**
-   * DrupalContentSyncDeleteForm constructor.
+   * FlowDeleteForm constructor.
    *
    * @param \Drupal\Core\Messenger\MessengerInterface $messenger
    *   The messenger service.
@@ -51,7 +51,7 @@ class DrupalContentSyncDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return new Url('entity.drupal_content_sync.collection');
+    return new Url('entity.dcs_flow.collection');
   }
 
   /**

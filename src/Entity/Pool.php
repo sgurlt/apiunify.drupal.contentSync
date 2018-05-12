@@ -3,7 +3,7 @@
 namespace Drupal\drupal_content_sync\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\drupal_content_sync\Form\DrupalContentSyncForm;
+use Drupal\drupal_content_sync\Form\FlowForm;
 
 /**
  * Defines the Pool entity.
@@ -82,12 +82,12 @@ class Pool extends ConfigEntityBase implements PoolInterface {
   /**
    * Load all dcs_pool entities.
    *
-   * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
+   * @return \Drupal\drupal_content_sync\Entity\Flow[]
    */
   public static function getAll() {
 
     /**
-     * @var \Drupal\drupal_content_sync\Entity\DrupalContentSync[] $configurations
+     * @var \Drupal\drupal_content_sync\Entity\Flow[] $configurations
      */
     $configurations = \Drupal::entityTypeManager()
       ->getStorage('dcs_pool')
@@ -109,7 +109,7 @@ class Pool extends ConfigEntityBase implements PoolInterface {
   public static function getSelectablePools($entity_type, $bundle) {
 
     // Get all available flows.
-    $flows = DrupalContentSync::getAll();
+    $flows = Flow::getAll();
     $configs = [];
     $selectable_pools = [];
     $selectable_flows = [];
@@ -133,7 +133,7 @@ class Pool extends ConfigEntityBase implements PoolInterface {
         foreach ($config['flow']['export_pools'] as $pool_id => $export_pool) {
 
           // Filter out all pools with configuration "allow".
-          if ($export_pool == DrupalContentSyncForm::POOL_ALLOW) {
+          if ($export_pool == FlowForm::POOL_ALLOW) {
             $pool_entity = \Drupal::entityTypeManager()->getStorage('dcs_pool')->loadByProperties(['id' => $pool_id]);
             $pool_entity = reset($pool_entity);
             $selectable_pools[$config_id]['pools'][$pool_id] = $pool_entity->label();

@@ -1,6 +1,6 @@
-drupal_content_sync.sync.*:
+drupal_content_sync.flow.*:
   type: config_entity
-  label: 'DrupalContentSync config'
+  label: 'Flow config'
   mapping:
     id:
       type: string

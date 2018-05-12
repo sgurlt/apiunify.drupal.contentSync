@@ -5,7 +5,7 @@ namespace Drupal\drupal_content_sync\Plugin\rest\resource;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfo;
 use Drupal\Core\Entity\EntityTypeManager;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\rest\ModifiedResourceResponse;
 use Drupal\rest\Plugin\ResourceBase;
@@ -20,7 +20,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @RestResource(
  *   id = "drupal_content_sync_entity_resource",
- *   label = @Translation("DrupalContentSync Entity Resource"),
+ *   label = @Translation("Flow Entity Resource"),
  *   uri_paths = {
  *     "canonical" = "/rest/dcs/{api}/{entity_type}/{entity_bundle}/{entity_type_version}/{entity_uuid}",
  *     "https://www.drupal.org/link-relations/create" = "/rest/dcs/{api}/{entity_type}/{entity_bundle}/{entity_type_version}"
@@ -180,9 +180,9 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       $items    = [];
 
       foreach ($entities as $entity) {
-        $sync   = DrupalContentSync::getExportSynchronizationForEntity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
+        $sync   = Flow::getExportSynchronizationForEntity($entity, Flow::EXPORT_AUTOMATICALLY);
         $result = [];
-        $status = $sync->getSerializedEntity($result, $entity, DrupalContentSync::EXPORT_AUTOMATICALLY);
+        $status = $sync->getSerializedEntity($result, $entity, Flow::EXPORT_AUTOMATICALLY);
         if ($status) {
           $items[] = $result;
         }
@@ -221,7 +221,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   A list of entities of the given type and bundle.
    */
   public function patch($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid, array $data) {
-    return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, $data, DrupalContentSync::ACTION_UPDATE);
+    return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, $data, Flow::ACTION_UPDATE);
   }
 
   /**
@@ -242,7 +242,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   A list of entities of the given type and bundle.
    */
   public function delete($api, $entity_type, $entity_bundle, $entity_type_version, $entity_uuid) {
-    return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, ['uuid' => $entity_uuid], DrupalContentSync::ACTION_DELETE);
+    return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, ['uuid' => $entity_uuid], Flow::ACTION_DELETE);
   }
 
   /**
@@ -263,12 +263,12 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    *   A list of entities of the given type and bundle.
    */
   public function post($api, $entity_type, $entity_bundle, $entity_type_version, array $data) {
-    return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, $data, DrupalContentSync::ACTION_CREATE);
+    return $this->handleIncomingEntity($api, $entity_type, $entity_bundle, $entity_type_version, $data, Flow::ACTION_CREATE);
   }
 
   /**
    * @param string $api
-   *   The API {@see DrupalContentSync}.
+   *   The API {@see Flow}.
    * @param string $entity_type_name
    *   The entity type of the processed entity.
    * @param string $entity_bundle
@@ -276,11 +276,11 @@ class DrupalContentSyncEntityResource extends ResourceBase {
    * @param string $entity_type_version
    *   The version the config was saved for.
    * @param array $data
-   *   For {@see DrupalContentSync::ACTION_CREATE} and
-   *    {@see DrupalContentSync::ACTION_UPDATE}: the data for the entity. Will
+   *   For {@see Flow::ACTION_CREATE} and
+   *    {@see Flow::ACTION_UPDATE}: the data for the entity. Will
    *    be passed to {@see ApiUnifyRequest}.
    * @param string $action
-   *   The {@see DrupalContentSync::ACTION_*} to be performed on the entity.
+   *   The {@see Flow::ACTION_*} to be performed on the entity.
    *
    * @return \Symfony\Component\HttpFoundation\Response The result (error, ignorance or success).
    */
@@ -296,10 +296,10 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     $is_dependency = isset($_GET['is_dependency']) && $_GET['is_dependency'] == 'true';
     $is_clone      = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
     $is_manual     = isset($_GET['is_manual']) && $_GET['is_manual'] == 'true';
-    $reason        = $is_dependency ? DrupalContentSync::IMPORT_AS_DEPENDENCY :
-      ($is_manual ? DrupalContentSync::IMPORT_MANUALLY : DrupalContentSync::IMPORT_AUTOMATICALLY);
+    $reason        = $is_dependency ? Flow::IMPORT_AS_DEPENDENCY :
+      ($is_manual ? Flow::IMPORT_MANUALLY : Flow::IMPORT_AUTOMATICALLY);
 
-    $sync = DrupalContentSync::getImportSynchronizationForApiAndEntityType($api, $entity_type_name, $entity_bundle, $reason, $action, $is_clone);
+    $sync = Flow::getImportSynchronizationForApiAndEntityType($api, $entity_type_name, $entity_bundle, $reason, $action, $is_clone);
     if (empty($sync)) {
       \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
         '@reason' => $reason,
@@ -319,7 +319,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
 
-    $local_version = DrupalContentSync::getEntityTypeVersion($entity_type_name, $entity_bundle);
+    $local_version = Flow::getEntityTypeVersion($entity_type_name, $entity_bundle);
     if ($entity_type_version != $local_version) {
       \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
         '@reason' => $reason,
@@ -409,10 +409,10 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
 
-    if ($status || $action == DrupalContentSync::ACTION_UPDATE) {
+    if ($status || $action == Flow::ACTION_UPDATE) {
       // If we send data for DELETE requests, the Drupal Serializer will throw
       // a random error. So we just leave the body empty then.
-      return new ModifiedResourceResponse($action == DrupalContentSync::ACTION_DELETE ? NULL : $data);
+      return new ModifiedResourceResponse($action == Flow::ACTION_DELETE ? NULL : $data);
     }
     else {
       return new ResourceResponse(

@@ -9,7 +9,7 @@ use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Drupal\drupal_content_sync\ApiUnifyConfig;
-use Drupal\drupal_content_sync\Entity\DrupalContentSync;
+use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\Pool;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Messenger\MessengerInterface;
@@ -19,9 +19,9 @@ use Drupal\Core\Config\ConfigFactory;
 use GuzzleHttp\Client;
 
 /**
- * Form handler for the DrupalContentSync add and edit forms.
+ * Form handler for the Flow add and edit forms.
  */
-class DrupalContentSyncForm extends EntityForm {
+class FlowForm extends EntityForm {
 
   /**
    * @var string DRUPAL_CONTENT_SYNC_PREVIEW_FIELD
@@ -152,31 +152,31 @@ class DrupalContentSyncForm extends EntityForm {
    */
   public function form(array $form, FormStateInterface $form_state) {
     $export_option_labels = [
-      DrupalContentSync::EXPORT_DISABLED => $this->t('Disabled')->render(),
-      DrupalContentSync::EXPORT_AUTOMATICALLY => $this->t('All')->render(),
-      DrupalContentSync::EXPORT_AS_DEPENDENCY => $this->t('Referenced')->render(),
-      DrupalContentSync::EXPORT_MANUALLY => $this->t('Manually')->render(),
+      Flow::EXPORT_DISABLED => $this->t('Disabled')->render(),
+      Flow::EXPORT_AUTOMATICALLY => $this->t('All')->render(),
+      Flow::EXPORT_AS_DEPENDENCY => $this->t('Referenced')->render(),
+      Flow::EXPORT_MANUALLY => $this->t('Manually')->render(),
     ];
     $export_option_labels_fields = [
-      DrupalContentSync::EXPORT_DISABLED => $this->t('No')->render(),
-      DrupalContentSync::EXPORT_AUTOMATICALLY => $this->t('Yes')->render(),
+      Flow::EXPORT_DISABLED => $this->t('No')->render(),
+      Flow::EXPORT_AUTOMATICALLY => $this->t('Yes')->render(),
     ];
 
     $import_option_labels = [
-      DrupalContentSync::IMPORT_DISABLED => $this->t('Disabled')->render(),
-      DrupalContentSync::IMPORT_AUTOMATICALLY => $this->t('All')->render(),
-      DrupalContentSync::IMPORT_AS_DEPENDENCY => $this->t('Referenced')->render(),
-      DrupalContentSync::IMPORT_MANUALLY => $this->t('Manually')->render(),
+      Flow::IMPORT_DISABLED => $this->t('Disabled')->render(),
+      Flow::IMPORT_AUTOMATICALLY => $this->t('All')->render(),
+      Flow::IMPORT_AS_DEPENDENCY => $this->t('Referenced')->render(),
+      Flow::IMPORT_MANUALLY => $this->t('Manually')->render(),
     ];
 
     $import_option_labels_fields = [
-      DrupalContentSync::IMPORT_DISABLED => $this->t('No')->render(),
-      DrupalContentSync::IMPORT_AUTOMATICALLY => $this->t('Yes')->render(),
+      Flow::IMPORT_DISABLED => $this->t('No')->render(),
+      Flow::IMPORT_AUTOMATICALLY => $this->t('Yes')->render(),
     ];
 
     $form = parent::form($form, $form_state);
 
-    $form['#attached']['library'][] = 'drupal_content_sync/drupal-content-sync-form';
+    $form['#attached']['library'][] = 'drupal_content_sync/flow-form';
 
     $sync_entity = $this->entity;
 
@@ -264,7 +264,7 @@ class DrupalContentSyncForm extends EntityForm {
       foreach ($entity_type as $entity_bundle_name => $entity_bundle) {
         $entity_bundle_row = [];
 
-        $version = DrupalContentSync::getEntityTypeVersion($type_key, $entity_bundle_name);
+        $version = Flow::getEntityTypeVersion($type_key, $entity_bundle_name);
 
         $current_display_mode = $type_key . '.' . $entity_bundle_name . '.' . self::DRUPAL_CONTENT_SYNC_PREVIEW_FIELD;
         $has_preview_mode = in_array($current_display_mode, $display_modes_ids) || $type_key == 'file';
@@ -344,7 +344,7 @@ class DrupalContentSyncForm extends EntityForm {
         $handler = NULL;
         if ($handler_id == 'ignore') {
           $export_options = [
-            DrupalContentSync::EXPORT_DISABLED => $this->t('Disabled')->render(),
+            Flow::EXPORT_DISABLED => $this->t('Disabled')->render(),
           ];
         }
         else {
@@ -391,7 +391,7 @@ class DrupalContentSyncForm extends EntityForm {
         }
         else {
           $import_options = [
-            DrupalContentSync::IMPORT_DISABLED => $this->t('Disabled')->render(),
+            Flow::IMPORT_DISABLED => $this->t('Disabled')->render(),
           ];
         }
 
@@ -461,10 +461,10 @@ class DrupalContentSyncForm extends EntityForm {
         $entity_bundle_row['import_updates'] = [
           '#type' => 'select',
           '#options' => [
-            DrupalContentSync::IMPORT_UPDATE_FORCE => $this->t('Dismiss local changes'),
-            DrupalContentSync::IMPORT_UPDATE_IGNORE => $this->t('Ignore updates completely'),
-            DrupalContentSync::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING => $this->t('Forbid local changes and update'),
-            DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN => $this->t('Update unless overwritten locally'),
+            Flow::IMPORT_UPDATE_FORCE => $this->t('Dismiss local changes'),
+            Flow::IMPORT_UPDATE_IGNORE => $this->t('Ignore updates completely'),
+            Flow::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING => $this->t('Forbid local changes and update'),
+            Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN => $this->t('Update unless overwritten locally'),
           ],
           '#default_value' => $row_default_values['import_updates'],
         ];
@@ -496,7 +496,7 @@ class DrupalContentSyncForm extends EntityForm {
 
         if ($handler_id != 'ignore') {
           $forbidden_fields = array_merge($handler->getForbiddenFields(),
-            // These are standard fields defined by the DrupalContentSync
+            // These are standard fields defined by the Flow
             // Entity type that entities may not override (otherwise
             // these fields will collide with DCS functionality)
             [
@@ -584,7 +584,7 @@ class DrupalContentSyncForm extends EntityForm {
 
             if ($handler_id == 'ignore') {
               $export_options = [
-                DrupalContentSync::EXPORT_DISABLED => $this->t('No')->render(),
+                Flow::EXPORT_DISABLED => $this->t('No')->render(),
               ];
             }
             else {
@@ -623,7 +623,7 @@ class DrupalContentSyncForm extends EntityForm {
               '#title_display' => 'invisible',
               '#disabled' => count($export_options) < 2,
               '#options' => $export_options,
-              '#default_value' => $field_default_values['export'] ? $field_default_values['export'] : (isset($export_options[DrupalContentSync::EXPORT_AUTOMATICALLY]) ? DrupalContentSync::EXPORT_AUTOMATICALLY : DrupalContentSync::EXPORT_DISABLED),
+              '#default_value' => $field_default_values['export'] ? $field_default_values['export'] : (isset($export_options[Flow::EXPORT_AUTOMATICALLY]) ? Flow::EXPORT_AUTOMATICALLY : Flow::EXPORT_DISABLED),
             ];
 
             $field_row['pool_export_widget_type'] = [
@@ -636,7 +636,7 @@ class DrupalContentSyncForm extends EntityForm {
 
             if ($handler_id == 'ignore') {
               $import_options = [
-                DrupalContentSync::IMPORT_DISABLED => $this->t('No')->render(),
+                Flow::IMPORT_DISABLED => $this->t('No')->render(),
               ];
             }
             else {
@@ -652,7 +652,7 @@ class DrupalContentSyncForm extends EntityForm {
               '#title_display' => 'invisible',
               '#options' => $import_options,
               '#disabled' => count($import_options) < 2,
-              '#default_value' => $field_default_values['import'] ? $field_default_values['import'] : (isset($import_options[DrupalContentSync::IMPORT_AUTOMATICALLY]) ? DrupalContentSync::IMPORT_AUTOMATICALLY : DrupalContentSync::IMPORT_DISABLED),
+              '#default_value' => $field_default_values['import'] ? $field_default_values['import'] : (isset($import_options[Flow::IMPORT_AUTOMATICALLY]) ? Flow::IMPORT_AUTOMATICALLY : Flow::IMPORT_DISABLED),
             ];
 
             $entity_bundle_row['import_deletion_settings']['import_deletion'] = [
@@ -798,7 +798,7 @@ class DrupalContentSyncForm extends EntityForm {
       $type_key = $matches[1];
       $bundle_key = $matches[2];
 
-      $sync_entities[$key]['version'] = DrupalContentSync::getEntityTypeVersion($type_key, $bundle_key);
+      $sync_entities[$key]['version'] = Flow::getEntityTypeVersion($type_key, $bundle_key);
       $sync_entities[$key]['entity_type_name'] = $type_key;
       $sync_entities[$key]['bundle_name'] = $bundle_key;
     }
@@ -842,14 +842,14 @@ class DrupalContentSyncForm extends EntityForm {
       ]));
     }
 
-    $form_state->setRedirect('entity.drupal_content_sync.collection');
+    $form_state->setRedirect('entity.dcs_flow.collection');
   }
 
   /**
    * Check if the entity exists.
    *
    * A helper function to check whether an
-   * DrupalContentSync configuration entity exists.
+   * Flow configuration entity exists.
    *
    * @param int $id
    *   An ID of sync.
@@ -859,7 +859,7 @@ class DrupalContentSyncForm extends EntityForm {
    */
   public function exists($id) {
     $entity = $this->entityTypeManager
-      ->getStorage('drupal_content_sync')
+      ->getStorage('dcs_flow')
       ->getQuery()
       ->condition('id', $id)
       ->execute();
