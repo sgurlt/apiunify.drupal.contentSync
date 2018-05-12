@@ -52,7 +52,7 @@ entity.dcs_pool.collection:
   path: '/admin/config/services/drupal_content_sync/pool'
   defaults:
     _entity_list: 'dcs_pool'
-    _title: 'Example configuration'
+    _title: 'Pools'
   requirements:
     _permission: 'administer site configuration'
 
@@ -68,7 +68,7 @@ entity.dcs_pool.edit_form:
   path: '/admin/config/services/drupal_content_sync/pool/{dcs_pool}/edit'
   defaults:
     _entity_form: 'dcs_pool.edit'
-    _title: 'Edit example'
+    _title: 'Edit pool'
   requirements:
     _permission: 'administer site configuration'
 
@@ -76,7 +76,7 @@ entity.dcs_pool.delete_form:
   path: '/admin/config/services/drupal_content_sync/pool/{dcs_pool}/delete'
   defaults:
     _entity_form: 'dcs_pool.delete'
-    _title: 'Delete example'
+    _title: 'Delete pool'
   requirements:
     _permission: 'administer site configuration'
 

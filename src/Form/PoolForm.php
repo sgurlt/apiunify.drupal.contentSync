@@ -9,12 +9,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Site\Settings;
 
 /**
- * Form handler for the Example add and edit forms.
+ * Form handler for the Pool add and edit forms.
  */
 class PoolForm extends EntityForm {
 
   /**
-   * Constructs an ExampleForm object.
+   * Constructs an PoolForm object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManager $entityTypeManager
    *   The entityTypeManager.
@@ -110,12 +110,12 @@ class PoolForm extends EntityForm {
     $status = $pool->save();
 
     if ($status) {
-      drupal_set_message($this->t('Saved the %label Example.', [
+      drupal_set_message($this->t('Saved the %label Pool.', [
         '%label' => $pool->label(),
       ]));
     }
     else {
-      drupal_set_message($this->t('The %label Example was not saved.', [
+      drupal_set_message($this->t('The %label Pool was not saved.', [
         '%label' => $pool->label(),
       ]));
     }
@@ -124,7 +124,7 @@ class PoolForm extends EntityForm {
   }
 
   /**
-   * Helper function to check whether an Example configuration entity exists.
+   * Helper function to check whether an Pool configuration entity exists.
    */
   public function exist($id) {
     $entity = $this->entityTypeManager->getStorage('dcs_pool')->getQuery()

@@ -6,7 +6,7 @@ use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 
 /**
- * Provides a listing of Example.
+ * Provides a listing of Pool.
  */
 class PoolListBuilder extends ConfigEntityListBuilder {
 

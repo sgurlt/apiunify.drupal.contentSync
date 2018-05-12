@@ -6,7 +6,7 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\drupal_content_sync\Form\DrupalContentSyncForm;
 
 /**
- * Defines the Example entity.
+ * Defines the Pool entity.
  *
  * @ConfigEntityType(
  *   id = "dcs_pool",

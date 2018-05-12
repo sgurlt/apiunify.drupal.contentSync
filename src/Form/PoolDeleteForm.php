@@ -7,7 +7,7 @@ use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Builds the form to delete an Example.
+ * Builds the form to delete an Pool.
  */
 class PoolDeleteForm extends EntityConfirmFormBase {
 
