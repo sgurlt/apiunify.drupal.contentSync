@@ -3,7 +3,7 @@
 namespace Drupal\drupal_content_sync\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use \Drupal\drupal_content_sync\Form\DrupalContentSyncForm;
+use Drupal\drupal_content_sync\Form\DrupalContentSyncForm;
 
 /**
  * Defines the Example entity.
@@ -34,37 +34,32 @@ use \Drupal\drupal_content_sync\Form\DrupalContentSyncForm;
 class Pool extends ConfigEntityBase implements PoolInterface {
 
   /**
-   * The Example ID.
+   * The Pool ID.
    *
    * @var string
    */
   public $id;
 
   /**
-   * The Example label.
+   * The Pool label.
    *
    * @var string
    */
   public $label;
 
   /**
-   * The Example label.
+   * The Pool API Unify backend URL.
    *
    * @var string
    */
   public $backend_url;
 
   /**
-   * The Example label.
+   * The unique site identifier.
    *
    * @var string
    */
   public $site_id;
-
-  /**
-   *
-   */
-  public static $all = NULL;
 
   /**
    * Returns the Drupal Content Sync Backend URL for this pool.
@@ -85,7 +80,6 @@ class Pool extends ConfigEntityBase implements PoolInterface {
   }
 
   /**
-   *
    * Load all dcs_pool entities.
    *
    * @return \Drupal\drupal_content_sync\Entity\DrupalContentSync[]
@@ -105,7 +99,12 @@ class Pool extends ConfigEntityBase implements PoolInterface {
   /**
    * Returns an list of pools that can be selected for an entity type.
    *
-   * @param null $entity_type
+   * @oaram string $entity_type
+   *  The entity type the pools should be returned for.
+   * @param string $bundle
+   *   The bundle the pools should be returned for.
+   *
+   * @return array $selectable_pools
    */
   public static function getSelectablePools($entity_type, $bundle) {
 
@@ -122,7 +121,7 @@ class Pool extends ConfigEntityBase implements PoolInterface {
 
         $configs[$flow_id] = [
           'flow_label' => $flow->label(),
-          'flow' => $flow->getEntityTypeConfig($entity_type, $bundle)
+          'flow' => $flow->getEntityTypeConfig($entity_type, $bundle),
         ];
 
       }
@@ -145,4 +144,5 @@ class Pool extends ConfigEntityBase implements PoolInterface {
     }
     return $selectable_pools;
   }
+
 }

@@ -56,7 +56,7 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
 
     $entity = $form_object->getEntity();
 
-    if( !DrupalContentSync::isLocalDeletionAllowed($entity) ) {
+    if (!DrupalContentSync::isLocalDeletionAllowed($entity)) {
       $messenger = \Drupal::messenger();
       $messenger->addWarning(
         t(
@@ -64,7 +64,7 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
           ['%label' => $entity->label()]
         )
       );
-      // ['actions']['submit']
+      // ['actions']['submit'].
       $form['#disabled'] = TRUE;
     }
     else {
@@ -73,18 +73,18 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
         DrupalContentSync::EXPORT_AUTOMATICALLY,
         DrupalContentSync::ACTION_DELETE
       );
-      if(!$sync) {
+      if (!$sync) {
         $sync = DrupalContentSync::getExportSynchronizationForEntity(
           $entity,
           DrupalContentSync::EXPORT_AS_DEPENDENCY,
           DrupalContentSync::ACTION_DELETE
         );
-        if($sync) {
+        if ($sync) {
           $info = DrupalContentSyncMetaInformation::getInfoForEntity(
             $entity->getEntityTypeId(),
             $entity->uuid()
           )[$sync->id];
-          if(!$info || !$info->getLastExport()) {
+          if (!$info || !$info->getLastExport()) {
             $sync = NULL;
           }
         }
@@ -123,7 +123,9 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
   }
 }
 
-
+/**
+ *
+ */
 function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter(&$element, &$form_state, $context) {
 
   // This code is based on: https://www.drupal.org/project/paragraphs/issues/2868155#comment-12610258
@@ -136,11 +138,15 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
   }
 }
 
+/**
+ *
+ */
 function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportable_flows) {
   // Try to show the group right above the status checkbox if it exists.
   if (isset($form['status'])) {
     $weight = $form['status']['#weight'] - 1;
-  } else {
+  }
+  else {
     $weight = 99;
   }
 
@@ -163,7 +169,7 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
       $flow_options[$flow_id] = $selectable_exportable_flow['flow_label'];
     }
 
-    // Flow selection
+    // Flow selection.
     $form['dcs_export_group']['dcs_flow_selector'] = [
       '#title' => t('Export flow selection'),
       '#type' => 'select',
@@ -172,12 +178,12 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
       '#ajax' => [
         'callback' => '_drupal_content_sync_update_pool_selector',
         'event' => 'change',
-        'wrapper' => 'ajax-pool-selector-wrapper'
-      ]
+        'wrapper' => 'ajax-pool-selector-wrapper',
+      ],
     ];
   }
 
-  // Pool selection
+  // Pool selection.
   // @Todo: Check if an meta entity exists and if so override the default value.
   // @ToDo: $options is just a temporary workaround.
   $options = reset($selectable_exportable_flows);
@@ -186,7 +192,8 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
   // @ToDo: Must also be based on the meta entity.
   if ($options['widget_type'] == 'single_select' || $options['widget_type'] == 'multi_select') {
     $widget_type = 'select';
-  } else {
+  }
+  else {
     $widget_type = $options['widget_type'];
   }
 
@@ -219,7 +226,6 @@ function _drupal_content_sync_update_pool_selector(array $form, FormStateInterfa
   return $form['dcs_export_group']['dcs_pool_selector'];
 }
 
-
 /**
  * Helper function to export an entity and display the user the results. If you
  * want to make changes programmatically, create your own handler instead.
@@ -238,22 +244,22 @@ function _drupal_content_sync_update_pool_selector(array $form, FormStateInterfa
 function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $action, DrupalContentSync $sync = NULL) {
   if (!$sync) {
     $sync = DrupalContentSync::getExportSynchronizationForEntity($entity, $reason, $action);
-    if(!$sync) {
+    if (!$sync) {
       // If this entity has been exported as a dependency, we want to export the
       // Update and deletion automatically as well.
-      if($reason==DrupalContentSync::EXPORT_AUTOMATICALLY &&
-        $action!=DrupalContentSync::ACTION_CREATE) {
+      if ($reason == DrupalContentSync::EXPORT_AUTOMATICALLY &&
+        $action != DrupalContentSync::ACTION_CREATE) {
         $sync = DrupalContentSync::getExportSynchronizationForEntity(
           $entity,
           DrupalContentSync::EXPORT_AS_DEPENDENCY,
           $action
         );
-        if($sync) {
+        if ($sync) {
           $info = DrupalContentSyncMetaInformation::getInfoForEntity(
             $entity->getEntityTypeId(),
             $entity->uuid()
           )[$sync->id];
-          if(!$info || !$info->getLastExport()) {
+          if (!$info || !$info->getLastExport()) {
             return FALSE;
           }
         }
@@ -329,9 +335,9 @@ function drupal_content_sync_entity_update(EntityInterface $entity) {
  *   forbidden, this will throw an error.
  */
 function drupal_content_sync_entity_delete(EntityInterface $entity) {
-  if( !DrupalContentSync::isLocalDeletionAllowed($entity) &&
-    !DrupalContentSync::entityHasBeenImportedByRemote($entity) ) {
-    throw new \Exception($entity->label().' cannot be deleted as it has been imported.');
+  if (!DrupalContentSync::isLocalDeletionAllowed($entity) &&
+    !DrupalContentSync::entityHasBeenImportedByRemote($entity)) {
+    throw new \Exception($entity->label() . ' cannot be deleted as it has been imported.');
   }
 
   _drupal_content_sync_export_entity($entity, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_DELETE);
@@ -340,7 +346,7 @@ function drupal_content_sync_entity_delete(EntityInterface $entity) {
 /**
  * Implements hook_entity_translation_delete().
  */
-function drupal_content_sync_entity_translation_delete(\Drupal\Core\Entity\EntityInterface $translation) {
+function drupal_content_sync_entity_translation_delete(EntityInterface $translation) {
   _drupal_content_sync_export_entity($translation, DrupalContentSync::EXPORT_AUTOMATICALLY, DrupalContentSync::ACTION_DELETE_TRANSLATION);
 }
 
@@ -417,7 +423,7 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
     return;
   }
 
-  if($form_object instanceof ContentEntityDeleteForm) {
+  if ($form_object instanceof ContentEntityDeleteForm) {
     return;
   }
 
@@ -429,23 +435,23 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
     return;
   }
 
-  $meta_infos = \Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation::getInfoForEntity(
+  $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity(
     $entity->getEntityTypeId(),
     $entity->uuid()
   );
   $behavior = NULL;
   $overridden = FALSE;
   foreach ($meta_infos as $info) {
-    if(!$info || !$info->getLastImport() || $info->isCloned()) {
+    if (!$info || !$info->getLastImport() || $info->isCloned()) {
       continue;
     }
-    if($info->isSourceEntity()) {
+    if ($info->isSourceEntity()) {
       continue;
     }
     $config = DrupalContentSync::load($info->getEntityTypeConfig())
-    ->getEntityTypeConfig($entity->getEntityTypeId(),$entity->bundle());
-    if ($config['import_updates']==DrupalContentSync::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING ||
-      $config['import_updates']==DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+      ->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
+    if ($config['import_updates'] == DrupalContentSync::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING ||
+      $config['import_updates'] == DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
       $behavior = $config['import_updates'];
       $overridden = $info->isOverriddenLocally();
       break;
@@ -458,16 +464,18 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
 
   $id = bin2hex(random_bytes(4));
 
-  $allow_overrides = $behavior==DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN;
+  $allow_overrides = $behavior == DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN;
 
-  $hide_elements = ['container','vertical_tabs','details'];
+  $hide_elements = ['container', 'vertical_tabs', 'details'];
   foreach ($form as $key => $form_item) {
-    if(!is_array($form_item))
+    if (!is_array($form_item)) {
       continue;
-    if(!isset($form_item['#type']))
+    }
+    if (!isset($form_item['#type'])) {
       continue;
-    if($key!='actions') {
-      if($allow_overrides) {
+    }
+    if ($key != 'actions') {
+      if ($allow_overrides) {
         // If we used the DISABLED attribute, we couldn't reliably remove it
         // from all elements, as some should still have the attribute from other
         // circumstances and we would also have to apply it nested.
@@ -476,9 +484,9 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
         // embedded forms.
         // So instead we hide and show the elements via JavaScript, leading
         // to the best usability and overall simplest / most reliable
-        // implementation from the options available-
+        // implementation from the options available-.
         $form[$key]['#attributes']['class'][] = 'dcs-edit-override-id-' . $id;
-        if(!$overridden) {
+        if (!$overridden) {
           $form[$key]['#attributes']['class'][] = 'dcs-edit-override-hide';
         }
       }
@@ -488,13 +496,13 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
     }
   }
 
-  if($allow_overrides) {
+  if ($allow_overrides) {
     $form['dcs_edit_override'] = [
       '#type' => 'checkbox',
       '#default_value' => $overridden,
       '#weight' => -10000,
       '#title' => t('Overwrite locally and ignore future remote updates'),
-      '#description' => t('%label has been imported and future remote updates would overwrite local changes. Checking this will make sure that future remote updates will be ignored so your local changes persist.',[
+      '#description' => t('%label has been imported and future remote updates would overwrite local changes. Checking this will make sure that future remote updates will be ignored so your local changes persist.', [
         '%label' => $entity->label(),
       ]),
       '#attributes' => [
@@ -507,7 +515,7 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
   }
   else {
     $messenger = \Drupal::messenger();
-    $messenger->addWarning(t('%label cannot be edited as it has been imported.',[
+    $messenger->addWarning(t('%label cannot be edited as it has been imported.', [
       '%label' => $entity->label(),
     ]));
   }
@@ -527,7 +535,7 @@ function _drupal_content_sync_override_entity_submit(array $form, FormStateInter
     ->getFormObject()
     ->getEntity();
 
-  $meta_infos = \Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation::getInfoForEntity(
+  $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity(
     $entity->getEntityTypeId(),
     $entity->uuid()
   );
@@ -538,7 +546,7 @@ function _drupal_content_sync_override_entity_submit(array $form, FormStateInter
     $config = DrupalContentSync::load($info->getEntityTypeConfig())
       ->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
     if ($config['import_updates'] == DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
-      if($value!=$info->isOverriddenLocally()) {
+      if ($value != $info->isOverriddenLocally()) {
         $info->isOverriddenLocally($value);
         $info->save();
         // TODO: If changed to "Don't override", we should re-import the entity

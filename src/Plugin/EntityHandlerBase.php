@@ -151,9 +151,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       }
     }
 
-    if($action==DrupalContentSync::ACTION_UPDATE) {
+    if ($action == DrupalContentSync::ACTION_UPDATE) {
       $behavior = $this->settings['import_updates'];
-      if($behavior==DrupalContentSync::IMPORT_UPDATE_IGNORE) {
+      if ($behavior == DrupalContentSync::IMPORT_UPDATE_IGNORE) {
         return TRUE;
       }
     }
@@ -206,12 +206,12 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     }
     else {
       $behavior = $this->settings['import_updates'];
-      if($behavior==DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+      if ($behavior == DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
         $meta_info = DrupalContentSyncMetaInformation::getInfoForEntity(
           $request->getEntityType(),
           $request->getUuid(),
           $this->sync->api)[$this->sync->id];
-        if($meta_info && $meta_info->isOverriddenLocally()) {
+        if ($meta_info && $meta_info->isOverriddenLocally()) {
           $merge_only = TRUE;
         }
       }
@@ -232,7 +232,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
        * @var \Drupal\menu_link_content\Entity\MenuLinkContent $item
        */
       $item->set('link', 'entity:' . $this->entityTypeName . '/' . $entity->id());
-      $item->set( 'enabled', 1 );
+      $item->set('enabled', 1);
       $item->save();
     }
 
@@ -319,19 +319,19 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         }
 
         $request->changeTranslationLanguage($language);
-        if(!$this->ignoreImport($request,$is_clone,$reason,$action)) {
+        if (!$this->ignoreImport($request, $is_clone, $reason, $action)) {
           $this->setEntityValues($request, $translation, $is_clone, $reason, $action, $merge_only);
         }
       }
 
-      // Delete translations that were deleted on master site
-      if(boolval($this->settings['import_deletion_settings']['import_deletion'])) {
+      // Delete translations that were deleted on master site.
+      if (boolval($this->settings['import_deletion_settings']['import_deletion'])) {
         $existing = $entity->getTranslationLanguages(FALSE);
-        foreach($existing as &$language) {
+        foreach ($existing as &$language) {
           $language = $language->getId();
         }
-        $languages = array_diff( $existing,  $languages );
-        foreach($languages as $language) {
+        $languages = array_diff($existing, $languages);
+        foreach ($languages as $language) {
           $entity->removeTranslation($language);
         }
       }
@@ -394,15 +394,15 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       }
     }
 
-    if($action==DrupalContentSync::ACTION_UPDATE) {
+    if ($action == DrupalContentSync::ACTION_UPDATE) {
       $behavior = $this->settings['import_updates'];
-      if($behavior==DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+      if ($behavior == DrupalContentSync::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
         $meta_info = DrupalContentSyncMetaInformation::getInfoForEntity(
           $request->getEntityType(),
           $request->getUuid(),
           $this->sync->api)[$this->sync->id];
-        // The flag means to overwrite locally, so changes should not be pushed
-        if($meta_info && !$meta_info->isSourceEntity()) {
+        // The flag means to overwrite locally, so changes should not be pushed.
+        if ($meta_info && !$meta_info->isSourceEntity()) {
           return TRUE;
         }
       }
@@ -445,13 +445,13 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
 
     // Translations.
     if (!$request->getActiveLanguage() &&
-      $entity instanceof TranslatableInterface ) {
+      $entity instanceof TranslatableInterface) {
       $languages = array_keys($entity->getTranslationLanguages(FALSE));
 
       foreach ($languages as $language) {
         $request->changeTranslationLanguage($language);
         /**
-         * @var FieldableEntityInterface $translation
+         * @var \Drupal\Core\Entity\FieldableEntityInterface $translation
          */
         $translation = $entity->getTranslation($language);
         $this->export($request, $translation, $request, $action);

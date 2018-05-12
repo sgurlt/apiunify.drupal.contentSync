@@ -31,7 +31,6 @@ class PoolListBuilder extends ConfigEntityListBuilder {
     $row['backend_url'] = $entity->backend_url;
 
     // You probably want a few more properties here...
-
     return $row + parent::buildRow($entity);
   }
 

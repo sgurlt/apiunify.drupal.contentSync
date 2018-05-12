@@ -67,7 +67,7 @@ class DefaultNodeHandler extends EntityHandlerBase {
    */
   public function getHandlerSettings() {
     return [
-      // TODO Move to default handler for all entities that can be published
+      // TODO Move to default handler for all entities that can be published.
       'ignore_unpublished' => [
         '#type' => 'checkbox',
         '#title' => 'Ignore unpublished content',

@@ -11,14 +11,12 @@ use Drupal\Core\Render\Element;
 use Drupal\drupal_content_sync\ApiUnifyConfig;
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
 use Drupal\drupal_content_sync\Entity\Pool;
-use Drupal\menu_link_content\Entity\MenuLinkContent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager;
 use Drupal\drupal_content_sync\Plugin\Type\FieldHandlerPluginManager;
 use Drupal\Core\Config\ConfigFactory;
 use GuzzleHttp\Client;
-use Drupal\Core\Site\Settings;
 
 /**
  * Form handler for the DrupalContentSync add and edit forms.
@@ -248,13 +246,13 @@ class DrupalContentSyncForm extends EntityForm {
       }
 
       // Add information text for paragraphs that a specific commit is required.
-      if($type_key == 'paragraph') {
+      if ($type_key == 'paragraph') {
         $markup = '<h2>' . str_replace('_', ' ', ucfirst($type_key)) . '</h2><i>In order to make it possible to select pools while exporting Paragraphs (Export Pool Configuration = Allow) Drupal Content Sync is relying on this commit <a target="_blank" href="https://www.drupal.org/project/paragraphs/issues/2868155#comment-12610258">https://www.drupal.org/project/paragraphs/issues/2868155#comment-12610258</a>.
                    The commit for now just exists within the Paragrahs dev Branch.<br>As soon as the commit got merged into the stable branch, it is no longer required to use the Paragraphs dev branch.</i>';
-      } else {
+      }
+      else {
         $markup = '<h2>' . str_replace('_', ' ', ucfirst($type_key)) . '</h2>';
       }
-
 
       $entity_table[$type_key]['title'] = [
         '#markup' => $markup,
@@ -262,8 +260,6 @@ class DrupalContentSyncForm extends EntityForm {
           'colspan' => count($entity_table['#header']),
         ],
       ];
-
-
 
       foreach ($entity_type as $entity_bundle_name => $entity_bundle) {
         $entity_bundle_row = [];
@@ -281,7 +277,7 @@ class DrupalContentSyncForm extends EntityForm {
             'id' => $type_key . '-' . $entity_bundle_name,
             'export' => FALSE,
             'export_deletion_settings' => [
-              'export_deletion' => FALSE
+              'export_deletion' => FALSE,
             ],
             'import' => NULL,
             'import_deletion_settings' => [
@@ -296,7 +292,7 @@ class DrupalContentSyncForm extends EntityForm {
             ])->render(),
             'entity_type' => $type_key,
             'entity_bundle' => $entity_bundle_name,
-            'pool_export_widget_type' => 'checkboxes'
+            'pool_export_widget_type' => 'checkboxes',
           ];
           foreach ($pool_entities as $pool) {
             $row_default_values['export_pools'][$pool->id()] = 'force';
@@ -736,9 +732,6 @@ class DrupalContentSyncForm extends EntityForm {
 
     // Reference fields are only allowed to have "Force" or "Forbid" for their
     // pool configurations.
-
-
-
     // @ToDO: POOL_REFACTOR
     return;
     $api = $form_state->getValue('api');
@@ -817,31 +810,31 @@ class DrupalContentSyncForm extends EntityForm {
       $this->messenger->addMessage($this->t('Saved the %label Drupal Content Synchronization.', [
         '%label' => $config->label(),
       ]));
-//      @ToDo: Needs to be refactored - "Manual Import Dashboard".
-//      $uri = 'internal:/admin/content/drupal_content_synchronization/' . $this->entity->id();
-//      $link_data = [
-//        'link' => ['uri' => $uri],
-//        'title' => $this->entity->label(),
-//        'menu_name' => 'admin',
-//        'parent' => 'system.admin_content',
-//      ];
-//      if ($is_new) {
-//        // $item = MenuLinkContent::create($link_data);
-//        // $item->save();
-//        // menu_cache_clear_all();
-//      }
-//      else {
-//        $links = $this->entityTypeManager->getStorage('menu_link_content')->loadByProperties(['link__uri' => $uri]);
-//
-//        if ($link = reset($links)) {
-//          $link->set('title', $this->entity->label());
-//        }
-//        else {
-//          $link = MenuLinkContent::create($link_data);
-//        }
-//        $link->save();
-//        menu_cache_clear_all();
-//      }
+      // @ToDo: Needs to be refactored - "Manual Import Dashboard".
+      //      $uri = 'internal:/admin/content/drupal_content_synchronization/' . $this->entity->id();
+      //      $link_data = [
+      //        'link' => ['uri' => $uri],
+      //        'title' => $this->entity->label(),
+      //        'menu_name' => 'admin',
+      //        'parent' => 'system.admin_content',
+      //      ];
+      //      if ($is_new) {
+      //        // $item = MenuLinkContent::create($link_data);
+      //        // $item->save();
+      //        // menu_cache_clear_all();
+      //      }
+      //      else {
+      //        $links = $this->entityTypeManager->getStorage('menu_link_content')->loadByProperties(['link__uri' => $uri]);
+      //
+      //        if ($link = reset($links)) {
+      //          $link->set('title', $this->entity->label());
+      //        }
+      //        else {
+      //          $link = MenuLinkContent::create($link_data);
+      //        }
+      //        $link->save();
+      //        menu_cache_clear_all();
+      //      }
     }
     else {
       $this->messenger->addMessage($this->t('The %label Drupal Content Synchronization was not saved.', [

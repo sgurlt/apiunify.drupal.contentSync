@@ -473,7 +473,7 @@ class ApiUnifyConfig {
             'created' => 'value',
             'changed' => 'value',
             'uuid' => 'value',
-            'url'=>'value',
+            'url' => 'value',
           ],
           'database' => [
             'id' => 'value',
@@ -695,8 +695,8 @@ class ApiUnifyConfig {
   /**
    * Delete the synchronizations from this connection.
    */
-  public function deleteConfig($removedOnly=TRUE) {
-    $condition = [
+  public function deleteConfig($removedOnly = TRUE) {
+    $condition   = [
       'operator'  => '==',
       'values'    => [
         [
@@ -706,26 +706,26 @@ class ApiUnifyConfig {
         [
           'source'  => 'value',
           'value'   => $this->sync->site_id,
-        ]
+        ],
       ],
     ];
-    $url      = $this->generateUrl(
+    $url         = $this->generateUrl(
       $this->sync->url . '/api_unify-api_unify-connection-0_1',
       [
         'items_per_page'  => '99999',
         'condition' => json_encode($condition),
       ]
     );
-    $response = $this->client->{'get'}($url);
-    $body     = json_decode($response->getBody(),TRUE);
+    $response    = $this->client->{'get'}($url);
+    $body        = json_decode($response->getBody(), TRUE);
     $connections = [];
-    foreach($body['items'] as $reference) {
+    foreach ($body['items'] as $reference) {
       $connections[] = $reference['id'];
     }
     $importConnections = $connections;
     $exportConnections = $connections;
 
-    if( $removedOnly ) {
+    if ($removedOnly) {
       $existingExport = [];
       $existingImport = [];
       foreach ($this->sync->getEntityTypeConfig() as $config) {
@@ -736,19 +736,19 @@ class ApiUnifyConfig {
           $config['bundle_name'],
           $config['version']
         );
-        if($config['export']!=DrupalContentSync::EXPORT_DISABLED) {
+        if ($config['export'] != DrupalContentSync::EXPORT_DISABLED) {
           $existingExport[] = $id;
         }
-        if($config['import']!=DrupalContentSync::IMPORT_DISABLED) {
+        if ($config['import'] != DrupalContentSync::IMPORT_DISABLED) {
           $existingImport[] = $id;
         }
       }
-      $importConnections  = array_diff($importConnections,$existingImport);
-      $exportConnections  = array_diff($exportConnections,$existingExport);
+      $importConnections = array_diff($importConnections, $existingImport);
+      $exportConnections = array_diff($exportConnections, $existingExport);
     }
     $condition = NULL;
-    if(count($exportConnections)>0) {
-      $condition  = [
+    if (count($exportConnections) > 0) {
+      $condition = [
         'operator'    => 'in',
         'values'      => [
           [
@@ -762,7 +762,7 @@ class ApiUnifyConfig {
         ],
       ];
     }
-    if(count($importConnections)>0) {
+    if (count($importConnections) > 0) {
       $importCondition = [
         'operator'    => 'in',
         'values'      => [
@@ -776,7 +776,7 @@ class ApiUnifyConfig {
           ],
         ],
       ];
-      if( $condition ) {
+      if ($condition) {
         $condition = [
           'operator'    => 'or',
           'conditions'  => [
@@ -786,11 +786,11 @@ class ApiUnifyConfig {
         ];
       }
       else {
-        $condition  = $importCondition;
+        $condition = $importCondition;
       }
     }
 
-    if(!$condition) {
+    if (!$condition) {
       return;
     }
 

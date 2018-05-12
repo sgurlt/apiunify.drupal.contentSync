@@ -132,7 +132,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @var string IMPORT_UPDATE_FORCE_AND_FORBID_EDITING
    *   Import all changes and forbid local editors to change the content.
    */
-  const IMPORT_UPDATE_FORCE_AND_FORBID_EDITING  = 'force_and_forbid_editing';
+  const IMPORT_UPDATE_FORCE_AND_FORBID_EDITING = 'force_and_forbid_editing';
   /**
    * @var string IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN
    *   Import all changes and forbid local editors to change the content unless
@@ -351,13 +351,13 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       $entity->getEntityTypeId(),
       $entity->uuid()
     );
-    foreach ($meta_infos as $id=>$info) {
-      if(!$info || !$info->getLastImport() || $info->isSourceEntity()) {
+    foreach ($meta_infos as $id => $info) {
+      if (!$info || !$info->getLastImport() || $info->isSourceEntity()) {
         continue;
       }
       $sync = $info->getSync();
-      $config = $sync->getEntityTypeConfig($entity->getEntityTypeId(),$entity->bundle());
-      if(!boolval($config['import_deletion_settings']['allow_local_deletion_of_import'])) {
+      $config = $sync->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
+      if (!boolval($config['import_deletion_settings']['allow_local_deletion_of_import'])) {
         return FALSE;
         break;
       }
@@ -561,9 +561,10 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
   public static function getSynchronizationsByApi($api_id) {
     $all = self::getAll();
     $result = [];
-    foreach($all as $sync) {
-      if( $sync->api!=$api_id)
+    foreach ($all as $sync) {
+      if ($sync->api != $api_id) {
         continue;
+      }
       $result[] = $sync;
     }
 
@@ -585,38 +586,38 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @return bool
    */
   public function importEntity($entity_type_name, $entity_bundle, array $data, $is_clone, $reason, $action = self::ACTION_CREATE) {
-    $import = time();
-    $uuid   = $data['uuid'];
-    $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity($entity_type_name,$uuid,$this->api);
+    $import     = time();
+    $uuid       = $data['uuid'];
+    $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity($entity_type_name, $uuid, $this->api);
     foreach ($meta_infos as $info) {
-      if(!$info) {
+      if (!$info) {
         continue;
       }
-      if($info->isDeleted()) {
+      if ($info->isDeleted()) {
         return TRUE;
       }
-      if($info->getLastImport() && $action==self::ACTION_CREATE) {
+      if ($info->getLastImport() && $action == self::ACTION_CREATE) {
         $action = self::ACTION_UPDATE;
       }
     }
 
-    $info     = $meta_infos[$this->id];
-    if(!$info) {
+    $info = $meta_infos[$this->id];
+    if (!$info) {
       $info = DrupalContentSyncMetaInformation::create([
         'entity_type_config' => $this->id,
         'entity_type' => $entity_type_name,
         'entity_uuid' => $uuid,
         'last_import' => 0,
-        'entity_type_version' => self::getEntityTypeVersion($entity_type_name,$entity_bundle),
+        'entity_type_version' => self::getEntityTypeVersion($entity_type_name, $entity_bundle),
         'flags' => 0,
         'source_url' => $data['url'],
       ]);
-      if($is_clone) {
+      if ($is_clone) {
         $info->isCloned(TRUE);
       }
-      $meta_infos[$this->id]  = $info;
+      $meta_infos[$this->id] = $info;
     }
-    $request  = new ApiUnifyRequest($this, $entity_type_name, $entity_bundle, $uuid, $info, $data);
+    $request = new ApiUnifyRequest($this, $entity_type_name, $entity_bundle, $uuid, $info, $data);
 
     $config = $this->getEntityTypeConfig($entity_type_name, $entity_bundle);
     $handler = $this->getEntityTypeHandler($config);
@@ -641,10 +642,10 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       return FALSE;
     }
 
-    foreach($meta_infos as $id=>$info) {
-      if($info) {
+    foreach ($meta_infos as $id => $info) {
+      if ($info) {
         $info->setLastImport($import);
-        if($action==self::ACTION_DELETE) {
+        if ($action == self::ACTION_DELETE) {
           $info->isDeleted(TRUE);
         }
         $info->save();
@@ -663,24 +664,25 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    * @param string $reason
    * @param string $action
-   * @param DrupalContentSyncMetaInformation $meta The meta information for this entity and sync, if any.
+   * @param DrupalContentSyncMetaInformation $meta
+   *   The meta information for this entity and sync, if any.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
    * @return bool
    *   Whether or not the export could be gotten.
    */
-  public function getSerializedEntity(array &$result, FieldableEntityInterface $entity, $reason, $action = self::ACTION_UPDATE, $meta=NULL) {
+  public function getSerializedEntity(array &$result, FieldableEntityInterface $entity, $reason, $action = self::ACTION_UPDATE, $meta = NULL) {
     $entity_type   = $entity->getEntityTypeId();
     $entity_bundle = $entity->bundle();
     $entity_uuid   = $entity->uuid();
 
-    $config   = $this->getEntityTypeConfig($entity_type, $entity_bundle);
-    $handler  = $this->getEntityTypeHandler($config);
+    $config = $this->getEntityTypeConfig($entity_type, $entity_bundle);
+    $handler = $this->getEntityTypeHandler($config);
 
-    $request  = new ApiUnifyRequest($this, $entity_type, $entity_bundle, $entity_uuid, $meta);
+    $request = new ApiUnifyRequest($this, $entity_type, $entity_bundle, $entity_uuid, $meta);
 
-    $status   = $handler->export($request, $entity, $reason, $action);
+    $status = $handler->export($request, $entity, $reason, $action);
 
     if (!$status) {
       return FALSE;
@@ -703,21 +705,25 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
    * Check whether the given entity is currently being exported. Useful to check
    * against hierarchical references as for nodes and menu items for example.
    *
-   * @param string $entity_type The entity type to check for.
-   * @param string $uuid The UUID of the entity in question.
-   * @param null|string $action See self::ACTION_*
+   * @param string $entity_type
+   *   The entity type to check for.
+   * @param string $uuid
+   *   The UUID of the entity in question.
+   * @param null|string $action
+   *   See self::ACTION_*.
+   *
    * @return bool
    */
-  public function isExporting($entity_type,$uuid,$action=NULL) {
-    foreach($this->exported as $do=>$types) {
-      if($action ? $do!=$action : $do==self::ACTION_DELETE) {
+  public function isExporting($entity_type, $uuid, $action = NULL) {
+    foreach ($this->exported as $do => $types) {
+      if ($action ? $do != $action : $do == self::ACTION_DELETE) {
         continue;
       }
-      if(!isset($types[$entity_type])) {
+      if (!isset($types[$entity_type])) {
         continue;
       }
-      foreach($types[$entity_type] as $bundle=>$entities) {
-        if(!empty($entities[$uuid])) {
+      foreach ($types[$entity_type] as $bundle => $entities) {
+        if (!empty($entities[$uuid])) {
           return TRUE;
         }
       }
@@ -745,7 +751,7 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
      */
     static $deletedTranslations = [];
 
-    if($action==self::ACTION_DELETE_TRANSLATION) {
+    if ($action == self::ACTION_DELETE_TRANSLATION) {
       $deletedTranslations[$entity->getEntityTypeId()][$entity->uuid()] = TRUE;
       return FALSE;
     }
@@ -754,12 +760,12 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       $entity = $entity->getUntranslated();
     }
     $export = time();
-    if($entity instanceof EntityChangedInterface) {
+    if ($entity instanceof EntityChangedInterface) {
       $export = $entity->getChangedTime();
-      if($entity instanceof TranslatableInterface) {
-        foreach($entity->getTranslationLanguages(FALSE) as $language) {
+      if ($entity instanceof TranslatableInterface) {
+        foreach ($entity->getTranslationLanguages(FALSE) as $language) {
           $translation = $entity->getTranslation($language->getId());
-          if($translation->getChangedTime()>$export) {
+          if ($translation->getChangedTime() > $export) {
             $export = $translation->getChangedTime();
           }
         }
@@ -778,50 +784,50 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
     $entity_bundle = $entity->bundle();
     $entity_uuid   = $entity->uuid();
 
-    $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity($entity_type,$entity_uuid,$this->api);
+    $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity($entity_type, $entity_uuid, $this->api);
     $exported   = FALSE;
-    foreach($meta_infos as $info) {
-      if(!$info) {
+    foreach ($meta_infos as $info) {
+      if (!$info) {
         continue;
       }
-      if($info->getLastExport()) {
-        if(!$exported || $exported<$info->getLastExport()) {
+      if ($info->getLastExport()) {
+        if (!$exported || $exported < $info->getLastExport()) {
           $exported = $info->getLastExport();
         }
       }
     }
 
     $info = $meta_infos[$this->id];
-    if(!$info) {
+    if (!$info) {
       $info = DrupalContentSyncMetaInformation::create([
         'entity_type_config' => $this->id,
         'entity_type' => $entity_type,
         'entity_uuid' => $entity_uuid,
         'last_export' => 0,
-        'entity_type_version' => self::getEntityTypeVersion($entity_type,$entity_bundle),
+        'entity_type_version' => self::getEntityTypeVersion($entity_type, $entity_bundle),
         'flags' => 0,
       ]);
-      if($action==self::ACTION_CREATE) {
+      if ($action == self::ACTION_CREATE) {
         $info->isSourceEntity(TRUE);
       }
-      $meta_infos[$this->id]  = $info;
+      $meta_infos[$this->id] = $info;
     }
 
-    if($exported) {
-      if($action==self::ACTION_CREATE) {
+    if ($exported) {
+      if ($action == self::ACTION_CREATE) {
         $action = self::ACTION_UPDATE;
       }
     }
     else {
-      if($action==self::ACTION_UPDATE) {
+      if ($action == self::ACTION_UPDATE) {
         $action = self::ACTION_CREATE;
       }
     }
 
-    // If the entity didn't change, it doesn't have to be re-exported
-    if( $exported && $exported>=$export && $reason!=self::EXPORT_FORCED &&
-      $action!=self::ACTION_DELETE &&
-      empty($deletedTranslations[$entity->getEntityTypeId()][$entity->uuid()]) ) {
+    // If the entity didn't change, it doesn't have to be re-exported.
+    if ($exported && $exported >= $export && $reason != self::EXPORT_FORCED &&
+      $action != self::ACTION_DELETE &&
+      empty($deletedTranslations[$entity->getEntityTypeId()][$entity->uuid()])) {
       return TRUE;
     }
 
@@ -933,15 +939,15 @@ class DrupalContentSync extends ConfigEntityBase implements DrupalContentSyncInt
       throw new SyncException(SyncException::CODE_EXPORT_REQUEST_FAILED);
     }
 
-    foreach($meta_infos as $id=>$info) {
-      if($info) {
-        if($id==$this->id) {
-          if(!$info->getLastExport() && !$info->getLastImport()) {
+    foreach ($meta_infos as $id => $info) {
+      if ($info) {
+        if ($id == $this->id) {
+          if (!$info->getLastExport() && !$info->getLastImport()) {
             $info->set('source_url', $body['url']);
           }
         }
         $info->setLastExport($export);
-        if($action==self::ACTION_DELETE) {
+        if ($action == self::ACTION_DELETE) {
           $info->isDeleted(TRUE);
         }
         $info->save();

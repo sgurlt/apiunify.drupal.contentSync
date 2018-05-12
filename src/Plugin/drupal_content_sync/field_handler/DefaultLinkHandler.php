@@ -39,7 +39,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
       return FALSE;
     }
 
-    if($merge_only) {
+    if ($merge_only) {
       return FALSE;
     }
 
@@ -58,8 +58,8 @@ class DefaultLinkHandler extends FieldHandlerBase {
             $result[] = [
               'uri' => 'entity:' . $reference->getEntityTypeId() . '/' . $reference->id(),
             ];
-            $request->setField('enabled', [['value'=>1]]);
-            $entity->set( 'enabled', 1 );
+            $request->setField('enabled', [['value' => 1]]);
+            $entity->set('enabled', 1);
           }
           // Menu items are created before the node as they are embedded
           // entities. For the link to work however the node must already

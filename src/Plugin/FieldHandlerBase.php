@@ -159,7 +159,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
       return FALSE;
     }
 
-    if($merge_only) {
+    if ($merge_only) {
       return FALSE;
     }
 

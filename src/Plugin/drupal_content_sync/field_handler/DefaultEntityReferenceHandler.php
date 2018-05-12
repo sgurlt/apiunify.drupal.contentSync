@@ -51,7 +51,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       ],
     ];
 
-    if($this->fieldDefinition->getFieldStorageDefinition()->isMultiple()) {
+    if ($this->fieldDefinition->getFieldStorageDefinition()->isMultiple()) {
       $options['merge_local_changes'] = [
         '#type' => 'checkbox',
         '#title' => 'Merge local changes',
@@ -88,9 +88,9 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     $storage = $entityTypeManager
       ->getStorage($reference_type);
 
-    $merge  = !empty($this->settings['handler_settings']['merge_local_changes']);
+    $merge = !empty($this->settings['handler_settings']['merge_local_changes']);
 
-    if(!$merge && $merge_only) {
+    if (!$merge && $merge_only) {
       return FALSE;
     }
 
@@ -117,11 +117,11 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       }
       $overwrite_ids = $reference_ids;
 
-      if($merge && $merge_only) {
-        $last_overwrite_values  = $request->getMetaData(['field',$this->fieldName,'last_overwrite_values']);
-        $last_imported_order    = $request->getMetaData(['field',$this->fieldName,'last_imported_values']);
-        $previous = $entity->get($this->fieldName)->getValue();
-        $previous_ids = [];
+      if ($merge && $merge_only) {
+        $last_overwrite_values     = $request->getMetaData(['field', $this->fieldName, 'last_overwrite_values']);
+        $last_imported_order       = $request->getMetaData(['field', $this->fieldName, 'last_imported_values']);
+        $previous                  = $entity->get($this->fieldName)->getValue();
+        $previous_ids              = [];
         $previous_id_to_definition = [];
         foreach ($previous as $value) {
           if (empty($value['target_id'])) {
@@ -133,7 +133,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
 
         // Check if there actually are any local overrides => otherwise just
         // overwrite local references with new references and new order.
-        if(!is_null($last_imported_order)) {
+        if (!is_null($last_imported_order)) {
           $merged     = [];
           $merged_ids = [];
 
@@ -148,7 +148,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
             // Removed from remote => remove locally.
             if (!in_array($target_id, $ids)) {
               $info = DrupalContentSyncMetaInformation::getInfoForEntity($reference->getEntityTypeId(), $reference->uuid(), $this->sync->api)[$this->sync->id];
-              // But only if it was actually imported
+              // But only if it was actually imported.
               if ($info && !$info->isSourceEntity()) {
                 continue;
               }
@@ -158,59 +158,59 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
             $merged_ids[] = $target_id;
           }
 
-          // Next add all newly added items where they fit best
-          if(count($reference_ids)) {
-            for ($i=0; $i<count($reference_ids); $i++) {
-              $def  = $reference_ids[$i];
-              $id   = $def['target_id'];
+          // Next add all newly added items where they fit best.
+          if (count($reference_ids)) {
+            for ($i = 0; $i < count($reference_ids); $i++) {
+              $def = $reference_ids[$i];
+              $id = $def['target_id'];
               // Already present? Ignore.
               if (in_array($id, $merged_ids)) {
                 continue;
               }
 
               // Deleted locally? Ignore.
-              if(in_array($def,$last_overwrite_values)) {
+              if (in_array($def, $last_overwrite_values)) {
                 continue;
               }
 
               // Get the index of the item before this one, so we can add ours
               // after it. If this doesn't work, it will be the first item
               // in the new item set.
-              $n = $i-1;
+              $n = $i - 1;
               $index = FALSE;
-              while($index===FALSE && $n>=0) {
+              while ($index === FALSE && $n >= 0) {
                 $index = array_search($reference_ids[$n]['target_id'], $merged_ids);
                 $n--;
               }
 
-              // First and unfound come first
-              if($i===0 || $index===FALSE) {
+              // First and unfound come first.
+              if ($i === 0 || $index === FALSE) {
                 array_unshift($merged, $def);
-                array_unshift($merged_ids,$id);
+                array_unshift($merged_ids, $id);
                 continue;
               }
-              // Everything else comes behind the last item that exists
-              array_splice($merged,$index+1,0,[$def]);
-              array_splice($merged_ids,$index+1,0,$id);
+              // Everything else comes behind the last item that exists.
+              array_splice($merged, $index + 1, 0, [$def]);
+              array_splice($merged_ids, $index + 1, 0, $id);
             }
           }
 
-          $reference_ids  = $merged;
-          $ids            = $merged_ids;
+          $reference_ids = $merged;
+          $ids           = $merged_ids;
         }
       }
 
-      if(!$merge || $overwrite_ids!==$last_overwrite_values) {
-        $entity->set($this->fieldName, count($reference_ids)?$reference_ids:NULL);
+      if (!$merge || $overwrite_ids !== $last_overwrite_values) {
+        $entity->set($this->fieldName, count($reference_ids) ? $reference_ids : NULL);
         $request->setMetaData([
           'field',
           $this->fieldName,
-          'last_imported_values'
+          'last_imported_values',
         ], $ids);
         $request->setMetaData([
           'field',
           $this->fieldName,
-          'last_overwrite_values'
+          'last_overwrite_values',
         ], $overwrite_ids);
       }
     }
@@ -252,7 +252,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
         continue;
       }
 
-      $target_id      = $value['target_id'];
+      $target_id = $value['target_id'];
       $reference = $storage
         ->load($target_id);
 

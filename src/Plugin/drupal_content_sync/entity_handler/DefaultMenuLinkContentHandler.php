@@ -42,7 +42,7 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
    * @inheritdoc
    */
   public function getHandlerSettings() {
-    $menus  = menu_ui_get_menus();
+    $menus = menu_ui_get_menus();
     return [
       'ignore_unpublished' => [
         '#type' => 'checkbox',
@@ -71,23 +71,23 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
       }
     }
 
-    if(!empty($this->settings['handler_settings']['restrict_menus'])) {
+    if (!empty($this->settings['handler_settings']['restrict_menus'])) {
       $menu = $request->getField('menu_name')[0]['value'];
-      if(empty($this->settings['handler_settings']['restrict_menus'][$menu])) {
+      if (empty($this->settings['handler_settings']['restrict_menus'][$menu])) {
         return TRUE;
       }
     }
 
     $link = $request->getField('link');
-    if(isset($link[0]['uri'])) {
-      $uri  = $link[0]['uri'];
+    if (isset($link[0]['uri'])) {
+      $uri = $link[0]['uri'];
       preg_match('/^internal:/([a-z_0-9]+)\/([a-z0-9-]+)$/', $uri, $found);
-      if(!empty($found)) {
-        $request->setField('enabled',[['value'=>0]]);
+      if (!empty($found)) {
+        $request->setField('enabled', [['value' => 0]]);
       }
     }
-    elseif(!empty($link[0][ApiUnifyRequest::ENTITY_TYPE_KEY]) && !empty($link[0][ApiUnifyRequest::UUID_KEY])) {
-      $request->setField('enabled',[['value'=>0]]);
+    elseif (!empty($link[0][ApiUnifyRequest::ENTITY_TYPE_KEY]) && !empty($link[0][ApiUnifyRequest::UUID_KEY])) {
+      $request->setField('enabled', [['value' => 0]]);
     }
 
     return parent::ignoreImport($request, $is_clone, $reason, $action);
@@ -104,15 +104,15 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
       return TRUE;
     }
 
-    if(!empty($this->settings['handler_settings']['restrict_menus'])) {
+    if (!empty($this->settings['handler_settings']['restrict_menus'])) {
       $menu = $entity->getMenuName();
-      if(empty($this->settings['handler_settings']['restrict_menus'][$menu])) {
+      if (empty($this->settings['handler_settings']['restrict_menus'][$menu])) {
         return TRUE;
       }
     }
 
     $uri = $entity->get('link')->getValue()[0]['uri'];
-    if(substr($uri,0,7)=='entity:') {
+    if (substr($uri, 0, 7) == 'entity:') {
       preg_match('/^entity:(.*)\/(\d*)$/', $uri, $found);
       // This means we're already dealing with a UUID that has not been resolved
       // locally yet. So there's no sense in exporting this back to the pool.
@@ -125,25 +125,25 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
         $entity_manager   = \Drupal::entityTypeManager();
         $reference        = $entity_manager->getStorage($link_entity_type)
           ->load($link_entity_id);
-        // Dead reference > ignore
-        if(empty($reference)) {
+        // Dead reference > ignore.
+        if (empty($reference)) {
           return TRUE;
         }
 
-        // Sync not supported > Ignore
+        // Sync not supported > Ignore.
         if (!$this->sync->supportsEntity($reference)) {
           return TRUE;
         }
 
-        $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity($link_entity_type,$reference->uuid(),$this->sync->api);
+        $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity($link_entity_type, $reference->uuid(), $this->sync->api);
         $exported   = FALSE;
-        foreach($meta_infos as $sync=>$info) {
-          if(!$info || !$info->getLastExport()) {
+        foreach ($meta_infos as $sync => $info) {
+          if (!$info || !$info->getLastExport()) {
             continue;
           }
           $exported = TRUE;
         }
-        if(!$exported && !$this->sync->isExporting($link_entity_type,$reference->uuid())) {
+        if (!$exported && !$this->sync->isExporting($link_entity_type, $reference->uuid())) {
           return TRUE;
         }
       }

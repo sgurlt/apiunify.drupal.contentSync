@@ -7,7 +7,6 @@ use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Driver\Exception\Exception;
 
 /**
  * Defines the Sync entity entity.
@@ -32,11 +31,11 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
 
   use EntityChangedTrait;
 
-  const FLAG_CLONED               = 0x00000001;
-  const FLAG_DELETED              = 0x00000002;
-  const FLAG_USER_ALLOWED_EXPORT  = 0x00000004;
-  const FLAG_EDIT_OVERRIDE        = 0x00000008;
-  const FLAG_IS_SOURCE_ENTITY     = 0x00000010;
+  const FLAG_CLONED              = 0x00000001;
+  const FLAG_DELETED             = 0x00000002;
+  const FLAG_USER_ALLOWED_EXPORT = 0x00000004;
+  const FLAG_EDIT_OVERRIDE       = 0x00000008;
+  const FLAG_IS_SOURCE_ENTITY    = 0x00000010;
 
   /**
    * {@inheritdoc}
@@ -66,19 +65,22 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * The list will use the sync config ID of the meta info as key. If a sync
    * config doesn't have a meta information entity yet, the value will be NULL.
    *
-   * @param string $entity_type The entity type ID.
-   * @param string $entity_uuid The entity UUID.
-   * @param string $api_id Optional api_id to filter by
+   * @param string $entity_type
+   *   The entity type ID.
+   * @param string $entity_uuid
+   *   The entity UUID.
+   * @param string $api_id
+   *   Optional api_id to filter by.
    *
    * @return \Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation[]
    */
-  public static function getInfoForEntity($entity_type, $entity_uuid, $api_id=NULL) {
-    // Fill with NULL values by default
-    $result   = [];
-    $configs  = $api_id ?
+  public static function getInfoForEntity($entity_type, $entity_uuid, $api_id = NULL) {
+    // Fill with NULL values by default.
+    $result = [];
+    $configs = $api_id ?
       DrupalContentSync::getSynchronizationsByApi($api_id) :
       DrupalContentSync::getAll();
-    foreach($configs as $sync) {
+    foreach ($configs as $sync) {
       $result[$sync->id] = NULL;
     }
 
@@ -92,9 +94,9 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
         'entity_uuid' => $entity_uuid,
       ]);
 
-    // Now extend with existing meta information entities
-    foreach($entities as $info) {
-      $result[ $info->getEntityTypeConfig() ] = $info;
+    // Now extend with existing meta information entities.
+    foreach ($entities as $info) {
+      $result[$info->getEntityTypeConfig()] = $info;
     }
 
     return $result;
@@ -327,25 +329,28 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
 
   /**
    * Get a previously saved key=>value pair.
+   *
    * @see self::setData()
    *
-   * @param string|string[] $key The key to retrieve
+   * @param string|string[] $key
+   *   The key to retrieve.
+   *
    * @return mixed Whatever you previously stored here or NULL if the key
    *   doesn't exist.
    */
   public function getData($key) {
-    $data     = $this->get('data')->getValue()[0];
+    $data    = $this->get('data')->getValue()[0];
     $storage = &$data;
 
-    if(!is_array($key)) {
-      $key  = [$key];
+    if (!is_array($key)) {
+      $key = [$key];
     }
 
-    foreach($key as $index) {
-      if(!isset($storage[$index])) {
+    foreach ($key as $index) {
+      if (!isset($storage[$index])) {
         return NULL;
       }
-      $storage  = &$storage[$index];
+      $storage = &$storage[$index];
     }
 
     return $storage;
@@ -354,28 +359,30 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
   /**
    * Set a key=>value pair.
    *
-   * @param string|string[] $key The key to set (for hierarchical usage, provide
+   * @param string|string[] $key
+   *   The key to set (for hierarchical usage, provide
    *   an array of indices.
-   * @param mixed $value The value to set. Must be a valid value for Drupal's
+   * @param mixed $value
+   *   The value to set. Must be a valid value for Drupal's
    *   "map" storage (so basic types that can be serialized).
    */
-  public function setData($key,$value) {
-    $data     = $this->get('data')->getValue()[0];
+  public function setData($key, $value) {
+    $data    = $this->get('data')->getValue()[0];
     $storage = &$data;
 
-    if(!is_array($key)) {
-      $key  = [$key];
+    if (!is_array($key)) {
+      $key = [$key];
     }
 
-    foreach($key as $index) {
-      if(!isset($storage[$index])) {
-        $storage[$index]  = [];
+    foreach ($key as $index) {
+      if (!isset($storage[$index])) {
+        $storage[$index] = [];
       }
-      $storage  = &$storage[$index];
+      $storage = &$storage[$index];
     }
 
-    $storage  = $value;
-    $this->set('data',$data);
+    $storage = $value;
+    $this->set('data', $data);
   }
 
   /**

@@ -39,7 +39,7 @@ class DefaultFileHandler extends FieldHandlerBase {
       return FALSE;
     }
 
-    if($merge_only) {
+    if ($merge_only) {
       return FALSE;
     }
 

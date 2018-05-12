@@ -35,7 +35,7 @@ class DefaultEntityHandler extends EntityHandlerBase {
       'node',
       'menu_link_content',
     ];
-    return !in_array($entity_type, $forbidden );
+    return !in_array($entity_type, $forbidden);
   }
 
   /**

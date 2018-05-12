@@ -3,7 +3,6 @@
 namespace Drupal\drupal_content_sync;
 
 use Drupal\drupal_content_sync\Entity\DrupalContentSync;
-use Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation;
 use Drupal\drupal_content_sync\Exception\SyncException;
 
 /**
@@ -28,7 +27,7 @@ class ApiUnifyRequest {
    * @var array             $embedEntities          The entities that should be processed along with this entity. Each entry is an array consisting of all ApiUnifyRequest::_*KEY entries.
    * @var string            $activeLanguage         The currently active language.
    * @var array             $translationFieldValues The field values for the translation of the entity per language as key.
-   * @var DrupalContentSyncMetaInformation $meta    The meta information for this entity and sync.
+   * @var \Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation $meta    The meta information for this entity and sync.
    */
   protected $sync, $entityType, $bundle, $uuid, $fieldValues, $embedEntities, $activeLanguage, $translationFieldValues, $meta;
 
@@ -65,13 +64,13 @@ class ApiUnifyRequest {
    *   {@see ApiUnifyRequest::$bundle}.
    * @param string $uuid
    *   {@see ApiUnifyRequest::$uuid}.
-   * @param DrupalContentSyncMetaInformation $meta
+   * @param \Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation $meta
    *   The meta information for this entity and sync.
    * @param array $data
    *   NULL for exports or the data provided from API Unify for imports.
    *   Format is the same as in self::getData.
    */
-  public function __construct(DrupalContentSync $sync, $entity_type, $bundle, $uuid, $meta=NULL, $data = NULL) {
+  public function __construct(DrupalContentSync $sync, $entity_type, $bundle, $uuid, $meta = NULL, $data = NULL) {
     $this->sync       = $sync;
     $this->entityType = $entity_type;
     $this->bundle     = $bundle;
@@ -111,7 +110,8 @@ class ApiUnifyRequest {
    *
    * @see DrupalContentSyncMetaInformation::getData()
    *
-   * @param string|string[] $key The key to retrieve.
+   * @param string|string[] $key
+   *   The key to retrieve.
    *
    * @return mixed Whatever you previously stored here.
    */
@@ -124,17 +124,19 @@ class ApiUnifyRequest {
    *
    * @see DrupalContentSyncMetaInformation::setData()
    *
-   * @param string|string[] $key The key to store the data against. Especially
+   * @param string|string[] $key
+   *   The key to store the data against. Especially
    *   field handlers should use nested keys like ['field','[name]','[key]'].
-   * @param mixed $value Whatever simple value you'd like to store.
+   * @param mixed $value
+   *   Whatever simple value you'd like to store.
    *
    * @return bool
    */
-  public function setMetaData($key,$value) {
-    if(!$this->meta) {
+  public function setMetaData($key, $value) {
+    if (!$this->meta) {
       return FALSE;
     }
-    $this->meta->setData($key,$value);
+    $this->meta->setData($key, $value);
     return TRUE;
   }
 
