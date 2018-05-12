@@ -16,7 +16,7 @@ use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\Core\Url;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Entity\ContentEntityDeleteForm;
-use Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation;
+use Drupal\drupal_content_sync\Entity\MetaInformation;
 use Drupal\drupal_content_sync\Entity\Pool;
 
 /**
@@ -80,7 +80,7 @@ function drupal_content_sync_form_alter(&$form, FormStateInterface $form_state, 
           Flow::ACTION_DELETE
         );
         if ($sync) {
-          $info = DrupalContentSyncMetaInformation::getInfoForEntity(
+          $info = MetaInformation::getInfoForEntity(
             $entity->getEntityTypeId(),
             $entity->uuid()
           )[$sync->id];
@@ -255,7 +255,7 @@ function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $a
           $action
         );
         if ($sync) {
-          $info = DrupalContentSyncMetaInformation::getInfoForEntity(
+          $info = MetaInformation::getInfoForEntity(
             $entity->getEntityTypeId(),
             $entity->uuid()
           )[$sync->id];
@@ -435,7 +435,7 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
     return;
   }
 
-  $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity(
+  $meta_infos = MetaInformation::getInfoForEntity(
     $entity->getEntityTypeId(),
     $entity->uuid()
   );
@@ -522,8 +522,8 @@ function _drupal_content_sync_form_alter_disabled_fields(&$form, FormStateInterf
 }
 
 /**
- * Update the DrupalContentSyncMetaInformation for the given entity, setting
- * the DrupalContentSyncMetaInformation::FLAG_EDIT_OVERRIDE flag accordingly.
+ * Update the MetaInformation for the given entity, setting
+ * the MetaInformation::FLAG_EDIT_OVERRIDE flag accordingly.
  *
  * @param array $form
  * @param \Drupal\Core\Form\FormStateInterface $form_state
@@ -535,7 +535,7 @@ function _drupal_content_sync_override_entity_submit(array $form, FormStateInter
     ->getFormObject()
     ->getEntity();
 
-  $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity(
+  $meta_infos = MetaInformation::getInfoForEntity(
     $entity->getEntityTypeId(),
     $entity->uuid()
   );

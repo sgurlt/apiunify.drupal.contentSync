@@ -9,14 +9,14 @@ use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityTypeInterface;
 
 /**
- * Defines the Sync entity entity.
+ * Defines meta information entity type.
  *
- * @ingroup drupal_content_sync_meta_info
+ * @ingroup dcs_meta_info
  *
  * @ContentEntityType(
- *   id = "drupal_content_sync_meta_info",
- *   label = @Translation("Drupal Content Sync Meta Info"),
- *   base_table = "drupal_content_sync_meta_info",
+ *   id = "dcs_meta_info",
+ *   label = @Translation("Meta Information"),
+ *   base_table = "dcs_meta_info",
  *   entity_keys = {
  *     "id" = "id",
  *     "entity_type_config" = "entity_type_config",
@@ -27,7 +27,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *   },
  * )
  */
-class DrupalContentSyncMetaInformation extends ContentEntityBase implements DrupalContentSyncMetaInformationInterface {
+class MetaInformation extends ContentEntityBase implements MetaInformationInterface {
 
   use EntityChangedTrait;
 
@@ -72,7 +72,7 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
    * @param string $api_id
    *   Optional api_id to filter by.
    *
-   * @return \Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation[]
+   * @return \Drupal\drupal_content_sync\Entity\MetaInformation[]
    */
   public static function getInfoForEntity($entity_type, $entity_uuid, $api_id = NULL) {
     // Fill with NULL values by default.
@@ -85,10 +85,10 @@ class DrupalContentSyncMetaInformation extends ContentEntityBase implements Drup
     }
 
     /**
-     * @var \Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation[] $entities
+     * @var \Drupal\drupal_content_sync\Entity\MetaInformation[] $entities
      */
     $entities = \Drupal::entityTypeManager()
-      ->getStorage('drupal_content_sync_meta_info')
+      ->getStorage('dcs_meta_info')
       ->loadByProperties([
         'entity_type' => $entity_type,
         'entity_uuid' => $entity_uuid,

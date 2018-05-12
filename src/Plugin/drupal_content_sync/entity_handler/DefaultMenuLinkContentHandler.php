@@ -5,7 +5,7 @@ namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Entity\Flow;
-use Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation;
+use Drupal\drupal_content_sync\Entity\MetaInformation;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 
 /**
@@ -135,7 +135,7 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
           return TRUE;
         }
 
-        $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity($link_entity_type, $reference->uuid(), $this->sync->api);
+        $meta_infos = MetaInformation::getInfoForEntity($link_entity_type, $reference->uuid(), $this->sync->api);
         $exported   = FALSE;
         foreach ($meta_infos as $sync => $info) {
           if (!$info || !$info->getLastExport()) {

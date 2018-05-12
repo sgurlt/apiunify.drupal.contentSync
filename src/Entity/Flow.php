@@ -347,7 +347,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    * @return bool
    */
   public static function isLocalDeletionAllowed($entity) {
-    $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity(
+    $meta_infos = MetaInformation::getInfoForEntity(
       $entity->getEntityTypeId(),
       $entity->uuid()
     );
@@ -588,7 +588,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
   public function importEntity($entity_type_name, $entity_bundle, array $data, $is_clone, $reason, $action = self::ACTION_CREATE) {
     $import     = time();
     $uuid       = $data['uuid'];
-    $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity($entity_type_name, $uuid, $this->api);
+    $meta_infos = MetaInformation::getInfoForEntity($entity_type_name, $uuid, $this->api);
     foreach ($meta_infos as $info) {
       if (!$info) {
         continue;
@@ -603,7 +603,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
 
     $info = $meta_infos[$this->id];
     if (!$info) {
-      $info = DrupalContentSyncMetaInformation::create([
+      $info = MetaInformation::create([
         'entity_type_config' => $this->id,
         'entity_type' => $entity_type_name,
         'entity_uuid' => $uuid,
@@ -664,7 +664,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    * @param string $reason
    * @param string $action
-   * @param DrupalContentSyncMetaInformation $meta
+   * @param MetaInformation $meta
    *   The meta information for this entity and sync, if any.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
@@ -784,7 +784,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
     $entity_bundle = $entity->bundle();
     $entity_uuid   = $entity->uuid();
 
-    $meta_infos = DrupalContentSyncMetaInformation::getInfoForEntity($entity_type, $entity_uuid, $this->api);
+    $meta_infos = MetaInformation::getInfoForEntity($entity_type, $entity_uuid, $this->api);
     $exported   = FALSE;
     foreach ($meta_infos as $info) {
       if (!$info) {
@@ -799,7 +799,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
 
     $info = $meta_infos[$this->id];
     if (!$info) {
-      $info = DrupalContentSyncMetaInformation::create([
+      $info = MetaInformation::create([
         'entity_type_config' => $this->id,
         'entity_type' => $entity_type,
         'entity_uuid' => $entity_uuid,

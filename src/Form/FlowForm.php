@@ -204,7 +204,7 @@ class FlowForm extends EntityForm {
     $entity_types = $this->bundleInfoService->getAllBundleInfo();
 
     // Remove the Drupal Content Sync Meta Info entity type form the array.
-    unset($entity_types['drupal_content_sync_meta_info']);
+    unset($entity_types['dcs_meta_info']);
 
     $display_modes = $this->entityTypeManager
       ->getStorage('entity_view_display')

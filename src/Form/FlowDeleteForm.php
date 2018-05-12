@@ -7,7 +7,7 @@ use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation;
+use Drupal\drupal_content_sync\Entity\MetaInformation;
 
 /**
  * Builds the form to delete an Flow.
@@ -66,11 +66,11 @@ class FlowDeleteForm extends EntityConfirmFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Delete config related meta entities.
-    $meta_entities = \Drupal::entityTypeManager()->getStorage('drupal_content_sync_meta_info')
+    $meta_entities = \Drupal::entityTypeManager()->getStorage('dcs_meta_info')
       ->loadByProperties(['entity_type_config' => $this->getEntity()->id()]);
 
     foreach ($meta_entities as $meta_entity) {
-      $entity = DrupalContentSyncMetaInformation::load($meta_entity->id());
+      $entity = MetaInformation::load($meta_entity->id());
       $entity->delete();
     }
 

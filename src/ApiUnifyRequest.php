@@ -27,7 +27,7 @@ class ApiUnifyRequest {
    * @var array             $embedEntities          The entities that should be processed along with this entity. Each entry is an array consisting of all ApiUnifyRequest::_*KEY entries.
    * @var string            $activeLanguage         The currently active language.
    * @var array             $translationFieldValues The field values for the translation of the entity per language as key.
-   * @var \Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation $meta    The meta information for this entity and sync.
+   * @var \Drupal\drupal_content_sync\Entity\MetaInformation $meta    The meta information for this entity and sync.
    */
   protected $sync, $entityType, $bundle, $uuid, $fieldValues, $embedEntities, $activeLanguage, $translationFieldValues, $meta;
 
@@ -64,7 +64,7 @@ class ApiUnifyRequest {
    *   {@see ApiUnifyRequest::$bundle}.
    * @param string $uuid
    *   {@see ApiUnifyRequest::$uuid}.
-   * @param \Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation $meta
+   * @param \Drupal\drupal_content_sync\Entity\MetaInformation $meta
    *   The meta information for this entity and sync.
    * @param array $data
    *   NULL for exports or the data provided from API Unify for imports.
@@ -108,7 +108,7 @@ class ApiUnifyRequest {
   /**
    * Retrieve a value you stored before via ::setMetaData().
    *
-   * @see DrupalContentSyncMetaInformation::getData()
+   * @see MetaInformation::getData()
    *
    * @param string|string[] $key
    *   The key to retrieve.
@@ -122,7 +122,7 @@ class ApiUnifyRequest {
   /**
    * Store a key=>value pair for later retrieval.
    *
-   * @see DrupalContentSyncMetaInformation::setData()
+   * @see MetaInformation::setData()
    *
    * @param string|string[] $key
    *   The key to store the data against. Especially

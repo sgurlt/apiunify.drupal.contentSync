@@ -1,3 +1,4 @@
+# DCS - Introduction
 entity.drupal_content_sync.introduction:
   path: '/admin/config/services/drupal_content_sync/introduction'
   defaults:
@@ -6,7 +7,7 @@ entity.drupal_content_sync.introduction:
   requirements:
     _permission: 'administer site configuration'
 
-# DCS Flows
+# DCS - Flows
 entity.dcs_flow.collection:
   path: '/admin/config/services/drupal_content_sync/flow'
   defaults:
@@ -39,7 +40,7 @@ entity.dcs_flow.delete_form:
   requirements:
     _permission: 'administer site configuration'
 
-# DCS Pools
+# DCS - Pools
 entity.dcs_pool.collection:
   path: '/admin/config/services/drupal_content_sync/pool'
   defaults:
@@ -72,6 +73,7 @@ entity.dcs_pool.delete_form:
   requirements:
     _permission: 'administer site configuration'
 
+# DCS - Push changes
 drupal_content_sync.publish_changes:
   path: '/drupal-content-sync/publish-changes/{sync_id}/{entity_type}/{entity}'
   defaults:

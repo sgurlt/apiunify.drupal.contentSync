@@ -6,7 +6,7 @@ use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
 use Drupal\drupal_content_sync\Entity\Flow;
-use Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation;
+use Drupal\drupal_content_sync\Entity\MetaInformation;
 use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\menu_link_content\Plugin\Menu\MenuLinkContent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -207,7 +207,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     else {
       $behavior = $this->settings['import_updates'];
       if ($behavior == Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
-        $meta_info = DrupalContentSyncMetaInformation::getInfoForEntity(
+        $meta_info = MetaInformation::getInfoForEntity(
           $request->getEntityType(),
           $request->getUuid(),
           $this->sync->api)[$this->sync->id];
@@ -397,7 +397,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     if ($action == Flow::ACTION_UPDATE) {
       $behavior = $this->settings['import_updates'];
       if ($behavior == Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
-        $meta_info = DrupalContentSyncMetaInformation::getInfoForEntity(
+        $meta_info = MetaInformation::getInfoForEntity(
           $request->getEntityType(),
           $request->getUuid(),
           $this->sync->api)[$this->sync->id];

@@ -4,7 +4,7 @@ namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\RevisionableInterface;
-use Drupal\drupal_content_sync\Entity\DrupalContentSyncMetaInformation;
+use Drupal\drupal_content_sync\Entity\MetaInformation;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\ApiUnifyRequest;
@@ -147,7 +147,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
 
             // Removed from remote => remove locally.
             if (!in_array($target_id, $ids)) {
-              $info = DrupalContentSyncMetaInformation::getInfoForEntity($reference->getEntityTypeId(), $reference->uuid(), $this->sync->api)[$this->sync->id];
+              $info = MetaInformation::getInfoForEntity($reference->getEntityTypeId(), $reference->uuid(), $this->sync->api)[$this->sync->id];
               // But only if it was actually imported.
               if ($info && !$info->isSourceEntity()) {
                 continue;
