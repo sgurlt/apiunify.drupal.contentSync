@@ -133,10 +133,15 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
   // https://www.drupal.org/project/paragraphs/issues/2868155#comment-12610258
   $entity_type = 'paragraph';
   $bundle = $element['#paragraph_type'];
-  $selectable_exportable_flows = Pool::getSelectablePools($entity_type, $bundle);
 
-  if (!empty($selectable_exportable_flows)) {
-    _drupal_content_sync_add_export_pool_form($element['subform'], $selectable_exportable_flows);
+  // If not bundle is given, the previous mentioned commit is
+  // not added to the project.
+  if (!is_null($bundle )) {
+    $selectable_exportable_flows = Pool::getSelectablePools($entity_type, $bundle);
+
+    if (!empty($selectable_exportable_flows)) {
+      _drupal_content_sync_add_export_pool_form($element['subform'], $selectable_exportable_flows);
+    }
   }
 }
 
