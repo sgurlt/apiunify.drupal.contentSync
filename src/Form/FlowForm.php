@@ -8,15 +8,15 @@ use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
-use Drupal\drupal_content_sync\ApiUnifyConfig;
 use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\Pool;
+use Drupal\drupal_content_sync\ExportIntent;
+use Drupal\drupal_content_sync\ImportIntent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager;
 use Drupal\drupal_content_sync\Plugin\Type\FieldHandlerPluginManager;
 use Drupal\Core\Config\ConfigFactory;
-use GuzzleHttp\Client;
 
 /**
  * Form handler for the Flow add and edit forms.
@@ -28,10 +28,6 @@ class FlowForm extends EntityForm {
    *    The name of the view mode that must be present to allow teaser previews.
    */
   const DRUPAL_CONTENT_SYNC_PREVIEW_FIELD = 'drupal_content_sync_preview';
-
-  const POOL_FORBID = 'forbid';
-  const POOL_ALLOW = 'allow';
-  const POOL_FORCE = 'force';
 
   /**
    * @var \Drupal\Core\Entity\EntityTypeManager
@@ -73,13 +69,6 @@ class FlowForm extends EntityForm {
   protected $configFactory;
 
   /**
-   * The http client to connect to API Unify.
-   *
-   * @var \GuzzleHttp\Client
-   */
-  protected $httpClient;
-
-  /**
    * Constructs an object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManager $entity_type_manager
@@ -105,8 +94,7 @@ class FlowForm extends EntityForm {
                               EntityHandlerPluginManager $entity_plugin_manager,
                               FieldHandlerPluginManager $field_plugin_manager,
                               MessengerInterface $messenger,
-                              ConfigFactory $config_factory,
-                              Client $http_client) {
+                              ConfigFactory $config_factory) {
     $this->entityTypeManager = $entity_type_manager;
     $this->bundleInfoService = $bundle_info_service;
     $this->entityFieldManager = $entity_field_manager;
@@ -114,7 +102,6 @@ class FlowForm extends EntityForm {
     $this->fieldPluginManager = $field_plugin_manager;
     $this->messenger = $messenger;
     $this->configFactory = $config_factory;
-    $this->httpClient = $http_client;
   }
 
   /**
@@ -128,8 +115,7 @@ class FlowForm extends EntityForm {
       $container->get('plugin.manager.dcs_entity_handler'),
       $container->get('plugin.manager.dcs_field_handler'),
       $container->get('messenger'),
-      $container->get('config.factory'),
-      $container->get('http_client')
+      $container->get('config.factory')
     );
   }
 
@@ -152,53 +138,56 @@ class FlowForm extends EntityForm {
    */
   public function form(array $form, FormStateInterface $form_state) {
     $export_option_labels = [
-      Flow::EXPORT_DISABLED => $this->t('Disabled')->render(),
-      Flow::EXPORT_AUTOMATICALLY => $this->t('All')->render(),
-      Flow::EXPORT_AS_DEPENDENCY => $this->t('Referenced')->render(),
-      Flow::EXPORT_MANUALLY => $this->t('Manually')->render(),
+      ExportIntent::EXPORT_DISABLED => $this->t('Disabled')->render(),
+      ExportIntent::EXPORT_AUTOMATICALLY => $this->t('All')->render(),
+      ExportIntent::EXPORT_AS_DEPENDENCY => $this->t('Referenced')->render(),
+      ExportIntent::EXPORT_MANUALLY => $this->t('Manually')->render(),
     ];
     $export_option_labels_fields = [
-      Flow::EXPORT_DISABLED => $this->t('No')->render(),
-      Flow::EXPORT_AUTOMATICALLY => $this->t('Yes')->render(),
+      ExportIntent::EXPORT_DISABLED => $this->t('No')->render(),
+      ExportIntent::EXPORT_AUTOMATICALLY => $this->t('Yes')->render(),
     ];
 
     $import_option_labels = [
-      Flow::IMPORT_DISABLED => $this->t('Disabled')->render(),
-      Flow::IMPORT_AUTOMATICALLY => $this->t('All')->render(),
-      Flow::IMPORT_AS_DEPENDENCY => $this->t('Referenced')->render(),
-      Flow::IMPORT_MANUALLY => $this->t('Manually')->render(),
+      ImportIntent::IMPORT_DISABLED => $this->t('Disabled')->render(),
+      ImportIntent::IMPORT_AUTOMATICALLY => $this->t('All')->render(),
+      ImportIntent::IMPORT_AS_DEPENDENCY => $this->t('Referenced')->render(),
+      ImportIntent::IMPORT_MANUALLY => $this->t('Manually')->render(),
     ];
 
     $import_option_labels_fields = [
-      Flow::IMPORT_DISABLED => $this->t('No')->render(),
-      Flow::IMPORT_AUTOMATICALLY => $this->t('Yes')->render(),
+      ImportIntent::IMPORT_DISABLED => $this->t('No')->render(),
+      ImportIntent::IMPORT_AUTOMATICALLY => $this->t('Yes')->render(),
     ];
 
     $form = parent::form($form, $form_state);
 
     $form['#attached']['library'][] = 'drupal_content_sync/flow-form';
 
-    $sync_entity = $this->entity;
+    /**
+     * @var Flow $flow
+     */
+    $flow = $this->entity;
 
-    $def_sync_entities = $sync_entity->{'sync_entities'};
+    $def_sync_entities = $flow->{'sync_entities'};
 
     $form['name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Name'),
       '#maxlength' => 255,
-      '#default_value' => $sync_entity->label(),
+      '#default_value' => $flow->label(),
       '#description' => $this->t("An administrative name describing the workflow intended to be achieved with this synchronization."),
       '#required' => TRUE,
     ];
 
     $form['id'] = [
       '#type' => 'machine_name',
-      '#default_value' => $sync_entity->id(),
+      '#default_value' => $flow->id(),
       '#machine_name' => [
         'exists' => [$this, 'exist'],
         'source' => ['name'],
       ],
-      '#disabled' => !$sync_entity->isNew(),
+      '#disabled' => !$flow->isNew(),
     ];
 
     $entity_types = $this->bundleInfoService->getAllBundleInfo();
@@ -284,7 +273,7 @@ class FlowForm extends EntityForm {
               'import_deletion' => FALSE,
               'allow_local_deletion_of_import' => FALSE,
             ],
-            'import_updates' => 'force',
+            'import_updates' => ImportIntent::IMPORT_UPDATE_FORCE,
             'import_clone' => FALSE,
             'preview' => NULL,
             'display_name' => $this->t('@bundle', [
@@ -295,8 +284,8 @@ class FlowForm extends EntityForm {
             'pool_export_widget_type' => 'checkboxes',
           ];
           foreach ($pool_entities as $pool) {
-            $row_default_values['export_pools'][$pool->id()] = 'force';
-            $row_default_values['import_pools'][$pool->id()] = 'force';
+            $row_default_values['export_pools'][$pool->id()] = Pool::POOL_USAGE_FORCE;
+            $row_default_values['import_pools'][$pool->id()] = Pool::POOL_USAGE_FORCE;
           }
         }
         else {
@@ -344,7 +333,7 @@ class FlowForm extends EntityForm {
         $handler = NULL;
         if ($handler_id == 'ignore') {
           $export_options = [
-            Flow::EXPORT_DISABLED => $this->t('Disabled')->render(),
+            ExportIntent::EXPORT_DISABLED => $this->t('Disabled')->render(),
           ];
         }
         else {
@@ -391,7 +380,7 @@ class FlowForm extends EntityForm {
         }
         else {
           $import_options = [
-            Flow::IMPORT_DISABLED => $this->t('Disabled')->render(),
+            ImportIntent::IMPORT_DISABLED => $this->t('Disabled')->render(),
           ];
         }
 
@@ -400,9 +389,9 @@ class FlowForm extends EntityForm {
             '#type' => 'select',
             '#title' => $this->t($pool->label()),
             '#options' => [
-              self::POOL_FORCE => $this->t('Force'),
-              self::POOL_ALLOW => $this->t('Allow'),
-              self::POOL_FORBID => $this->t('Forbid'),
+              Pool::POOL_USAGE_FORCE => $this->t('Force'),
+              Pool::POOL_USAGE_ALLOW => $this->t('Allow'),
+              Pool::POOL_USAGE_FORBID => $this->t('Forbid'),
             ],
             '#default_value' => $row_default_values['export_pools'][$pool->id()],
           ];
@@ -438,9 +427,9 @@ class FlowForm extends EntityForm {
             '#type' => 'select',
             '#title' => $this->t($pool->label()),
             '#options' => [
-              self::POOL_FORCE => $this->t('Force'),
-              self::POOL_ALLOW => $this->t('Allow'),
-              self::POOL_FORBID => $this->t('Forbid'),
+              Pool::POOL_USAGE_FORCE => $this->t('Force'),
+              Pool::POOL_USAGE_ALLOW => $this->t('Allow'),
+              Pool::POOL_USAGE_FORBID => $this->t('Forbid'),
             ],
             '#default_value' => $row_default_values['import_pools'][$pool->id()],
           ];
@@ -461,10 +450,10 @@ class FlowForm extends EntityForm {
         $entity_bundle_row['import_updates'] = [
           '#type' => 'select',
           '#options' => [
-            Flow::IMPORT_UPDATE_FORCE => $this->t('Dismiss local changes'),
-            Flow::IMPORT_UPDATE_IGNORE => $this->t('Ignore updates completely'),
-            Flow::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING => $this->t('Forbid local changes and update'),
-            Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN => $this->t('Update unless overwritten locally'),
+            ImportIntent::IMPORT_UPDATE_FORCE => $this->t('Dismiss local changes'),
+            ImportIntent::IMPORT_UPDATE_IGNORE => $this->t('Ignore updates completely'),
+            ImportIntent::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING => $this->t('Forbid local changes and update'),
+            ImportIntent::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN => $this->t('Update unless overwritten locally'),
           ],
           '#default_value' => $row_default_values['import_updates'],
         ];
@@ -584,7 +573,7 @@ class FlowForm extends EntityForm {
 
             if ($handler_id == 'ignore') {
               $export_options = [
-                Flow::EXPORT_DISABLED => $this->t('No')->render(),
+                ExportIntent::EXPORT_DISABLED => $this->t('No')->render(),
               ];
             }
             else {
@@ -623,7 +612,7 @@ class FlowForm extends EntityForm {
               '#title_display' => 'invisible',
               '#disabled' => count($export_options) < 2,
               '#options' => $export_options,
-              '#default_value' => $field_default_values['export'] ? $field_default_values['export'] : (isset($export_options[Flow::EXPORT_AUTOMATICALLY]) ? Flow::EXPORT_AUTOMATICALLY : Flow::EXPORT_DISABLED),
+              '#default_value' => $field_default_values['export'] ? $field_default_values['export'] : (isset($export_options[ExportIntent::EXPORT_AUTOMATICALLY]) ? ExportIntent::EXPORT_AUTOMATICALLY : ExportIntent::EXPORT_DISABLED),
             ];
 
             $field_row['pool_export_widget_type'] = [
@@ -636,7 +625,7 @@ class FlowForm extends EntityForm {
 
             if ($handler_id == 'ignore') {
               $import_options = [
-                Flow::IMPORT_DISABLED => $this->t('No')->render(),
+                ImportIntent::IMPORT_DISABLED => $this->t('No')->render(),
               ];
             }
             else {
@@ -652,7 +641,7 @@ class FlowForm extends EntityForm {
               '#title_display' => 'invisible',
               '#options' => $import_options,
               '#disabled' => count($import_options) < 2,
-              '#default_value' => $field_default_values['import'] ? $field_default_values['import'] : (isset($import_options[Flow::IMPORT_AUTOMATICALLY]) ? Flow::IMPORT_AUTOMATICALLY : Flow::IMPORT_DISABLED),
+              '#default_value' => $field_default_values['import'] ? $field_default_values['import'] : (isset($import_options[ImportIntent::IMPORT_AUTOMATICALLY]) ? ImportIntent::IMPORT_AUTOMATICALLY : ImportIntent::IMPORT_DISABLED),
             ];
 
             $entity_bundle_row['import_deletion_settings']['import_deletion'] = [
@@ -717,46 +706,6 @@ class FlowForm extends EntityForm {
         $form[$field_key]['#value'] = $this->configFactory->get($config_name)->get($field_key);
         unset($form[$field_key]['#default_value']);
       }
-    }
-  }
-
-  /**
-   * Validate format of input fields and make sure the API Unify backend is
-   * accessible to actually update it.
-   *
-   * @param array $form
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    parent::validateForm($form, $form_state);
-
-    // Reference fields are only allowed to have "Force" or "Forbid" for their
-    // pool configurations.
-    // @ToDO: POOL_REFACTOR
-    return;
-    $api = $form_state->getValue('api');
-    if (!preg_match('@^([a-z0-9\-]+)$@', $api)) {
-      $form_state->setErrorByName('api', $this->t('Please only use letters, numbers and dashes.'));
-    }
-    if ($api == 'drupal' || $api == 'api-unify') {
-      $form_state->setErrorByName('api', $this->t('This name is reserved.'));
-    }
-
-    $site_id = $form_state->getValue('site_id');
-    if ($site_id == ApiUnifyConfig::POOL_SITE_ID) {
-      $form_state->setErrorByName('site_id', $this->t('This name is reserved.'));
-    }
-
-    $url    = $form_state->getValue('url');
-    $client = $this->httpClient;
-    try {
-      $response = $client->get($url . '/status');
-      if ($response->getStatusCode() != 200) {
-        $form_state->setErrorByName('url', $this->t('The backend did not respond with 200 OK. Please ask your technical contact person for support.'));
-      }
-    }
-    catch (\Exception $e) {
-      $form_state->setErrorByName('url', $this->t('The backend did not respond with 200 OK. Please ask your technical contact person for support. The error messages is @message', ['@message' => $e->getMessage()]));
     }
   }
 

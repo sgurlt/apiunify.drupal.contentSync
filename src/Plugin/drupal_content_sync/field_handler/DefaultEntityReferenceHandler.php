@@ -5,9 +5,11 @@ namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\drupal_content_sync\Entity\MetaInformation;
+use Drupal\drupal_content_sync\ExportIntent;
+use Drupal\drupal_content_sync\ImportIntent;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\Entity\Flow;
-use Drupal\drupal_content_sync\ApiUnifyRequest;
+use Drupal\drupal_content_sync\SyncIntent;
 use Drupal\Core\Field\FieldDefinitionInterface;
 
 /**
@@ -65,13 +67,19 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action, $merge_only) {
+  public function import(ImportIntent $intent) {
+    $action = $intent->getAction();
+    /**
+     * @var FieldableEntityInterface $entity
+     */
+    $entity = $intent->getEntity();
+
     // Deletion doesn't require any action on field basis for static data.
-    if ($action == Flow::ACTION_DELETE) {
+    if ($action == SyncIntent::ACTION_DELETE) {
       return FALSE;
     }
 
-    $data = $request->getField($this->fieldName);
+    $data = $intent->getField($this->fieldName);
 
     $entityFieldManager = \Drupal::service('entity_field.manager');
     $field_definitions = $entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
@@ -90,7 +98,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
 
     $merge = !empty($this->settings['handler_settings']['merge_local_changes']);
 
-    if (!$merge && $merge_only) {
+    if (!$merge && $intent->shouldMergeChanges()) {
       return FALSE;
     }
 
@@ -101,7 +109,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       $reference_ids = [];
       $ids = [];
       foreach ($data as $value) {
-        $reference = $request->loadEmbeddedEntity($value);
+        $reference = $intent->loadEmbeddedEntity($value);
         if ($reference) {
           $reference_data = [
             'target_id' => $reference->id(),
@@ -117,9 +125,9 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       }
       $overwrite_ids = $reference_ids;
 
-      if ($merge && $merge_only) {
-        $last_overwrite_values     = $request->getMetaData(['field', $this->fieldName, 'last_overwrite_values']);
-        $last_imported_order       = $request->getMetaData(['field', $this->fieldName, 'last_imported_values']);
+      if ($merge && $intent->shouldMergeChanges()) {
+        $last_overwrite_values     = $intent->getMetaData(['field', $this->fieldName, 'last_overwrite_values']);
+        $last_imported_order       = $intent->getMetaData(['field', $this->fieldName, 'last_imported_values']);
         $previous                  = $entity->get($this->fieldName)->getValue();
         $previous_ids              = [];
         $previous_id_to_definition = [];
@@ -147,7 +155,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
 
             // Removed from remote => remove locally.
             if (!in_array($target_id, $ids)) {
-              $info = MetaInformation::getInfoForEntity($reference->getEntityTypeId(), $reference->uuid(), $this->sync->api)[$this->sync->id];
+              $info = MetaInformation::getInfoForEntity($reference->getEntityTypeId(), $reference->uuid(), $intent->getFlow(), $intent->getPool());
               // But only if it was actually imported.
               if ($info && !$info->isSourceEntity()) {
                 continue;
@@ -202,12 +210,12 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
 
       if (!$merge || $overwrite_ids !== $last_overwrite_values) {
         $entity->set($this->fieldName, count($reference_ids) ? $reference_ids : NULL);
-        $request->setMetaData([
+        $intent->setMetaData([
           'field',
           $this->fieldName,
           'last_imported_values',
         ], $ids);
-        $request->setMetaData([
+        $intent->setMetaData([
           'field',
           $this->fieldName,
           'last_overwrite_values',
@@ -221,9 +229,15 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
+  public function export(ExportIntent $intent) {
+    $action = $intent->getAction();
+    /**
+     * @var FieldableEntityInterface $entity
+     */
+    $entity = $intent->getEntity();
+
     // Deletion doesn't require any action on field basis for static data.
-    if ($action == Flow::ACTION_DELETE) {
+    if ($action == SyncIntent::ACTION_DELETE) {
       return FALSE;
     }
 
@@ -256,15 +270,15 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       $reference = $storage
         ->load($target_id);
 
-      if (!$reference || $reference->uuid() == $request->getUuid()) {
+      if (!$reference || $reference->uuid() == $intent->getUuid()) {
         continue;
       }
 
       if ($export_referenced_entities) {
-        $result[] = $request->embedEntity($reference);
+        $result[] = $intent->embedEntity($reference);
       }
       else {
-        $result[] = $request->embedEntityDefinition(
+        $result[] = $intent->embedEntityDefinition(
           $reference->getEntityTypeId(),
           $reference->bundle(),
           $reference->uuid()
@@ -272,7 +286,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       }
     }
 
-    $request->setField($this->fieldName, $result);
+    $intent->setField($this->fieldName, $result);
 
     return TRUE;
   }

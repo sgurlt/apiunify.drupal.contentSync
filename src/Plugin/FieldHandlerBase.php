@@ -2,9 +2,9 @@
 
 namespace Drupal\drupal_content_sync\Plugin;
 
-use Drupal\Core\Entity\FieldableEntityInterface;
-use Drupal\drupal_content_sync\ApiUnifyRequest;
-use Drupal\drupal_content_sync\Entity\Flow;
+use Drupal\drupal_content_sync\ExportIntent;
+use Drupal\drupal_content_sync\ImportIntent;
+use Drupal\drupal_content_sync\SyncIntent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\PluginBase;
@@ -58,7 +58,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   /**
    * @var \Drupal\drupal_content_sync\Entity\Flow
    */
-  protected $sync;
+  protected $flow;
 
   /**
    * Constructs a Drupal\rest\Plugin\ResourceBase object.
@@ -82,7 +82,7 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
     $this->fieldName = $configuration['field_name'];
     $this->fieldDefinition = $configuration['field_definition'];
     $this->settings = $configuration['settings'];
-    $this->sync = $configuration['sync'];
+    $this->flow = $configuration['sync'];
   }
 
   /**
@@ -102,8 +102,8 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
    */
   public function getAllowedExportOptions() {
     return [
-      Flow::EXPORT_DISABLED,
-      Flow::EXPORT_AUTOMATICALLY,
+      ExportIntent::EXPORT_DISABLED,
+      ExportIntent::EXPORT_AUTOMATICALLY,
     ];
   }
 
@@ -112,8 +112,8 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
    */
   public function getAllowedImportOptions() {
     return [
-      Flow::IMPORT_DISABLED,
-      Flow::IMPORT_AUTOMATICALLY,
+      ImportIntent::IMPORT_DISABLED,
+      ImportIntent::IMPORT_AUTOMATICALLY,
     ];
   }
 
@@ -153,21 +153,24 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   /**
    * @inheritdoc
    */
-  public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action, $merge_only) {
+  public function import(ImportIntent $intent) {
+    $action = $intent->getAction();
+    $entity = $intent->getEntity();
+
     // Deletion doesn't require any action on field basis for static data.
-    if ($action == Flow::ACTION_DELETE) {
+    if ($action == SyncIntent::ACTION_DELETE) {
       return FALSE;
     }
 
-    if ($merge_only) {
+    if ($intent->shouldMergeChanges()) {
       return FALSE;
     }
 
-    if ($this->settings['import'] != Flow::IMPORT_AUTOMATICALLY) {
+    if ($this->settings['import'] != ImportIntent::IMPORT_AUTOMATICALLY) {
       return FALSE;
     }
 
-    $data = $request->getField($this->fieldName);
+    $data = $intent->getField($this->fieldName);
 
     if (empty($data)) {
       $entity->set($this->fieldName, NULL);
@@ -182,17 +185,20 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
-    if ($this->settings['export'] != Flow::EXPORT_AUTOMATICALLY) {
+  public function export(ExportIntent $intent) {
+    $action = $intent->getAction();
+    $entity = $intent->getEntity();
+
+    if ($this->settings['export'] != ExportIntent::EXPORT_AUTOMATICALLY) {
       return FALSE;
     }
 
     // Deletion doesn't require any action on field basis for static data.
-    if ($action == Flow::ACTION_DELETE) {
+    if ($action == SyncIntent::ACTION_DELETE) {
       return FALSE;
     }
 
-    $request->setField($this->fieldName, $entity->get($this->fieldName)->getValue());
+    $intent->setField($this->fieldName, $entity->get($this->fieldName)->getValue());
 
     return TRUE;
   }

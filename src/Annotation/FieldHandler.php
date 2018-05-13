@@ -62,7 +62,7 @@ class FieldHandler extends Plugin {
    * An integer to determine the weight of this handler relative to other
    * handlersin the Field UI when selecting a handler for a given field.
    *
-   * @var intoptional
+   * @var int optional
    */
   public $weight = NULL;
 

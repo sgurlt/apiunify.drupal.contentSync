@@ -3,7 +3,6 @@
 namespace Drupal\drupal_content_sync\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\drupal_content_sync\Form\FlowForm;
 
 /**
  * Defines the Pool entity.
@@ -32,6 +31,19 @@ use Drupal\drupal_content_sync\Form\FlowForm;
  * )
  */
 class Pool extends ConfigEntityBase implements PoolInterface {
+
+  /**
+   * @var string POOL_USAGE_FORBID Forbid usage of this pool for this flow.
+   */
+  const POOL_USAGE_FORBID = 'forbid';
+  /**
+   * @var string POOL_USAGE_ALLOW Allow usage of this pool for this flow.
+   */
+  const POOL_USAGE_ALLOW  = 'allow';
+  /**
+   * @var string POOL_USAGE_FORCE Force usage of this pool for this flow.
+   */
+  const POOL_USAGE_FORCE  = 'force';
 
   /**
    * The Pool ID.
@@ -80,14 +92,94 @@ class Pool extends ConfigEntityBase implements PoolInterface {
   }
 
   /**
+   * Get the newest import/export timestamp for this pool from all meta
+   * information entities that exist for the given entity.
+   *
+   * @param $entity_type
+   * @param $entity_uuid
+   * @param bool $import
+   *
+   * @return int|null
+   */
+  public function getNewestTimestamp($entity_type,$entity_uuid,$import=TRUE) {
+    $meta_infos = MetaInformation::getInfoForPool($entity_type, $entity_uuid, $this);
+    $timestamp  = NULL;
+    foreach ($meta_infos as $info) {
+      $item_timestamp = $import ? $info->getLastImport() : $info->getLastExport();
+      if ($item_timestamp) {
+        if (!$timestamp || $timestamp < $item_timestamp) {
+          $timestamp = $item_timestamp;
+        }
+      }
+    }
+    return $timestamp;
+  }
+
+  /**
+   * Get the newest import/export timestamp for this pool from all meta
+   * information entities that exist for the given entity.
+   *
+   * @param $entity_type
+   * @param $entity_uuid
+   * @param int $timestamp
+   * @param bool $import
+   */
+  public function setTimestamp($entity_type,$entity_uuid,$timestamp,$import=TRUE) {
+    $meta_infos = MetaInformation::getInfoForPool($entity_type, $entity_uuid, $this);
+    foreach ($meta_infos as $info) {
+      if($import) {
+        $info->setLastImport($timestamp);
+      }
+      else {
+        $info->setLastExport($timestamp);
+      }
+      $info->save();
+    }
+  }
+
+  /**
+   * Mark the entity as deleted in this pool (reflected on all meta information
+   * entities related to this pool).
+   *
+   * @param $entity_type
+   * @param $entity_uuid
+   */
+  public function markDeleted($entity_type,$entity_uuid) {
+    $meta_infos = MetaInformation::getInfoForPool($entity_type, $entity_uuid, $this);
+    foreach ($meta_infos as $info) {
+      $info->isDeleted(TRUE);
+      $info->save();
+    }
+  }
+
+  /**
+   * Check whether this entity has been deleted intentionally already. In this
+   * case we ignore export and import intents for it.
+   *
+   * @param $entity_type
+   * @param $entity_uuid
+   *
+   * @return bool
+   */
+  public function isEntityDeleted($entity_type,$entity_uuid) {
+    $meta_infos = MetaInformation::getInfoForPool($entity_type, $entity_uuid, $this);
+    foreach ($meta_infos as $info) {
+      if($info->isDeleted()) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
    * Load all dcs_pool entities.
    *
-   * @return \Drupal\drupal_content_sync\Entity\Flow[]
+   * @return \Drupal\drupal_content_sync\Entity\Pool[]
    */
   public static function getAll() {
 
     /**
-     * @var \Drupal\drupal_content_sync\Entity\Flow[] $configurations
+     * @var \Drupal\drupal_content_sync\Entity\Pool[] $configurations
      */
     $configurations = \Drupal::entityTypeManager()
       ->getStorage('dcs_pool')
@@ -133,8 +225,9 @@ class Pool extends ConfigEntityBase implements PoolInterface {
         foreach ($config['flow']['export_pools'] as $pool_id => $export_pool) {
 
           // Filter out all pools with configuration "allow".
-          if ($export_pool == FlowForm::POOL_ALLOW) {
-            $pool_entity = \Drupal::entityTypeManager()->getStorage('dcs_pool')->loadByProperties(['id' => $pool_id]);
+          if ($export_pool == self::POOL_USAGE_ALLOW) {
+            $pool_entity = \Drupal::entityTypeManager()->getStorage('dcs_pool')
+              ->loadByProperties(['id' => $pool_id]);
             $pool_entity = reset($pool_entity);
             $selectable_pools[$config_id]['pools'][$pool_id] = $pool_entity->label();
           }

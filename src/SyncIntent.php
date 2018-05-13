@@ -2,11 +2,14 @@
 
 namespace Drupal\drupal_content_sync;
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\Entity\Flow;
+use Drupal\drupal_content_sync\Entity\MetaInformation;
+use Drupal\drupal_content_sync\Entity\Pool;
 use Drupal\drupal_content_sync\Exception\SyncException;
 
 /**
- * Class ApiUnifyRequest.
+ * Class SyncIntent.
  *
  * For every import and export of every entity, an instance of this class is
  * created and passed through the entity and field handlers. When exporting,
@@ -16,7 +19,7 @@ use Drupal\drupal_content_sync\Exception\SyncException;
  * The same class is used for export and import to allow adjusting values
  * with hook integration.
  */
-class ApiUnifyRequest {
+abstract class SyncIntent {
   /**
    * @var \Drupal\drupal_content_sync\Entity\Flow
    *   The synchronization this request spawned at.
@@ -24,18 +27,33 @@ class ApiUnifyRequest {
    * @var string            $bundle                 Bundle of the processed entity.
    * @var string            $uuid                   UUID of the processed entity.
    * @var array             $fieldValues            The field values for the untranslated entity.
-   * @var array             $embedEntities          The entities that should be processed along with this entity. Each entry is an array consisting of all ApiUnifyRequest::_*KEY entries.
+   * @var array             $embedEntities          The entities that should be processed along with this entity. Each entry is an array consisting of all SyncIntent::_*KEY entries.
    * @var string            $activeLanguage         The currently active language.
    * @var array             $translationFieldValues The field values for the translation of the entity per language as key.
-   * @var \Drupal\drupal_content_sync\Entity\MetaInformation $meta    The meta information for this entity and sync.
    */
-  protected $sync, $entityType, $bundle, $uuid, $fieldValues, $embedEntities, $activeLanguage, $translationFieldValues, $meta;
+  protected $flow,
+    $entityType,
+    $bundle,
+    $uuid,
+    $fieldValues,
+    $embedEntities,
+    $activeLanguage,
+    $translationFieldValues;
+
+  /**
+   * @var MetaInformation $meta The meta information for this entity and sync.
+   */
+  protected $meta;
+  protected $pool,
+    $reason,
+    $action,
+    $entity;
 
   /**
    * Keys used in the definition array for embedded entities.
    *
-   * @see ApiUnifyRequest::embedEntity        for its usage on export.
-   * @see ApiUnifyRequest::loadEmbeddedEntity for its usage on import.
+   * @see SyncIntent::embedEntity        for its usage on export.
+   * @see SyncIntent::loadEmbeddedEntity for its usage on import.
    *
    * @var string API_KEY                  The API of the processed and referenced entity.
    * @var string ENTITY_TYPE_KEY          The entity type of the referenced entity.
@@ -54,55 +72,138 @@ class ApiUnifyRequest {
   const POOL_CONNECTION_ID_KEY   = 'next_connection_id';
 
   /**
-   * ApiUnifyRequest constructor.
-   *
-   * @param \Drupal\drupal_content_sync\Entity\Flow $sync
-   *   {@see ApiUnifyRequest::$sync}.
-   * @param string $entity_type
-   *   {@see ApiUnifyRequest::$entityType}.
-   * @param string $bundle
-   *   {@see ApiUnifyRequest::$bundle}.
-   * @param string $uuid
-   *   {@see ApiUnifyRequest::$uuid}.
-   * @param \Drupal\drupal_content_sync\Entity\MetaInformation $meta
-   *   The meta information for this entity and sync.
-   * @param array $data
-   *   NULL for exports or the data provided from API Unify for imports.
-   *   Format is the same as in self::getData.
+   * @var string ACTION_CREATE
+   *   export/import the creation of this entity.
    */
-  public function __construct(Flow $sync, $entity_type, $bundle, $uuid, $meta = NULL, $data = NULL) {
-    $this->sync       = $sync;
+  const ACTION_CREATE = 'create';
+  /**
+   * @var string ACTION_UPDATE
+   *   export/import the update of this entity.
+   */
+  const ACTION_UPDATE = 'update';
+  /**
+   * @var string ACTION_DELETE
+   *   export/import the deletion of this entity.
+   */
+  const ACTION_DELETE = 'delete';
+  /**
+   * @var string ACTION_DELETE_TRANSLATION
+   *   Drupal doesn't update the ->getTranslationStatus($langcode) to
+   *   TRANSLATION_REMOVED before calling hook_entity_translation_delete, so we
+   *   need to use a custom action to circumvent deletions of translations of
+   *   entities not being handled. This is only used for calling the
+   *   ->exportEntity function. It will then be replaced by a simple
+   *   ::ACTION_UPDATE.
+   */
+  const ACTION_DELETE_TRANSLATION = 'delete translation';
+
+  /**
+   * SyncIntent constructor.
+   *
+   * @param \Drupal\drupal_content_sync\Entity\Flow $flow
+   *   {@see SyncIntent::$sync}.
+   * @param Pool $pool
+   *   {@see SyncIntent::$pool}.
+   * @param string $reason
+   *   {@see Flow::EXPORT_*} or {@see Flow::IMPORT_*}.
+   * @param string $action
+   *   {@see ::ACTION_*}.
+   * @param string $entity_type
+   *   {@see SyncIntent::$entityType}.
+   * @param string $bundle
+   *   {@see SyncIntent::$bundle}.
+   * @param string $uuid
+   *   {@see SyncIntent::$uuid}.
+   * @param string $source_url
+   *   The source URL if imported or NULL if exported from this site.
+   */
+  public function __construct(Flow $flow, Pool $pool, $reason, $action, $entity_type, $bundle, $uuid, $source_url=NULL) {
+    $this->flow       = $flow;
+    $this->pool       = $pool;
+    $this->reason     = $reason;
+    $this->action     = $action;
     $this->entityType = $entity_type;
     $this->bundle     = $bundle;
+    $this->uuid       = $uuid;
+    $this->meta       = MetaInformation::getInfoForEntity($entity_type,$uuid,$flow,$pool);
+    if (!$this->meta) {
+      $this->meta = MetaInformation::create([
+        'flow' => $this->flow->id,
+        'pool' => $this->pool->id,
+        'entity_type' => $entity_type,
+        'entity_uuid' => $uuid,
+        'entity_type_version' => Flow::getEntityTypeVersion($entity_type, $bundle),
+        'flags' => 0,
+        'source_url' => $source_url,
+      ]);
+      if (!$source_url) {
+        $this->meta->isSourceEntity(TRUE);
+      }
+    }
 
-    $this->uuid                   = $uuid;
     $this->embedEntities          = [];
     $this->activeLanguage         = NULL;
     $this->translationFieldValues = NULL;
     $this->fieldValues            = [];
-    $this->meta                   = $meta;
+  }
 
-    if (!empty($data['embed_entities'])) {
-      $this->embedEntities = $data['embed_entities'];
+  /**
+   * Execute the intent.
+   *
+   * @return bool
+   */
+  abstract public function execute();
+
+  /**
+   * @return string
+   */
+  public function getReason() {
+    return $this->reason;
+  }
+
+  /**
+   * @return string
+   */
+  public function getAction() {
+    return $this->action;
+  }
+
+  /**
+   * @return \Drupal\drupal_content_sync\Entity\Flow
+   */
+  public function getFlow() {
+    return $this->flow;
+  }
+
+  /**
+   * @return \Drupal\drupal_content_sync\Entity\Pool
+   */
+  public function getPool() {
+    return $this->pool;
+  }
+
+  /**
+   * @return \Drupal\Core\Entity\FieldableEntityInterface
+   *   The entity of the intent, if it already exists locally.
+   */
+  public function getEntity() {
+    return $this->entity ? $this->entity : \Drupal::service('entity.repository')
+      ->loadEntityByUuid($this->entityType, $this->uuid);
+  }
+
+  /**
+   * Set the entity when importing (may not be saved yet then).
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity you just created.
+   *
+   * @throws \Drupal\drupal_content_sync\Exception\SyncException
+   */
+  public function setEntity(EntityInterface $entity) {
+    if($this->entity && $entity!=$this->entity) {
+      throw new SyncException(SyncException::CODE_INTERNAL_ERROR,NULL, "Attempting to re-set existing entity.");
     }
-    if (!empty($data['uuid'])) {
-      $this->uuid = $data['uuid'];
-    }
-    if (!empty($data['apiu_translation'])) {
-      $this->translationFieldValues = $data['apiu_translation'];
-    }
-    if (!empty($data)) {
-      $this->fieldValues = array_diff_key(
-        $data,
-        [
-          'embed_entities' => [],
-          'apiu_translation' => [],
-          'uuid' => NULL,
-          'id' => NULL,
-          'bundle' => NULL,
-        ]
-      );
-    }
+    $this->entity = $entity;
   }
 
   /**
@@ -149,7 +250,7 @@ class ApiUnifyRequest {
 
   /**
    * Change the language used for provided field values. If you want to add a
-   * translation of an entity, the same ApiUnifyRequest is used. First, you
+   * translation of an entity, the same SyncIntent is used. First, you
    * add your fields using self::setField() for the untranslated version.
    * After that you call self::changeTranslationLanguage() with the language
    * identifier for the translation in question. Then you perform all the
@@ -167,7 +268,7 @@ class ApiUnifyRequest {
   /**
    * Return the language that's currently used.
    *
-   * @see ApiUnifyRequest::changeTranslationLanguage() for a detailed explanation.
+   * @see SyncIntent::changeTranslationLanguage() for a detailed explanation.
    */
   public function getActiveLanguage() {
     return $this->activeLanguage;
@@ -177,7 +278,7 @@ class ApiUnifyRequest {
    * Get the definition for a referenced entity that should be exported /
    * embedded as well.
    *
-   * @see ApiUnifyRequest::$embedEntities
+   * @see SyncIntent::$embedEntities
    *
    * @param string $entity_type
    *   The entity type of the referenced entity.
@@ -194,21 +295,21 @@ class ApiUnifyRequest {
     $version = Flow::getEntityTypeVersion($entity_type, $bundle);
 
     return array_merge([
-      self::API_KEY           => $this->sync->api,
+      self::API_KEY           => $this->pool->id,
       self::ENTITY_TYPE_KEY   => $entity_type,
       self::UUID_KEY          => $uuid,
       self::BUNDLE_KEY        => $bundle,
       self::VERSION_KEY       => $version,
-      self::SOURCE_CONNECTION_ID_KEY => ApiUnifyConfig::getExternalConnectionId(
-        $this->sync->api,
-        $this->sync->site_id,
+      self::SOURCE_CONNECTION_ID_KEY => ApiUnifyFlowExport::getExternalConnectionId(
+        $this->pool->id,
+        $this->pool->site_id,
         $entity_type,
         $bundle,
         $version
       ),
-      self::POOL_CONNECTION_ID_KEY => ApiUnifyConfig::getExternalConnectionId(
-        $this->sync->api,
-        ApiUnifyConfig::POOL_SITE_ID,
+      self::POOL_CONNECTION_ID_KEY => ApiUnifyFlowExport::getExternalConnectionId(
+        $this->pool->id,
+        ApiUnifyPoolExport::POOL_SITE_ID,
         $entity_type,
         $bundle,
         $version
@@ -219,19 +320,21 @@ class ApiUnifyRequest {
   /**
    * Embed an entity by its properties.
    *
-   * @see ApiUnifyRequest::getEmbedEntityDefinition
-   * @see ApiUnifyRequest::embedEntity
+   * @see SyncIntent::getEmbedEntityDefinition
+   * @see SyncIntent::embedEntity
    *
    * @param string $entity_type
-   *   {@see ApiUnifyRequest::getEmbedEntityDefinition}.
+   *   {@see SyncIntent::getEmbedEntityDefinition}.
    * @param string $bundle
-   *   {@see ApiUnifyRequest::getEmbedEntityDefinition}.
+   *   {@see SyncIntent::getEmbedEntityDefinition}.
    * @param string $uuid
-   *   {@see ApiUnifyRequest::getEmbedEntityDefinition}.
+   *   {@see SyncIntent::getEmbedEntityDefinition}.
    * @param array $details
-   *   {@see ApiUnifyRequest::getEmbedEntityDefinition}.
+   *   {@see SyncIntent::getEmbedEntityDefinition}.
    *
-   * @return array The definition you can store via {@see ApiUnifyRequest::setField} and on the other end receive via {@see ApiUnifyRequest::getField}.
+   * @return array
+   *   The definition you can store via {@see SyncIntent::setField} and on the
+   *   other end receive via {@see SyncIntent::getField}.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
@@ -265,9 +368,9 @@ class ApiUnifyRequest {
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The referenced entity to export as well.
    * @param array $details
-   *   {@see ApiUnifyRequest::getEmbedEntityDefinition}.
+   *   {@see SyncIntent::getEmbedEntityDefinition}.
    *
-   * @return array The definition you can store via {@see ApiUnifyRequest::setField} and on the other end receive via {@see ApiUnifyRequest::getField}.
+   * @return array The definition you can store via {@see SyncIntent::setField} and on the other end receive via {@see SyncIntent::getField}.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
@@ -282,8 +385,8 @@ class ApiUnifyRequest {
 
   /**
    * Restore an entity that was added via
-   * {@see ApiUnifyRequest::embedEntityDefinition} or
-   * {@see ApiUnifyRequest::embedEntity}.
+   * {@see SyncIntent::embedEntityDefinition} or
+   * {@see SyncIntent::embedEntity}.
    *
    * @param array $definition
    *   The definition you saved in a field and gotten
@@ -331,7 +434,7 @@ class ApiUnifyRequest {
   /**
    * Provide the value of a field you stored when exporting by using.
    *
-   * @see ApiUnifyRequest::setField()
+   * @see SyncIntent::setField()
    *
    * @param string $name
    *   The name of the field to restore.
@@ -387,7 +490,7 @@ class ApiUnifyRequest {
   }
 
   /**
-   * @see ApiUnifyRequest::$entityType
+   * @see SyncIntent::$entityType
    *
    * @return string
    */
@@ -396,14 +499,14 @@ class ApiUnifyRequest {
   }
 
   /**
-   * @see ApiUnifyRequest::$bundle
+   * @see SyncIntent::$bundle
    */
   public function getBundle() {
     return $this->bundle;
   }
 
   /**
-   * @see ApiUnifyRequest::$uuid
+   * @see SyncIntent::$uuid
    */
   public function getUuid() {
     return $this->uuid;

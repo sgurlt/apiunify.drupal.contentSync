@@ -11,6 +11,8 @@ use Drupal\drupal_content_sync\DrupalContentSync;
 use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\drupal_content_sync\ExportIntent;
+use Drupal\drupal_content_sync\SyncIntent;
 use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\drupal_content_sync\Entity\Flow;
@@ -70,29 +72,37 @@ function drupal_content_sync_form_alter(array &$form, FormStateInterface $form_s
       $form['#disabled'] = TRUE;
     }
     else {
-      $sync = Flow::getExportSynchronizationForEntity(
+      $flows = Flow::getFlowsForEntity(
         $entity,
-        Flow::EXPORT_AUTOMATICALLY,
-        Flow::ACTION_DELETE
+        ExportIntent::EXPORT_AUTOMATICALLY,
+        SyncIntent::ACTION_DELETE
       );
-      if (!$sync) {
-        $sync = Flow::getExportSynchronizationForEntity(
+      if (!count($flows)) {
+        $flows = Flow::getFlowsForEntity(
           $entity,
-          Flow::EXPORT_AS_DEPENDENCY,
-          Flow::ACTION_DELETE
+          ExportIntent::EXPORT_AS_DEPENDENCY,
+          SyncIntent::ACTION_DELETE
         );
-        if ($sync) {
-          $info = MetaInformation::getInfoForEntity(
+        if (count($flows)) {
+          $infos = MetaInformation::getInfosForEntity(
             $entity->getEntityTypeId(),
             $entity->uuid()
-          )[$sync->id];
-          if (!$info || !$info->getLastExport()) {
-            $sync = NULL;
+          );
+          $exported = [];
+          foreach($infos as $info) {
+            if(!in_array($info->getFlow(),$flows))
+              continue;
+            if(in_array($info->getFlow(),$exported))
+              continue;
+            if(!$info->getLastExport())
+              continue;
+            $exported[] = $info->getFlow();
           }
+          $flows = $exported;
         }
       }
 
-      if ($sync) {
+      if (count($flows)) {
         $messenger = \Drupal::messenger();
         $messenger->addWarning(
           t(
@@ -240,7 +250,7 @@ function _drupal_content_sync_update_pool_selector(array $form, FormStateInterfa
  * @param \Drupal\Core\Entity\EntityInterface $entity
  */
 function drupal_content_sync_entity_insert(EntityInterface $entity) {
-  DrupalContentSync::exportEntityFromUi($entity, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_CREATE);
+  ExportIntent::exportEntityFromUi($entity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_CREATE);
 }
 
 /**
@@ -253,7 +263,7 @@ function drupal_content_sync_entity_update(EntityInterface $entity) {
   // before the synchronization was created or the entity could not be
   // exported before for any reason, using ::ACTION_UPDATE would lead to
   // errors. Thus we're just using ::ACTION_CREATE which always works.
-  DrupalContentSync::exportEntityFromUi($entity, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_UPDATE);
+  ExportIntent::exportEntityFromUi($entity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_UPDATE);
 }
 
 /**
@@ -270,14 +280,14 @@ function drupal_content_sync_entity_delete(EntityInterface $entity) {
     throw new \Exception($entity->label() . ' cannot be deleted as it has been imported.');
   }
 
-  DrupalContentSync::exportEntityFromUi($entity, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_DELETE);
+  ExportIntent::exportEntityFromUi($entity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_DELETE);
 }
 
 /**
  * Implements hook_entity_translation_delete().
  */
 function drupal_content_sync_entity_translation_delete(EntityInterface $translation) {
-  DrupalContentSync::exportEntityFromUi($translation, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_DELETE_TRANSLATION);
+  ExportIntent::exportEntityFromUi($translation, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_DELETE_TRANSLATION);
 }
 
 /**
@@ -307,10 +317,10 @@ function drupal_content_sync_user_password_submit(&$form, FormStateInterface $fo
 
     $userData->set('drupal_content_sync', $userId, 'sync_data', $new_data);
 
-    $synchronisations = Flow::getAll();
+    $flows = Flow::getAll();
 
-    foreach ($synchronisations as $synchronisation) {
-      $synchronisation->save();
+    foreach ($flows as $flow) {
+      $flow->save();
     }
   }
 }
@@ -365,7 +375,7 @@ function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormState
     return;
   }
 
-  $meta_infos = MetaInformation::getInfoForEntity(
+  $meta_infos = MetaInformation::getInfosForEntity(
     $entity->getEntityTypeId(),
     $entity->uuid()
   );
@@ -380,8 +390,8 @@ function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormState
     }
     $config = Flow::load($info->getEntityTypeConfig())
       ->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
-    if ($config['import_updates'] == Flow::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING ||
-      $config['import_updates'] == Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+    if ($config['import_updates'] == ImportIntent::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING ||
+      $config['import_updates'] == ImportIntent::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
       $behavior = $config['import_updates'];
       $overridden = $info->isOverriddenLocally();
       break;
@@ -394,7 +404,7 @@ function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormState
 
   $id = bin2hex(random_bytes(4));
 
-  $allow_overrides = $behavior == Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN;
+  $allow_overrides = $behavior == ImportIntent::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN;
 
   // $hide_elements = ['container', 'vertical_tabs', 'details'];.
   foreach ($form as $key => $form_item) {
@@ -467,7 +477,7 @@ function _drupal_content_sync_override_entity_submit(array $form, FormStateInter
     ->getFormObject()
     ->getEntity();
 
-  $meta_infos = MetaInformation::getInfoForEntity(
+  $meta_infos = MetaInformation::getInfosForEntity(
     $entity->getEntityTypeId(),
     $entity->uuid()
   );
@@ -477,7 +487,7 @@ function _drupal_content_sync_override_entity_submit(array $form, FormStateInter
     }
     $config = Flow::load($info->getEntityTypeConfig())
       ->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
-    if ($config['import_updates'] == Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+    if ($config['import_updates'] == ImportIntent::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
       if ($value != $info->isOverriddenLocally()) {
         $info->isOverriddenLocally($value);
         $info->save();
@@ -522,14 +532,14 @@ function drupal_content_sync_get_publish_changes_operations(EntityInterface $ent
   /** @var \Drupal\Core\Routing\RedirectDestinationInterface $redirect_destination */
   $redirect_destination = Drupal::service('redirect.destination');
 
-  $sync = Flow::getExportSynchronizationForEntity($entity, Flow::EXPORT_MANUALLY);
+  $flow = Flow::getFlowsForEntity($entity, ExportIntent::EXPORT_MANUALLY);
 
-  if (!$sync) {
+  if (!$flow) {
     return [];
   }
 
   $route_parameters = [
-    'sync_id' => $sync->id(),
+    'sync_id' => $flow->id(),
     'entity_type' => $entity->getEntityTypeId(),
     'entity' => $entity->id(),
   ];

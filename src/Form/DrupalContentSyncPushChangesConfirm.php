@@ -8,6 +8,8 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\drupal_content_sync\DrupalContentSync;
+use Drupal\drupal_content_sync\ExportIntent;
+use Drupal\drupal_content_sync\SyncIntent;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\drupal_content_sync\Entity\Flow;
@@ -124,10 +126,10 @@ class DrupalContentSyncPushChangesConfirm extends ConfirmFormBase {
 
       /** @var \Drupal\node\NodeInterface[] $nodes */
       foreach ($this->nodes as $node) {
-        if (!DrupalContentSync::exportEntityFromUi(
+        if (!ExportIntent::exportEntityFromUi(
           $node,
-          Flow::EXPORT_MANUALLY,
-          Flow::ACTION_UPDATE
+          ExportIntent::EXPORT_MANUALLY,
+          SyncIntent::ACTION_UPDATE
         )) {
           $ignored++;
         }

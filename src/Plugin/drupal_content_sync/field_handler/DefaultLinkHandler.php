@@ -3,9 +3,10 @@
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\drupal_content_sync\ExportIntent;
+use Drupal\drupal_content_sync\ImportIntent;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
-use Drupal\drupal_content_sync\Entity\Flow;
-use Drupal\drupal_content_sync\ApiUnifyRequest;
+use Drupal\drupal_content_sync\SyncIntent;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
 
@@ -33,17 +34,23 @@ class DefaultLinkHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function import(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action, $merge_only) {
+  public function import(ImportIntent $intent) {
+    $action = $intent->getAction();
+    /**
+     * @var FieldableEntityInterface $entity
+     */
+    $entity = $intent->getEntity();
+
     // Deletion doesn't require any action on field basis for static data.
-    if ($action == Flow::ACTION_DELETE) {
+    if ($action == SyncIntent::ACTION_DELETE) {
       return FALSE;
     }
 
-    if ($merge_only) {
+    if ($intent->shouldMergeChanges()) {
       return FALSE;
     }
 
-    $data = $request->getField($this->fieldName);
+    $data = $intent->getField($this->fieldName);
 
     if (empty($data)) {
       $entity->set($this->fieldName, NULL);
@@ -53,12 +60,12 @@ class DefaultLinkHandler extends FieldHandlerBase {
 
       foreach ($data as &$link_element) {
         if (empty($link_element['uri'])) {
-          $reference = $request->loadEmbeddedEntity($link_element);
+          $reference = $intent->loadEmbeddedEntity($link_element);
           if ($reference) {
             $result[] = [
               'uri' => 'entity:' . $reference->getEntityTypeId() . '/' . $reference->id(),
             ];
-            $request->setField('enabled', [['value' => 1]]);
+            $intent->setField('enabled', [['value' => 1]]);
             $entity->set('enabled', 1);
           }
           // Menu items are created before the node as they are embedded
@@ -69,7 +76,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
           // now available entity reference by ID.
           elseif ($entity instanceof MenuLinkContent && $this->fieldName == 'link') {
             $result[] = [
-              'uri' => 'internal:/' . $link_element[ApiUnifyRequest::ENTITY_TYPE_KEY] . '/' . $link_element[ApiUnifyRequest::UUID_KEY],
+              'uri' => 'internal:/' . $link_element[SyncIntent::ENTITY_TYPE_KEY] . '/' . $link_element[SyncIntent::UUID_KEY],
             ];
           }
         }
@@ -89,9 +96,15 @@ class DefaultLinkHandler extends FieldHandlerBase {
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
+  public function export(ExportIntent $intent) {
+    $action = $intent->getAction();
+    /**
+     * @var FieldableEntityInterface $entity
+     */
+    $entity = $intent->getEntity();
+
     // Deletion doesn't require any action on field basis for static data.
-    if ($action == Flow::ACTION_DELETE) {
+    if ($action == SyncIntent::ACTION_DELETE) {
       return FALSE;
     }
 
@@ -121,11 +134,11 @@ class DefaultLinkHandler extends FieldHandlerBase {
           continue;
         }
 
-        if (!$this->sync->supportsEntity($link_entity)) {
+        if (!$this->flow->supportsEntity($link_entity)) {
           continue;
         }
 
-        $result[] = $request->getEmbedEntityDefinition(
+        $result[] = $intent->getEmbedEntityDefinition(
           $link_entity->getEntityTypeId(),
           $link_entity->bundle(),
           $link_entity->uuid()
@@ -133,7 +146,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
       }
     }
 
-    $request->setField($this->fieldName, $result);
+    $intent->setField($this->fieldName, $result);
 
     return TRUE;
   }

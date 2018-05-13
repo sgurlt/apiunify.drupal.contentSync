@@ -4,9 +4,11 @@ namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\Exception\SyncException;
+use Drupal\drupal_content_sync\ExportIntent;
+use Drupal\drupal_content_sync\ImportIntent;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 use Drupal\drupal_content_sync\Entity\Flow;
-use Drupal\drupal_content_sync\ApiUnifyRequest;
+use Drupal\drupal_content_sync\SyncIntent;
 
 /**
  * Class DefaultFileHandler, providing proper file handling capabilities.
@@ -33,10 +35,10 @@ class DefaultFileHandler extends EntityHandlerBase {
    */
   public function getAllowedExportOptions() {
     return [
-      Flow::EXPORT_DISABLED,
-      Flow::EXPORT_AUTOMATICALLY,
-      Flow::EXPORT_AS_DEPENDENCY,
-      Flow::EXPORT_MANUALLY,
+      ExportIntent::EXPORT_DISABLED,
+      ExportIntent::EXPORT_AUTOMATICALLY,
+      ExportIntent::EXPORT_AS_DEPENDENCY,
+      ExportIntent::EXPORT_MANUALLY,
     ];
   }
 
@@ -45,10 +47,10 @@ class DefaultFileHandler extends EntityHandlerBase {
    */
   public function getAllowedImportOptions() {
     return [
-      Flow::IMPORT_DISABLED,
-      Flow::IMPORT_AUTOMATICALLY,
-      Flow::IMPORT_AS_DEPENDENCY,
-      Flow::IMPORT_MANUALLY,
+      ImportIntent::IMPORT_DISABLED,
+      ImportIntent::IMPORT_AUTOMATICALLY,
+      ImportIntent::IMPORT_AS_DEPENDENCY,
+      ImportIntent::IMPORT_MANUALLY,
     ];
   }
 
@@ -104,20 +106,22 @@ class DefaultFileHandler extends EntityHandlerBase {
   /**
    * @inheritdoc
    */
-  public function import(ApiUnifyRequest $request, $is_clone, $reason, $action) {
+  public function import(ImportIntent $intent) {
     /**
      * @var \Drupal\file\FileInterface $entity
      */
-    $entity = $this->loadEntity($request);
+    $entity = $intent->getEntity();
+    $action = $intent->getAction();
+    $is_clone = $intent->isClone();
 
-    if ($action == Flow::ACTION_DELETE) {
+    if ($action == SyncIntent::ACTION_DELETE) {
       if ($entity) {
         return $this->deleteEntity($entity);
       }
       return FALSE;
     }
 
-    $uri = $request->getField('uri');
+    $uri = $intent->getField('uri');
     if (empty($uri)) {
       throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST);
     }
@@ -125,12 +129,12 @@ class DefaultFileHandler extends EntityHandlerBase {
       $uri = $uri[0]['value'];
     }
 
-    $content = $request->getField('apiu_file_content');
+    $content = $intent->getField('apiu_file_content');
     if (!$content) {
       throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST);
     }
 
-    if ($action == Flow::ACTION_CREATE) {
+    if ($action == SyncIntent::ACTION_CREATE) {
       if (!$is_clone) {
         if ($entity) {
           if (file_save_data(base64_decode($content), $entity->getFileUri(), FILE_EXISTS_REPLACE)) {
@@ -147,15 +151,15 @@ class DefaultFileHandler extends EntityHandlerBase {
         $entity = file_save_data(base64_decode($content), $uri);
         $entity->setPermanent();
         if (!$is_clone) {
-          $entity->set('uuid', $request->getUuid());
+          $entity->set('uuid', $intent->getUuid());
         }
       }
 
       $entity->save();
       return TRUE;
     }
-    if ($action == Flow::ACTION_UPDATE) {
-      $content = $request->getField('apiu_file_content');
+    if ($action == SyncIntent::ACTION_UPDATE) {
+      $content = $intent->getField('apiu_file_content');
       if (!$content) {
         throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST);
       }
@@ -166,8 +170,9 @@ class DefaultFileHandler extends EntityHandlerBase {
         // So we have to tell Drupal we actually want to keep it so references
         // to it keep working for us.
         $entity->setPermanent();
-        $entity->set('uuid', $request->getUuid());
+        $entity->set('uuid', $intent->getUuid());
         $entity->save();
+        $intent->setEntity($entity);
         return TRUE;
       };
       throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE);
@@ -179,27 +184,30 @@ class DefaultFileHandler extends EntityHandlerBase {
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
+  public function export(ExportIntent $intent, FieldableEntityInterface $entity=NULL) {
     /**
      * @var \Drupal\file\FileInterface $entity
      */
+    if(!$entity) {
+      $entity = $intent->getEntity();
+    }
 
-    if (!parent::export($request, $entity, $request, $action)) {
+    if (!parent::export($intent)) {
       return FALSE;
     }
 
     // Base Info.
     $uri = $entity->getFileUri();
-    $request->setField('apiu_file_content', base64_encode(file_get_contents($uri)));
-    $request->setField('uri', [['value' => $uri]]);
-    $request->setField('title', $entity->getFilename());
+    $intent->setField('apiu_file_content', base64_encode(file_get_contents($uri)));
+    $intent->setField('uri', [['value' => $uri]]);
+    $intent->setField('title', $entity->getFilename());
 
     // Preview.
-    $request->setField('preview', '<img style="max-height: 200px" src="' . file_create_url($uri) . '"/>');
+    $intent->setField('preview', '<img style="max-height: 200px" src="' . file_create_url($uri) . '"/>');
 
     // No Translations, No Menu items compared to EntityHandlerBase.
     // Source URL.
-    $this->setSourceUrl($request, $entity);
+    $this->setSourceUrl($intent, $entity);
 
     return TRUE;
   }

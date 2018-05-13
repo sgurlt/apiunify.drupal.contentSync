@@ -2,10 +2,10 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
-use Drupal\Core\Entity\FieldableEntityInterface;
-use Drupal\drupal_content_sync\ApiUnifyRequest;
+use Drupal\drupal_content_sync\ExportIntent;
+use Drupal\drupal_content_sync\ImportIntent;
+use Drupal\drupal_content_sync\SyncIntent;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
-use Drupal\drupal_content_sync\Entity\Flow;
 
 /**
  * Class DefaultNodeHandler, providing proper handling for published/unpublished
@@ -33,10 +33,10 @@ class DefaultNodeHandler extends EntityHandlerBase {
    */
   public function getAllowedExportOptions() {
     return [
-      Flow::EXPORT_DISABLED,
-      Flow::EXPORT_AUTOMATICALLY,
-      Flow::EXPORT_AS_DEPENDENCY,
-      Flow::EXPORT_MANUALLY,
+      ExportIntent::EXPORT_DISABLED,
+      ExportIntent::EXPORT_AUTOMATICALLY,
+      ExportIntent::EXPORT_AS_DEPENDENCY,
+      ExportIntent::EXPORT_MANUALLY,
     ];
   }
 
@@ -45,10 +45,10 @@ class DefaultNodeHandler extends EntityHandlerBase {
    */
   public function getAllowedImportOptions() {
     return [
-      Flow::IMPORT_DISABLED,
-      Flow::IMPORT_AUTOMATICALLY,
-      Flow::IMPORT_AS_DEPENDENCY,
-      Flow::IMPORT_MANUALLY,
+      ImportIntent::IMPORT_DISABLED,
+      ImportIntent::IMPORT_AUTOMATICALLY,
+      ImportIntent::IMPORT_AS_DEPENDENCY,
+      ImportIntent::IMPORT_MANUALLY,
     ];
   }
 
@@ -79,31 +79,33 @@ class DefaultNodeHandler extends EntityHandlerBase {
   /**
    * @inheritdoc
    */
-  public function ignoreImport(ApiUnifyRequest $request, $is_clone, $reason, $action) {
+  public function ignoreImport(ImportIntent $intent) {
     // Not published? Ignore this revision then.
-    if (empty($request->getField('status')) && $this->settings['handler_settings']['ignore_unpublished']) {
+    if (empty($intent->getField('status')) && $this->settings['handler_settings']['ignore_unpublished']) {
       // Unless it's a delete, then it won't have a status and is independent
       // of published state, so we don't ignore the import.
-      if ($action != Flow::ACTION_DELETE) {
+      if ($intent->getAction() != SyncIntent::ACTION_DELETE) {
         return TRUE;
       }
     }
 
-    return parent::ignoreImport($request, $is_clone, $reason, $action);
+    return parent::ignoreImport($intent);
   }
 
   /**
    * @inheritdoc
    */
-  public function ignoreExport(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
+  public function ignoreExport(ExportIntent $intent) {
     /**
      * @var \Drupal\node\NodeInterface $entity
      */
+    $entity = $intent->getEntity();
+
     if (!$entity->isPublished() && $this->settings['handler_settings']['ignore_unpublished']) {
       return TRUE;
     }
 
-    return parent::ignoreExport($request, $entity, $request, $action);
+    return parent::ignoreExport($intent);
   }
 
 }

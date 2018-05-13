@@ -3,8 +3,8 @@
 namespace Drupal\drupal_content_sync\Plugin;
 
 use Drupal\Component\Plugin\PluginInspectionInterface;
-use Drupal\Core\Entity\FieldableEntityInterface;
-use Drupal\drupal_content_sync\ApiUnifyRequest;
+use Drupal\drupal_content_sync\ExportIntent;
+use Drupal\drupal_content_sync\ImportIntent;
 
 /**
  * Specifies the publicly available methods of an entity handler plugin that can
@@ -92,15 +92,7 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
   public function getForbiddenFields();
 
   /**
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
-   *   The request
-   *   containing all relevant data and where the result is stored as well.
-   * @param bool $is_clone
-   *   Whether or not the entity should be clone'd or sync'd.
-   * @param string $reason
-   *   {@see Flow::IMPORT_*}.
-   * @param string $action
-   *   {@see Flow::ACTION_*}.
+   * @param \Drupal\drupal_content_sync\ImportIntent $intent
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
@@ -108,17 +100,11 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    *   Whether or not the content has been imported. FALSE is a desired state,
    *   meaning nothing should be imported according to config.
    */
-  public function import(ApiUnifyRequest $request, $is_clone, $reason, $action);
+  public function import(ImportIntent $intent);
 
   /**
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   * @param \Drupal\drupal_content_sync\ExportIntent $intent
    *   The request to store all relevant info at.
-   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
-   *   The entity to export.
-   * @param string $reason
-   *   {@see Flow::EXPORT_*}.
-   * @param string $action
-   *   {@see Flow::ACTION_*}.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
@@ -126,6 +112,6 @@ interface EntityHandlerInterface extends PluginInspectionInterface {
    *   Whether or not the content has been exported. FALSE is a desired state,
    *   meaning nothing should be exported according to config.
    */
-  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action);
+  public function export(ExportIntent $intent);
 
 }

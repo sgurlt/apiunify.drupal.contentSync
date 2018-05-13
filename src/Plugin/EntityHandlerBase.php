@@ -4,7 +4,9 @@ namespace Drupal\drupal_content_sync\Plugin;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\TranslatableInterface;
-use Drupal\drupal_content_sync\ApiUnifyRequest;
+use Drupal\drupal_content_sync\ExportIntent;
+use Drupal\drupal_content_sync\ImportIntent;
+use Drupal\drupal_content_sync\SyncIntent;
 use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\MetaInformation;
 use Drupal\drupal_content_sync\Exception\SyncException;
@@ -42,7 +44,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    *
    * @var \Drupal\drupal_content_sync\Entity\Flow
    */
-  protected $sync;
+  protected $flow;
 
   /**
    * Constructs a Drupal\rest\Plugin\ResourceBase object.
@@ -62,7 +64,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     $this->entityTypeName = $configuration['entity_type_name'];
     $this->bundleName     = $configuration['bundle_name'];
     $this->settings       = $configuration['settings'];
-    $this->sync           = $configuration['sync'];
+    $this->flow           = $configuration['sync'];
   }
 
   /**
@@ -82,9 +84,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    */
   public function getAllowedExportOptions() {
     return [
-      Flow::EXPORT_DISABLED,
-      Flow::EXPORT_AUTOMATICALLY,
-      Flow::EXPORT_AS_DEPENDENCY,
+      ExportIntent::EXPORT_DISABLED,
+      ExportIntent::EXPORT_AUTOMATICALLY,
+      ExportIntent::EXPORT_AS_DEPENDENCY,
       // Not manually as that requires UI and is not available for all entity
       // types. Advanced handlers will provide this.
     ];
@@ -95,10 +97,10 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    */
   public function getAllowedImportOptions() {
     return [
-      Flow::IMPORT_DISABLED,
-      Flow::IMPORT_AUTOMATICALLY,
-      Flow::IMPORT_AS_DEPENDENCY,
-      Flow::IMPORT_MANUALLY,
+      ImportIntent::IMPORT_DISABLED,
+      ImportIntent::IMPORT_AUTOMATICALLY,
+      ImportIntent::IMPORT_AS_DEPENDENCY,
+      ImportIntent::IMPORT_MANUALLY,
     ];
   }
 
@@ -116,44 +118,26 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
-   * Load the requested entity by its UUID.
-   *
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
-   *   The request.
-   *
-   * @return \Drupal\Core\Entity\EntityInterface
-   *   Returns the loaded entity.
-   */
-  protected function loadEntity(ApiUnifyRequest $request) {
-    return \Drupal::service('entity.repository')
-      ->loadEntityByUuid($request->getEntityType(), $request->getUuid());
-  }
-
-  /**
    * Check if the import should be ignored.
    *
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
-   *   The API Unify Request.
-   * @param bool $is_clone
-   *   Entity cloned parameter.
-   * @param string $reason
-   *   The reason why the import should be ignored.
-   * @param string $action
-   *   The action to apply.
+   * @param \Drupal\drupal_content_sync\ImportIntent $intent
    *
    * @return bool
    *   Whether or not to ignore this import request.
    */
-  protected function ignoreImport(ApiUnifyRequest $request, $is_clone, $reason, $action) {
-    if ($reason == Flow::IMPORT_AUTOMATICALLY || $reason == Flow::IMPORT_MANUALLY) {
+  protected function ignoreImport(ImportIntent $intent) {
+    $reason = $intent->getReason();
+    $action = $intent->getAction();
+
+    if ($reason == ImportIntent::IMPORT_AUTOMATICALLY || $reason == ImportIntent::IMPORT_MANUALLY) {
       if ($this->settings['import'] != $reason) {
         return TRUE;
       }
     }
 
-    if ($action == Flow::ACTION_UPDATE) {
+    if ($action == SyncIntent::ACTION_UPDATE) {
       $behavior = $this->settings['import_updates'];
-      if ($behavior == Flow::IMPORT_UPDATE_IGNORE) {
+      if ($behavior == ImportIntent::IMPORT_UPDATE_IGNORE) {
         return TRUE;
       }
     }
@@ -166,58 +150,49 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    *
    * @inheritdoc
    */
-  public function import(ApiUnifyRequest $request, $is_clone, $reason, $action) {
-    if ($this->ignoreImport($request, $is_clone, $reason, $action)) {
+  public function import(ImportIntent $intent) {
+    $action   = $intent->getAction();
+    $is_clone = $intent->isClone();
+
+    if ($this->ignoreImport($intent)) {
       return FALSE;
     }
 
     /**
      * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
      */
-    $entity = $this->loadEntity($request);
+    $entity = $intent->getEntity();
 
-    if ($action == Flow::ACTION_DELETE) {
+    if ($action == SyncIntent::ACTION_DELETE) {
       if ($entity) {
         return $this->deleteEntity($entity);
       }
       return FALSE;
     }
 
-    $merge_only = FALSE;
-
     if ($is_clone || !$entity) {
-      $entity_type = \Drupal::entityTypeManager()->getDefinition($request->getEntityType());
+      $entity_type = \Drupal::entityTypeManager()->getDefinition($intent->getEntityType());
 
       $base_data = [
-        $entity_type->getKey('bundle') => $request->getBundle(),
-        $entity_type->getKey('label') => $request->getField('title'),
+        $entity_type->getKey('bundle') => $intent->getBundle(),
+        $entity_type->getKey('label') => $intent->getField('title'),
       ];
 
       if (!$is_clone) {
-        $base_data[$entity_type->getKey('uuid')] = $request->getUuid();
+        $base_data[$entity_type->getKey('uuid')] = $intent->getUuid();
       }
 
-      $storage = \Drupal::entityTypeManager()->getStorage($request->getEntityType());
+      $storage = \Drupal::entityTypeManager()->getStorage($intent->getEntityType());
       $entity = $storage->create($base_data);
 
       if (!$entity) {
         throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE);
       }
-    }
-    else {
-      $behavior = $this->settings['import_updates'];
-      if ($behavior == Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
-        $meta_info = MetaInformation::getInfoForEntity(
-          $request->getEntityType(),
-          $request->getUuid(),
-          $this->sync->api)[$this->sync->id];
-        if ($meta_info && $meta_info->isOverriddenLocally()) {
-          $merge_only = TRUE;
-        }
-      }
+
+      $intent->setEntity($entity);
     }
 
-    if (!$this->setEntityValues($request, $entity, $is_clone, $reason, $action, $merge_only)) {
+    if (!$this->setEntityValues($intent)) {
       return FALSE;
     }
 
@@ -263,15 +238,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   /**
    * Set the values for the imported entity.
    *
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
-   *   The api unify request.
-   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
-   *   The entity the values show be set for.
-   * @param bool $is_clone
-   *   The clone parameter of the imported entity.
-   * @param string $reason
-   *   The reason why the values should be set. @see Flow::REASON_*.
-   * @param string $action
+   * @param \Drupal\drupal_content_sync\SyncIntent $intent
+   * @param FieldableEntityInterface $entity The translation of the entity.
    *
    * @see Flow::IMPORT_*
    *
@@ -280,31 +248,35 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    * @return bool
    *   Returns TRUE when the values are set.
    */
-  protected function setEntityValues(ApiUnifyRequest $request, FieldableEntityInterface $entity, $is_clone, $reason, $action, $merge_only) {
+  protected function setEntityValues(ImportIntent $intent, \Drupal\Core\Entity\FieldableEntityInterface $entity=NULL) {
+    if(!$entity) {
+      $entity = $intent->getEntity();
+    }
+
     /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
     $entityFieldManager = \Drupal::service('entity_field.manager');
     $type = $entity->getEntityTypeId();
     $bundle = $entity->bundle();
     $field_definitions = $entityFieldManager->getFieldDefinitions($type, $bundle);
 
-    $entity_type = \Drupal::entityTypeManager()->getDefinition($request->getEntityType());
+    $entity_type = \Drupal::entityTypeManager()->getDefinition($intent->getEntityType());
     $label       = $entity_type->getKey('label');
-    if ($label && !$merge_only) {
-      $entity->set($label, $request->getField('title'));
+    if ($label && !$intent->shouldMergeChanges()) {
+      $entity->set($label, $intent->getField('title'));
     }
 
     foreach ($field_definitions as $key => $field) {
-      $handler = $this->sync->getFieldHandler($type, $bundle, $key);
+      $handler = $this->flow->getFieldHandler($type, $bundle, $key);
 
       if (!$handler) {
         continue;
       }
 
-      $handler->import($request, $entity, $is_clone, $reason, $action, $merge_only);
+      $handler->import($intent);
     }
 
-    if ($entity instanceof TranslatableInterface && !$request->getActiveLanguage()) {
-      $languages = $request->getTranslationLanguages();
+    if ($entity instanceof TranslatableInterface && !$intent->getActiveLanguage()) {
+      $languages = $intent->getTranslationLanguages();
       foreach ($languages as $language) {
         /**
          * If the provided entity is fieldable, translations are as well.
@@ -318,9 +290,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
           $translation = $entity->addTranslation($language);
         }
 
-        $request->changeTranslationLanguage($language);
-        if (!$this->ignoreImport($request, $is_clone, $reason, $action)) {
-          $this->setEntityValues($request, $translation, $is_clone, $reason, $action, $merge_only);
+        $intent->changeTranslationLanguage($language);
+        if (!$this->ignoreImport($intent)) {
+          $this->setEntityValues($intent, $translation);
         }
       }
 
@@ -337,7 +309,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       }
     }
 
-    $request->changeTranslationLanguage();
+    $intent->changeTranslationLanguage();
 
     try {
       $entity->save();
@@ -350,18 +322,18 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   }
 
   /**
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   * @param \Drupal\drupal_content_sync\SyncIntent $intent
    * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
-  protected function setSourceUrl(ApiUnifyRequest $request, FieldableEntityInterface $entity) {
+  protected function setSourceUrl(ExportIntent $intent, FieldableEntityInterface $entity) {
     if ($entity->hasLinkTemplate('canonical')) {
       try {
         $url = $entity->toUrl('canonical', ['absolute' => TRUE])
           ->toString(TRUE)
           ->getGeneratedUrl();
-        $request->setField(
+        $intent->setField(
           'url',
           $url
         );
@@ -375,7 +347,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   /**
    * Check if the entity should not be ignored from the export.
    *
-   * @param \Drupal\drupal_content_sync\ApiUnifyRequest $request
+   * @param \Drupal\drupal_content_sync\SyncIntent $intent
    *   The API Unify Request.
    * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
    *   The entity that could be ignored.
@@ -387,20 +359,25 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    * @return bool
    *   Whether or not to ignore this export request.
    */
-  protected function ignoreExport(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
-    if ($reason == Flow::EXPORT_AUTOMATICALLY || $reason == Flow::EXPORT_MANUALLY) {
+  protected function ignoreExport(ExportIntent $intent) {
+    $reason = $intent->getReason();
+    $action = $intent->getAction();
+
+    if ($reason == ExportIntent::EXPORT_AUTOMATICALLY || $reason == ExportIntent::EXPORT_MANUALLY) {
       if ($this->settings['export'] != $reason) {
         return TRUE;
       }
     }
 
-    if ($action == Flow::ACTION_UPDATE) {
+    if ($action == SyncIntent::ACTION_UPDATE) {
       $behavior = $this->settings['import_updates'];
-      if ($behavior == Flow::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+      if ($behavior == ImportIntent::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
         $meta_info = MetaInformation::getInfoForEntity(
-          $request->getEntityType(),
-          $request->getUuid(),
-          $this->sync->api)[$this->sync->id];
+          $intent->getEntityType(),
+          $intent->getUuid(),
+          $intent->getFlow(),
+          $intent->getPool()
+          );
         // The flag means to overwrite locally, so changes should not be pushed.
         if ($meta_info && !$meta_info->isSourceEntity()) {
           return TRUE;
@@ -435,29 +412,29 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   /**
    * @inheritdoc
    */
-  public function export(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
-    if ($this->ignoreExport($request, $entity, $reason, $action)) {
+  public function export(ExportIntent $intent, FieldableEntityInterface $entity=NULL) {
+    if ($this->ignoreExport($intent)) {
       return FALSE;
     }
 
     // Base info.
-    $request->setField('title', $entity->label());
+    $intent->setField('title', $entity->label());
 
     // Translations.
-    if (!$request->getActiveLanguage() &&
+    if (!$intent->getActiveLanguage() &&
       $entity instanceof TranslatableInterface) {
       $languages = array_keys($entity->getTranslationLanguages(FALSE));
 
       foreach ($languages as $language) {
-        $request->changeTranslationLanguage($language);
+        $intent->changeTranslationLanguage($language);
         /**
          * @var \Drupal\Core\Entity\FieldableEntityInterface $translation
          */
         $translation = $entity->getTranslation($language);
-        $this->export($request, $translation, $request, $action);
+        $this->export($intent, $translation);
       }
 
-      $request->changeTranslationLanguage();
+      $intent->changeTranslationLanguage();
     }
 
     // Menu items.
@@ -474,11 +451,11 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         continue;
       }
 
-      if (!$this->sync->canExportEntity($item, Flow::EXPORT_AS_DEPENDENCY)) {
+      if (!$this->flow->canExportEntity($item, ExportIntent::EXPORT_AS_DEPENDENCY)) {
         continue;
       }
 
-      $request->embedEntity($item);
+      $intent->embedEntity($item);
     }
 
     // Preview.
@@ -492,10 +469,10 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         return $rendered->render($preview);
       }
     );
-    $request->setField('preview', $html);
+    $intent->setField('preview', $html);
 
     // Source URL.
-    $this->setSourceUrl($request, $entity);
+    $this->setSourceUrl($intent, $entity);
 
     // Fields.
     /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
@@ -505,13 +482,13 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     $field_definitions  = $entityFieldManager->getFieldDefinitions($type, $bundle);
 
     foreach ($field_definitions as $key => $field) {
-      $handler = $this->sync->getFieldHandler($type, $bundle, $key);
+      $handler = $this->flow->getFieldHandler($type, $bundle, $key);
 
       if (!$handler) {
         continue;
       }
 
-      $handler->export($request, $entity, $reason, $action);
+      $handler->export($intent);
     }
 
     return TRUE;

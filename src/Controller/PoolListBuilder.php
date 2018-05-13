@@ -25,6 +25,9 @@ class PoolListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
+    /**
+     * @var \Drupal\drupal_content_sync\Entity\Pool $entity
+     */
     $row['name'] = $entity->label();
     $row['id'] = $entity->id();
     $row['site_id'] = $entity->site_id;

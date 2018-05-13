@@ -3,7 +3,9 @@
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
-use Drupal\drupal_content_sync\ApiUnifyRequest;
+use Drupal\drupal_content_sync\ExportIntent;
+use Drupal\drupal_content_sync\ImportIntent;
+use Drupal\drupal_content_sync\SyncIntent;
 use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\MetaInformation;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
@@ -61,45 +63,49 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
   /**
    * @inheritdoc
    */
-  public function ignoreImport(ApiUnifyRequest $request, $is_clone, $reason, $action) {
+  public function ignoreImport(ImportIntent $intent) {
+    $action = $intent->getAction();
+
     // Not published? Ignore this revision then.
-    if ((empty($request->getField('enabled')) || !$request->getField('enabled')[0]['value']) && $this->settings['handler_settings']['ignore_unpublished']) {
+    if ((empty($intent->getField('enabled')) || !$intent->getField('enabled')[0]['value']) && $this->settings['handler_settings']['ignore_unpublished']) {
       // Unless it's a delete, then it won't have a status and is independent
       // of published state, so we don't ignore the import.
-      if ($action != Flow::ACTION_DELETE) {
+      if ($action != SyncIntent::ACTION_DELETE) {
         return TRUE;
       }
     }
 
     if (!empty($this->settings['handler_settings']['restrict_menus'])) {
-      $menu = $request->getField('menu_name')[0]['value'];
+      $menu = $intent->getField('menu_name')[0]['value'];
       if (empty($this->settings['handler_settings']['restrict_menus'][$menu])) {
         return TRUE;
       }
     }
 
-    $link = $request->getField('link');
+    $link = $intent->getField('link');
     if (isset($link[0]['uri'])) {
       $uri = $link[0]['uri'];
       preg_match('/^internal:/([a-z_0-9]+)\/([a-z0-9-]+)$/', $uri, $found);
       if (!empty($found)) {
-        $request->setField('enabled', [['value' => 0]]);
+        $intent->setField('enabled', [['value' => 0]]);
       }
     }
-    elseif (!empty($link[0][ApiUnifyRequest::ENTITY_TYPE_KEY]) && !empty($link[0][ApiUnifyRequest::UUID_KEY])) {
-      $request->setField('enabled', [['value' => 0]]);
+    elseif (!empty($link[0][SyncIntent::ENTITY_TYPE_KEY]) && !empty($link[0][SyncIntent::UUID_KEY])) {
+      $intent->setField('enabled', [['value' => 0]]);
     }
 
-    return parent::ignoreImport($request, $is_clone, $reason, $action);
+    return parent::ignoreImport($intent);
   }
 
   /**
    * @inheritdoc
    */
-  public function ignoreExport(ApiUnifyRequest $request, FieldableEntityInterface $entity, $reason, $action) {
+  public function ignoreExport(ExportIntent $intent) {
     /**
      * @var \Drupal\menu_link_content\Entity\MenuLinkContent $entity
      */
+    $entity = $intent->getEntity();
+
     if (!$entity->isEnabled() && $this->settings['handler_settings']['ignore_unpublished']) {
       return TRUE;
     }
@@ -131,25 +137,25 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
         }
 
         // Sync not supported > Ignore.
-        if (!$this->sync->supportsEntity($reference)) {
+        if (!$this->flow->supportsEntity($reference)) {
           return TRUE;
         }
 
-        $meta_infos = MetaInformation::getInfoForEntity($link_entity_type, $reference->uuid(), $this->sync->api);
+        $meta_infos = MetaInformation::getInfosForEntity($link_entity_type, $reference->uuid(), ['pool'=>$intent->getPool()->id]);
         $exported   = FALSE;
-        foreach ($meta_infos as $sync => $info) {
-          if (!$info || !$info->getLastExport()) {
+        foreach ($meta_infos as $flow_id => $info) {
+          if (!$info->getLastExport()) {
             continue;
           }
           $exported = TRUE;
         }
-        if (!$exported && !$this->sync->isExporting($link_entity_type, $reference->uuid())) {
+        if (!$exported && !ExportIntent::isExporting($link_entity_type, $reference->uuid())) {
           return TRUE;
         }
       }
     }
 
-    return parent::ignoreExport($request, $entity, $request, $action);
+    return parent::ignoreExport($intent);
   }
 
 }

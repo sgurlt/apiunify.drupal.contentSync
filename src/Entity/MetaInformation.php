@@ -66,29 +66,13 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   }
 
   /**
-   * Get a list of all meta information entities for the given entity.
-   * The list will use the sync config ID of the meta info as key. If a sync
-   * config doesn't have a meta information entity yet, the value will be NULL.
-   *
-   * @param string $entity_type
-   *   The entity type ID.
-   * @param string $entity_uuid
-   *   The entity UUID.
-   * @param string $api_id
-   *   Optional api_id to filter by.
+   * @param $entity_type
+   * @param $entity_uuid
+   * @param \Drupal\drupal_content_sync\Entity\Pool $pool
    *
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation[]
    */
-  public static function getInfoForEntity($entity_type, $entity_uuid, $api_id = NULL) {
-    // Fill with NULL values by default.
-    $result = [];
-    $configs = $api_id ?
-      Flow::getSynchronizationsByApi($api_id) :
-      Flow::getAll();
-    foreach ($configs as $sync) {
-      $result[$sync->id] = NULL;
-    }
-
+  public static function getInfoForPool($entity_type, $entity_uuid, Pool $pool) {
     /**
      * @var \Drupal\drupal_content_sync\Entity\MetaInformation[] $entities
      */
@@ -97,14 +81,67 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
       ->loadByProperties([
         'entity_type' => $entity_type,
         'entity_uuid' => $entity_uuid,
+        'pool'        => $pool->id,
       ]);
 
     // Now extend with existing meta information entities.
     foreach ($entities as $info) {
-      $result[$info->getEntityTypeConfig()] = $info;
+      $result[$info->getFlow()->id] = $info;
     }
 
     return $result;
+  }
+
+  /**
+   * Get a list of all meta information entities for the given entity.
+   *
+   * @param string $entity_type
+   *   The entity type ID.
+   * @param string $entity_uuid
+   *   The entity UUID.
+   * @param array $filter
+   *   Additional filters. Usually "flow"=>... or "pool"=>...
+   *
+   * @return \Drupal\drupal_content_sync\Entity\MetaInformation[]
+   */
+  public static function getInfosForEntity($entity_type, $entity_uuid, $filter=NULL) {
+    $base_filter = [
+      'entity_type' => $entity_type,
+      'entity_uuid' => $entity_uuid,
+    ];
+
+    /**
+     * @var \Drupal\drupal_content_sync\Entity\MetaInformation[] $entities
+     */
+    $entities = \Drupal::entityTypeManager()
+      ->getStorage('dcs_meta_info')
+      ->loadByProperties($filter ? array_merge($filter,$base_filter) : $base_filter );
+
+    return array_values($entities);
+  }
+
+  /**
+   * @param string $entity_type
+   * @param string $entity_uuid
+   * @param \Drupal\drupal_content_sync\Entity\Flow $flow
+   * @param \Drupal\drupal_content_sync\Entity\Pool $pool
+   *
+   * @return \Drupal\drupal_content_sync\Entity\MetaInformation|mixed
+   */
+  public static function getInfoForEntity($entity_type, $entity_uuid, $flow, $pool) {
+    /**
+     * @var \Drupal\drupal_content_sync\Entity\MetaInformation[] $entities
+     */
+    $entities = \Drupal::entityTypeManager()
+      ->getStorage('dcs_meta_info')
+      ->loadByProperties([
+        'entity_type' => $entity_type,
+        'entity_uuid' => $entity_uuid,
+        'flow' => $flow->id,
+        'pool' => $pool->id,
+      ]);
+
+    return reset($entities);
   }
 
   /**
@@ -117,15 +154,6 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
       $this->getEntityTypeName(),
       $this->getUuid()
     );
-  }
-
-  /**
-   * Get the flow this meta information belongs to.
-   *
-   * @return \Drupal\drupal_content_sync\Entity\Flow
-   */
-  public function getSync() {
-    return Flow::getAll()[$this->getEntityTypeConfig()];
   }
 
   /**

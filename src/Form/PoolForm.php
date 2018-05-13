@@ -5,6 +5,9 @@ namespace Drupal\drupal_content_sync\Form;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\drupal_content_sync\ApiUnifyFlowExport;
+use Drupal\drupal_content_sync\ApiUnifyPoolExport;
+use GuzzleHttp\Client;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Site\Settings;
 
@@ -38,6 +41,9 @@ class PoolForm extends EntityForm {
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
 
+    /**
+     * @var \Drupal\drupal_content_sync\Entity\Pool $pool
+     */
     $pool = $this->entity;
 
     $form['label'] = [
@@ -101,6 +107,42 @@ class PoolForm extends EntityForm {
     }
 
     return $form;
+  }
+
+  /**
+   * Validate format of input fields and make sure the API Unify backend is
+   * accessible to actually update it.
+   *
+   * @param array $form
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    parent::validateForm($form, $form_state);
+
+    $api = $form_state->getValue('id');
+    if (!preg_match('@^([a-z0-9\-]+)$@', $api)) {
+      $form_state->setErrorByName('id', $this->t('Please only use letters, numbers and dashes.'));
+    }
+    if ($api == 'drupal' || $api == 'api-unify') {
+      $form_state->setErrorByName('api', $this->t('This name is reserved.'));
+    }
+
+    $site_id = $form_state->getValue('site_id');
+    if ($site_id == ApiUnifyPoolExport::POOL_SITE_ID) {
+      $form_state->setErrorByName('site_id', $this->t('This name is reserved.'));
+    }
+
+    $url    = $form_state->getValue('backend_url');
+    $client = new Client();
+    try {
+      $response = $client->get($url . '/status');
+      if ($response->getStatusCode() != 200) {
+        $form_state->setErrorByName('backend_url', $this->t('The backend did not respond with 200 OK. Please ask your technical contact person for support.'));
+      }
+    }
+    catch (\Exception $e) {
+      $form_state->setErrorByName('backend_url', $this->t('The backend did not respond with 200 OK. Please ask your technical contact person for support. The error messages is @message', ['@message' => $e->getMessage()]));
+    }
   }
 
   /**
