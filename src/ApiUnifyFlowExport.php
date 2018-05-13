@@ -288,16 +288,16 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
       try {
         $entity_type_pools = [];
         foreach ($type['import_pools'] as $pool_id => $state) {
-          if (!isset($entity_type_pools[$id])) {
-            $entity_type_pools[$id] = [];
+          if (!isset($entity_type_pools[$pool_id])) {
+            $entity_type_pools[$pool_id] = [];
           }
-          $entity_type_pools[$id]['import'] = $state;
+          $entity_type_pools[$pool_id]['import'] = $state;
         }
         foreach ($type['export_pools'] as $pool_id => $state) {
-          if (!isset($entity_type_pools[$id])) {
-            $entity_type_pools[$id] = [];
+          if (!isset($entity_type_pools[$pool_id])) {
+            $entity_type_pools[$pool_id] = [];
           }
-          $entity_type_pools[$id]['export'] = $state;
+          $entity_type_pools[$pool_id]['export'] = $state;
         }
 
         foreach ($entity_type_pools as $pool_id => $definition) {
