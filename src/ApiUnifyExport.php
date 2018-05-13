@@ -27,6 +27,11 @@ abstract class ApiUnifyExport {
   abstract public function export();
 
   /**
+   *
+   */
+  abstract public function remove($removedOnly = TRUE);
+
+  /**
    * Send a request to the API Unify backend.
    * Requests will be passed to $this->>client.
    *

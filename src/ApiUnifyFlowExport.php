@@ -607,7 +607,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
   /**
    * Delete the synchronizations from this connection.
    */
-  public function deleteConfig($removedOnly = TRUE) {
+  public function remove($removedOnly = TRUE) {
     return TRUE;
 
     // @TODO Refactor for pool changes

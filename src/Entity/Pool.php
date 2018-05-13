@@ -3,6 +3,10 @@
 namespace Drupal\drupal_content_sync\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
+use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\drupal_content_sync\ApiUnifyPoolExport;
+use GuzzleHttp\Exception\RequestException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Defines the Pool entity.
@@ -72,6 +76,53 @@ class Pool extends ConfigEntityBase implements PoolInterface {
    * @var string
    */
   public $site_id;
+
+  /**
+   * Acts on a saved entity before the insert or update hook is invoked.
+   *
+   * Used after the entity is saved, but before invoking the insert or update
+   * hook. Note that in case of translatable content entities this callback is
+   * only fired on their current translation. It is up to the developer to
+   * iterate over all translations if needed.
+   *
+   * @param \Drupal\Core\Entity\EntityStorageInterface $storage
+   *   The entity storage object.
+   */
+  public function preSave(EntityStorageInterface $storage) {
+    parent::preSave($storage);
+
+    $exporter = new ApiUnifyPoolExport($this);
+    $exporter->remove(TRUE);
+
+    if (!$exporter->export()) {
+      $messenger = \Drupal::messenger();
+      $warning = 'The communication with the Drupal Content Sync Server failed.' .
+        ' Therefore the synchronization entity could not be saved. For more' .
+        ' information see the error output above.';
+
+      $messenger->addWarning(t($warning));
+      return;
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function preDelete(EntityStorageInterface $storage, array $entities) {
+    parent::preDelete($storage, $entities);
+
+    try {
+      foreach ($entities as $entity) {
+        $exporter = new ApiUnifyPoolExport($entity);
+        $exporter->remove(FALSE);
+      }
+    }
+    catch (RequestException $e) {
+      $messenger = \Drupal::messenger();
+      $messenger->addError(t('The API Unify server could not be accessed. Please check the connection.'));
+      throw new AccessDeniedHttpException();
+    }
+  }
 
   /**
    * Returns the Drupal Content Sync Backend URL for this pool.

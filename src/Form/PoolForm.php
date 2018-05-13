@@ -119,7 +119,7 @@ class PoolForm extends EntityForm {
     parent::validateForm($form, $form_state);
 
     $api = $form_state->getValue('id');
-    if (!preg_match('@^([a-z0-9\-]+)$@', $api)) {
+    if (!preg_match('@^([a-z0-9\-_]+)$@', $api)) {
       $form_state->setErrorByName('id', $this->t('Please only use letters, numbers and dashes.'));
     }
     if ($api == 'drupal' || $api == 'api-unify') {
@@ -127,6 +127,9 @@ class PoolForm extends EntityForm {
     }
 
     $site_id = $form_state->getValue('site_id');
+    if (!preg_match('@^([a-z0-9\-_]+)$@', $site_id)) {
+      $form_state->setErrorByName('site_id', $this->t('Please only use letters, numbers and dashes.'));
+    }
     if ($site_id == ApiUnifyPoolExport::POOL_SITE_ID) {
       $form_state->setErrorByName('site_id', $this->t('This name is reserved.'));
     }

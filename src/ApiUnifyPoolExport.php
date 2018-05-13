@@ -145,4 +145,8 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
     return TRUE;
   }
 
+  public function remove($removedOnly = TRUE) {
+    return TRUE;
+  }
+
 }

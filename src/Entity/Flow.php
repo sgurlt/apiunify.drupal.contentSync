@@ -91,9 +91,9 @@ class Flow extends ConfigEntityBase implements FlowInterface {
     parent::preSave($storage);
 
     $exporter = new ApiUnifyFlowExport($this);
-    $exporter->deleteConfig(TRUE);
+    $exporter->remove(TRUE);
 
-    if (!$exporter->exportConfig()) {
+    if (!$exporter->export()) {
       $messenger = \Drupal::messenger();
       $warning = 'The communication with the Drupal Content Sync Server failed.' .
         ' Therefore the synchronization entity could not be saved. For more' .
@@ -113,7 +113,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
     try {
       foreach ($entities as $entity) {
         $exporter = new ApiUnifyFlowExport($entity);
-        $exporter->deleteConfig(FALSE);
+        $exporter->remove(FALSE);
       }
     }
     catch (RequestException $e) {
