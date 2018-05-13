@@ -32,11 +32,12 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
 
   use EntityChangedTrait;
 
-  const FLAG_CLONED              = 0x00000001;
-  const FLAG_DELETED             = 0x00000002;
-  const FLAG_USER_ALLOWED_EXPORT = 0x00000004;
-  const FLAG_EDIT_OVERRIDE       = 0x00000008;
-  const FLAG_IS_SOURCE_ENTITY    = 0x00000010;
+  const FLAG_CLONED               = 0x00000001;
+  const FLAG_DELETED              = 0x00000002;
+  const FLAG_USER_ALLOWED_EXPORT  = 0x00000004;
+  const FLAG_EDIT_OVERRIDE        = 0x00000008;
+  const FLAG_IS_SOURCE_ENTITY     = 0x00000010;
+  const FLAG_EXPORT_ENABLED       = 0x00000020;
 
   /**
    * {@inheritdoc}
@@ -166,11 +167,9 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   public function isCloned($set = NULL) {
     if ($set === TRUE) {
       $this->set('flags', $this->get('flags')->value | self::FLAG_CLONED);
-      $this->save();
     }
     elseif ($set === FALSE) {
       $this->set('flags', $this->get('flags')->value & ~self::FLAG_CLONED);
-      $this->save();
     }
     return (bool) ($this->get('flags')->value & self::FLAG_CLONED);
   }
@@ -187,13 +186,30 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   public function isSourceEntity($set = NULL) {
     if ($set === TRUE) {
       $this->set('flags', $this->get('flags')->value | self::FLAG_IS_SOURCE_ENTITY);
-      $this->save();
     }
     elseif ($set === FALSE) {
       $this->set('flags', $this->get('flags')->value & ~self::FLAG_IS_SOURCE_ENTITY);
-      $this->save();
     }
     return (bool) ($this->get('flags')->value & self::FLAG_IS_SOURCE_ENTITY);
+  }
+
+  /**
+   * Returns the information if the entity has been chosen by the user to
+   * be exported with this flow and pool.
+   *
+   * @param bool $set
+   *   Optional parameter to set the value for ExportEnabled.
+   *
+   * @return bool
+   */
+  public function isExportEnabled($set = NULL) {
+    if ($set === TRUE) {
+      $this->set('flags', $this->get('flags')->value | self::FLAG_EXPORT_ENABLED);
+    }
+    elseif ($set === FALSE) {
+      $this->set('flags', $this->get('flags')->value & ~self::FLAG_EXPORT_ENABLED);
+    }
+    return (bool) ($this->get('flags')->value & self::FLAG_EXPORT_ENABLED);
   }
 
   /**
@@ -207,11 +223,9 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   public function isOverriddenLocally($set = NULL) {
     if ($set === TRUE) {
       $this->set('flags', $this->get('flags')->value | self::FLAG_EDIT_OVERRIDE);
-      $this->save();
     }
     elseif ($set === FALSE) {
       $this->set('flags', $this->get('flags')->value & ~self::FLAG_EDIT_OVERRIDE);
-      $this->save();
     }
     return (bool) ($this->get('flags')->value & self::FLAG_EDIT_OVERRIDE);
   }
@@ -227,11 +241,9 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   public function didUserAllowExport($set = NULL) {
     if ($set === TRUE) {
       $this->set('flags', $this->get('flags')->value | self::FLAG_USER_ALLOWED_EXPORT);
-      $this->save();
     }
     elseif ($set === FALSE) {
       $this->set('flags', $this->get('flags')->value & ~self::FLAG_USER_ALLOWED_EXPORT);
-      $this->save();
     }
     return (bool) ($this->get('flags')->value & self::FLAG_USER_ALLOWED_EXPORT);
   }
@@ -247,11 +259,9 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   public function isDeleted($set = NULL) {
     if ($set === TRUE) {
       $this->set('flags', $this->get('flags')->value | self::FLAG_DELETED);
-      $this->save();
     }
     elseif ($set === FALSE) {
       $this->set('flags', $this->get('flags')->value & ~self::FLAG_DELETED);
-      $this->save();
     }
     return (bool) ($this->get('flags')->value & self::FLAG_DELETED);
   }
@@ -272,7 +282,6 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    */
   public function setLastImport($timestamp) {
     $this->set('last_import', $timestamp);
-    $this->save();
   }
 
   /**
@@ -309,7 +318,6 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    */
   public function setLastExport($timestamp) {
     $this->set('last_export', $timestamp);
-    $this->save();
   }
 
   /**
@@ -346,7 +354,6 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    */
   public function setEntityTypeVersion($version) {
     $this->set('entity_type_version', $version);
-    $this->save();
   }
 
   /**

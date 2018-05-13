@@ -183,13 +183,21 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
     $form['dcs_export_group']['#group'] = 'advanced';
   }
 
-  if (count($selectable_exportable_flows) !== 1) {
+  // Flow selection.
+  if (count($selectable_exportable_flows) === 1) {
+    $ids = array_keys($selectable_exportable_flows);
+    $form['dcs_export_group']['dcs_flow_selector'] = [
+      '#title' => t('Export flow selection'),
+      '#type' => 'hidden',
+      '#value' => $ids[0],
+    ];
+  }
+  else {
     $flow_options = [];
     foreach ($selectable_exportable_flows as $flow_id => $selectable_exportable_flow) {
       $flow_options[$flow_id] = $selectable_exportable_flow['flow_label'];
     }
 
-    // Flow selection.
     $form['dcs_export_group']['dcs_flow_selector'] = [
       '#title' => t('Export flow selection'),
       '#type' => 'select',
@@ -222,12 +230,68 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
     '#prefix' => '<div id="ajax-pool-selector-wrapper">',
     '#suffix' => '</div>',
     '#type' => $widget_type,
-    '#default_value' => '',
+    '#default_value' => [],
     '#options' => $options['pools'],
   ];
 
   if ($options['widget_type'] == 'multi_select') {
     $form['dcs_export_group']['dcs_pool_selector']['#multiple'] = TRUE;
+  }
+
+  array_unshift($form['actions']['submit']['#submit'], '_drupal_content_sync_set_entity_export');
+}
+
+/**
+ * Meta Information update.
+ *
+ * Update the MetaInformation for the given entity, setting
+ * the MetaInformation::FLAG_EDIT_OVERRIDE flag accordingly.
+ *
+ * @param array $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ */
+function _drupal_content_sync_set_entity_export(array $form, FormStateInterface $form_state) {
+  $flow = $form_state->getValue('dcs_flow_selector');
+  if(!$flow){
+    return;
+  }
+  $flow   = Flow::getAll()[$flow];
+
+  $values = $form_state->getValue('dcs_pool_selector');
+  $pools  = Pool::getAll();
+
+  /**
+   * @var EntityInterface $entity
+   */
+  $entity = $form_state
+    ->getFormObject()
+    ->getEntity();
+
+  foreach ($values as $pool_id=>$selected) {
+    $pool = $pools[$pool_id];
+    $meta = MetaInformation::getInfoForEntity($entity->getEntityTypeId(),$entity->uuid(),$flow,$pool);
+    if(!$selected) {
+      if($meta) {
+        $meta->isExportEnabled(FALSE);
+        $meta->save();
+      }
+      continue;
+    }
+
+    $meta = MetaInformation::getInfoForEntity($entity->getEntityTypeId(),$entity->uuid(),$flow,$pool);
+    if(!$meta) {
+      $meta = MetaInformation::create([
+        'flow' => $flow->id,
+        'pool' => $pool->id,
+        'entity_type' => $entity->getEntityTypeId(),
+        'entity_uuid' => $entity->uuid(),
+        'entity_type_version' => Flow::getEntityTypeVersion($entity->getEntityTypeId(), $entity->bundle()),
+        'flags' => 0,
+        'source_url' => NULL,
+      ]);
+    }
+    $meta->isExportEnabled(TRUE);
+    $meta->save();
   }
 }
 

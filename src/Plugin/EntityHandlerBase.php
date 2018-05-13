@@ -418,6 +418,10 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       return FALSE;
     }
 
+    if(!$entity) {
+      $entity = $intent->getEntity();
+    }
+
     // Base info.
     $intent->setField('title', $entity->label());
 

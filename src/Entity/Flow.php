@@ -276,7 +276,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
       }
 
       $meta = MetaInformation::getInfoForEntity($entity->getEntityTypeId(), $entity->uuid(), $this, $pool);
-      if ($meta && $meta->getLastExport()) {
+      if ($meta && $meta->isExportEnabled()) {
         $result[] = $pool;
       }
     }

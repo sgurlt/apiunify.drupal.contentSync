@@ -140,6 +140,11 @@ abstract class SyncIntent {
         $this->meta->isSourceEntity(TRUE);
       }
     }
+    elseif(!$this->meta->getLastExport() && !$this->meta->getLastImport()) {
+      if (!$source_url) {
+        $this->meta->isSourceEntity(TRUE);
+      }
+    }
 
     $this->embedEntities          = [];
     $this->activeLanguage         = NULL;
