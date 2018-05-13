@@ -12,7 +12,7 @@ entity.dcs_flow.collection:
   path: '/admin/config/services/drupal_content_sync/flow'
   defaults:
     _entity_list: 'dcs_flow'
-    _title: 'Flow - Configuration'
+    _title: 'Flows - Drupal Content Sync'
   requirements:
     _permission: 'administer site configuration'
 
@@ -20,7 +20,7 @@ entity.dcs_flow.add_form:
   path: '/admin/config/services/drupal_content_sync/flow/add'
   defaults:
     _entity_form: 'dcs_flow.add'
-    _title: 'Add flow'
+    _title: 'Add Flow to Drupal Content Sync'
   requirements:
     _permission: 'administer site configuration'
 
@@ -28,7 +28,7 @@ entity.dcs_flow.edit_form:
   path: '/admin/config/services/drupal_content_sync/flow/{dcs_flow}/edit'
   defaults:
     _entity_form: 'dcs_flow.edit'
-    _title: 'Edit flow'
+    _title: 'Edit Flow from Drupal Content Sync'
   requirements:
     _permission: 'administer site configuration'
 
@@ -36,7 +36,7 @@ entity.dcs_flow.delete_form:
   path: '/admin/config/services/drupal_content_sync/flow/{dcs_flow}/delete'
   defaults:
     _entity_form: 'dcs_flow.delete'
-    _title: 'Delete flow'
+    _title: 'Delete Flow from Drupal Content Sync'
   requirements:
     _permission: 'administer site configuration'
 
@@ -45,7 +45,7 @@ entity.dcs_pool.collection:
   path: '/admin/config/services/drupal_content_sync/pool'
   defaults:
     _entity_list: 'dcs_pool'
-    _title: 'Pools'
+    _title: 'Pools - Drupal Content Sync'
   requirements:
     _permission: 'administer site configuration'
 
@@ -53,7 +53,7 @@ entity.dcs_pool.add_form:
   path: '/admin/config/services/drupal_content_sync/pool/add'
   defaults:
     _entity_form: 'dcs_pool.add'
-    _title: 'Add pool'
+    _title: 'Add Pool to Drupal Content Sync'
   requirements:
     _permission: 'administer site configuration'
 
@@ -61,7 +61,7 @@ entity.dcs_pool.edit_form:
   path: '/admin/config/services/drupal_content_sync/pool/{dcs_pool}/edit'
   defaults:
     _entity_form: 'dcs_pool.edit'
-    _title: 'Edit pool'
+    _title: 'Edit Pool from Drupal Content Sync'
   requirements:
     _permission: 'administer site configuration'
 
@@ -69,7 +69,7 @@ entity.dcs_pool.delete_form:
   path: '/admin/config/services/drupal_content_sync/pool/{dcs_pool}/delete'
   defaults:
     _entity_form: 'dcs_pool.delete'
-    _title: 'Delete pool'
+    _title: 'Delete Pool from Drupal Content Sync'
   requirements:
     _permission: 'administer site configuration'
 
