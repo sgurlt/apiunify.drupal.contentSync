@@ -266,8 +266,6 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
         ->decrypt($value, $encryption_profile);
     }
 
-
-
     $entity_types = $this->flow->sync_entities;
 
     $localConnections = [];
