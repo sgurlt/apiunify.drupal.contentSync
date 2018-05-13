@@ -17,6 +17,8 @@ use Drupal\drupal_content_sync\Plugin\Type\EntityHandlerPluginManager;
 use Drupal\drupal_content_sync\Plugin\Type\FieldHandlerPluginManager;
 use Drupal\Core\Config\ConfigFactory;
 use GuzzleHttp\Client;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\Url;
 
 /**
  * Form handler for the Flow add and edit forms.
@@ -151,6 +153,18 @@ class FlowForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
+
+    // Before a flow can be created, at least one pool must exist.
+    // Get all pool entities.
+    $pool_entities = Pool::getAll();
+
+    if (empty($pool_entities)) {
+      global $base_url;
+      $path = Url::fromRoute('drupal_content_sync.dcs_pool.pool_required')->toString();
+      $response = new RedirectResponse($base_url . $path);
+      $response->send();
+    }
+
     $export_option_labels = [
       Flow::EXPORT_DISABLED => $this->t('Disabled')->render(),
       Flow::EXPORT_AUTOMATICALLY => $this->t('All')->render(),
@@ -268,9 +282,6 @@ class FlowForm extends EntityForm {
 
         $current_display_mode = $type_key . '.' . $entity_bundle_name . '.' . self::DRUPAL_CONTENT_SYNC_PREVIEW_FIELD;
         $has_preview_mode = in_array($current_display_mode, $display_modes_ids) || $type_key == 'file';
-
-        // Get all pool entities.
-        $pool_entities = Pool::getAll();
 
         if (!isset($def_sync_entities[$type_key . '-' . $entity_bundle_name])) {
           $row_default_values = [
