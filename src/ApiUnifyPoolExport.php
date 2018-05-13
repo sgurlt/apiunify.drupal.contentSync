@@ -128,8 +128,6 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
           ],
         ],
       ]);
-
-      $this->createEntityTypes();
     }
     catch (RequestException $e) {
       $messenger = \Drupal::messenger();
