@@ -6,6 +6,9 @@ use Drupal\Core\Site\Settings;
 use Drupal\drupal_content_sync\Entity\Pool;
 use GuzzleHttp\Exception\RequestException;
 
+/**
+ *
+ */
 class ApiUnifyPoolExport extends ApiUnifyExport {
   /**
    * @var string POOL_SITE_ID
@@ -40,7 +43,7 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
       $pool->site_id = $dcs_settings[$pool->id];
     }
 
-    $this->pool   = $pool;
+    $this->pool = $pool;
   }
 
   /**
@@ -143,5 +146,5 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
     }
     return TRUE;
   }
-}
 
+}

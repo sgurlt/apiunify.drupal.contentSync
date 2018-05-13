@@ -2,7 +2,6 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
-use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ExportIntent;
 use Drupal\drupal_content_sync\ImportIntent;
 use Drupal\drupal_content_sync\SyncIntent;
@@ -141,7 +140,7 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
           return TRUE;
         }
 
-        $meta_infos = MetaInformation::getInfosForEntity($link_entity_type, $reference->uuid(), ['pool'=>$intent->getPool()->id]);
+        $meta_infos = MetaInformation::getInfosForEntity($link_entity_type, $reference->uuid(), ['pool' => $intent->getPool()->id]);
         $exported   = FALSE;
         foreach ($meta_infos as $flow_id => $info) {
           if (!$info->getLastExport()) {

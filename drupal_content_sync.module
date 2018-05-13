@@ -7,8 +7,6 @@
  * @author Edge Box GmbH
  */
 
-use Drupal\drupal_content_sync\DrupalContentSync;
-use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\drupal_content_sync\ExportIntent;
@@ -89,13 +87,16 @@ function drupal_content_sync_form_alter(array &$form, FormStateInterface $form_s
             $entity->uuid()
           );
           $exported = [];
-          foreach($infos as $info) {
-            if(!in_array($info->getFlow(),$flows))
+          foreach ($infos as $info) {
+            if (!in_array($info->getFlow(), $flows)) {
               continue;
-            if(in_array($info->getFlow(),$exported))
+            }
+            if (in_array($info->getFlow(), $exported)) {
               continue;
-            if(!$info->getLastExport())
+            }
+            if (!$info->getLastExport()) {
               continue;
+            }
             $exported[] = $info->getFlow();
           }
           $flows = $exported;
@@ -147,7 +148,7 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
 
   // If not bundle is given, the previous mentioned commit is
   // not added to the project.
-  if (!is_null($bundle )) {
+  if (!is_null($bundle)) {
     $selectable_exportable_flows = Pool::getSelectablePools($entity_type, $bundle);
 
     if (!empty($selectable_exportable_flows)) {

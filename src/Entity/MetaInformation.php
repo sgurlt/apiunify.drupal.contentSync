@@ -53,7 +53,6 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
       throw new \Exception(t('The pool is required.'));
     }
 
-
     /**
      * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
      */
@@ -104,7 +103,7 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    *
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation[]
    */
-  public static function getInfosForEntity($entity_type, $entity_uuid, $filter=NULL) {
+  public static function getInfosForEntity($entity_type, $entity_uuid, $filter = NULL) {
     $base_filter = [
       'entity_type' => $entity_type,
       'entity_uuid' => $entity_uuid,
@@ -115,7 +114,7 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
      */
     $entities = \Drupal::entityTypeManager()
       ->getStorage('dcs_meta_info')
-      ->loadByProperties($filter ? array_merge($filter,$base_filter) : $base_filter );
+      ->loadByProperties($filter ? array_merge($filter, $base_filter) : $base_filter);
 
     return array_values($entities);
   }
@@ -319,7 +318,7 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    * @return \Drupal\drupal_content_sync\Entity\Flow
    */
   public function getFlow() {
-    return Flow::getAll()[ $this->get('flow')->value ];
+    return Flow::getAll()[$this->get('flow')->value];
   }
 
   /**
@@ -328,7 +327,7 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    * @return \Drupal\drupal_content_sync\Entity\Pool
    */
   public function getPool() {
-    return Pool::getAll()[ $this->get('pool')->value ];
+    return Pool::getAll()[$this->get('pool')->value];
   }
 
   /**

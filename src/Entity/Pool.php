@@ -39,11 +39,11 @@ class Pool extends ConfigEntityBase implements PoolInterface {
   /**
    * @var string POOL_USAGE_ALLOW Allow usage of this pool for this flow.
    */
-  const POOL_USAGE_ALLOW  = 'allow';
+  const POOL_USAGE_ALLOW = 'allow';
   /**
    * @var string POOL_USAGE_FORCE Force usage of this pool for this flow.
    */
-  const POOL_USAGE_FORCE  = 'force';
+  const POOL_USAGE_FORCE = 'force';
 
   /**
    * The Pool ID.
@@ -101,9 +101,9 @@ class Pool extends ConfigEntityBase implements PoolInterface {
    *
    * @return int|null
    */
-  public function getNewestTimestamp($entity_type,$entity_uuid,$import=TRUE) {
+  public function getNewestTimestamp($entity_type, $entity_uuid, $import = TRUE) {
     $meta_infos = MetaInformation::getInfoForPool($entity_type, $entity_uuid, $this);
-    $timestamp  = NULL;
+    $timestamp = NULL;
     foreach ($meta_infos as $info) {
       $item_timestamp = $import ? $info->getLastImport() : $info->getLastExport();
       if ($item_timestamp) {
@@ -124,10 +124,10 @@ class Pool extends ConfigEntityBase implements PoolInterface {
    * @param int $timestamp
    * @param bool $import
    */
-  public function setTimestamp($entity_type,$entity_uuid,$timestamp,$import=TRUE) {
+  public function setTimestamp($entity_type, $entity_uuid, $timestamp, $import = TRUE) {
     $meta_infos = MetaInformation::getInfoForPool($entity_type, $entity_uuid, $this);
     foreach ($meta_infos as $info) {
-      if($import) {
+      if ($import) {
         $info->setLastImport($timestamp);
       }
       else {
@@ -144,7 +144,7 @@ class Pool extends ConfigEntityBase implements PoolInterface {
    * @param $entity_type
    * @param $entity_uuid
    */
-  public function markDeleted($entity_type,$entity_uuid) {
+  public function markDeleted($entity_type, $entity_uuid) {
     $meta_infos = MetaInformation::getInfoForPool($entity_type, $entity_uuid, $this);
     foreach ($meta_infos as $info) {
       $info->isDeleted(TRUE);
@@ -161,10 +161,10 @@ class Pool extends ConfigEntityBase implements PoolInterface {
    *
    * @return bool
    */
-  public function isEntityDeleted($entity_type,$entity_uuid) {
+  public function isEntityDeleted($entity_type, $entity_uuid) {
     $meta_infos = MetaInformation::getInfoForPool($entity_type, $entity_uuid, $this);
     foreach ($meta_infos as $info) {
-      if($info->isDeleted()) {
+      if ($info->isDeleted()) {
         return TRUE;
       }
     }

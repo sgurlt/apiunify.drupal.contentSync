@@ -41,7 +41,7 @@ abstract class SyncIntent {
     $translationFieldValues;
 
   /**
-   * @var MetaInformation $meta The meta information for this entity and sync.
+   * @var \Drupal\drupal_content_sync\Entity\MetaInformation
    */
   protected $meta;
   protected $pool,
@@ -102,7 +102,7 @@ abstract class SyncIntent {
    *
    * @param \Drupal\drupal_content_sync\Entity\Flow $flow
    *   {@see SyncIntent::$sync}.
-   * @param Pool $pool
+   * @param \Drupal\drupal_content_sync\Entity\Pool $pool
    *   {@see SyncIntent::$pool}.
    * @param string $reason
    *   {@see Flow::EXPORT_*} or {@see Flow::IMPORT_*}.
@@ -117,7 +117,7 @@ abstract class SyncIntent {
    * @param string $source_url
    *   The source URL if imported or NULL if exported from this site.
    */
-  public function __construct(Flow $flow, Pool $pool, $reason, $action, $entity_type, $bundle, $uuid, $source_url=NULL) {
+  public function __construct(Flow $flow, Pool $pool, $reason, $action, $entity_type, $bundle, $uuid, $source_url = NULL) {
     $this->flow       = $flow;
     $this->pool       = $pool;
     $this->reason     = $reason;
@@ -125,7 +125,7 @@ abstract class SyncIntent {
     $this->entityType = $entity_type;
     $this->bundle     = $bundle;
     $this->uuid       = $uuid;
-    $this->meta       = MetaInformation::getInfoForEntity($entity_type,$uuid,$flow,$pool);
+    $this->meta       = MetaInformation::getInfoForEntity($entity_type, $uuid, $flow, $pool);
     if (!$this->meta) {
       $this->meta = MetaInformation::create([
         'flow' => $this->flow->id,
@@ -200,8 +200,8 @@ abstract class SyncIntent {
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
   public function setEntity(EntityInterface $entity) {
-    if($this->entity && $entity!=$this->entity) {
-      throw new SyncException(SyncException::CODE_INTERNAL_ERROR,NULL, "Attempting to re-set existing entity.");
+    if ($this->entity && $entity != $this->entity) {
+      throw new SyncException(SyncException::CODE_INTERNAL_ERROR, NULL, "Attempting to re-set existing entity.");
     }
     $this->entity = $entity;
   }

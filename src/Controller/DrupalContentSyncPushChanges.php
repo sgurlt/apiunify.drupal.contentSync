@@ -4,7 +4,6 @@ namespace Drupal\drupal_content_sync\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\FieldableEntityInterface;
-use Drupal\drupal_content_sync\DrupalContentSync;
 use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\ExportIntent;
 use Drupal\drupal_content_sync\SyncIntent;

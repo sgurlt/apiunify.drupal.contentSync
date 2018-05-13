@@ -239,7 +239,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    * Set the values for the imported entity.
    *
    * @param \Drupal\drupal_content_sync\SyncIntent $intent
-   * @param FieldableEntityInterface $entity The translation of the entity.
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
+   *   The translation of the entity.
    *
    * @see Flow::IMPORT_*
    *
@@ -248,8 +249,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    * @return bool
    *   Returns TRUE when the values are set.
    */
-  protected function setEntityValues(ImportIntent $intent, \Drupal\Core\Entity\FieldableEntityInterface $entity=NULL) {
-    if(!$entity) {
+  protected function setEntityValues(ImportIntent $intent, FieldableEntityInterface $entity = NULL) {
+    if (!$entity) {
       $entity = $intent->getEntity();
     }
 
@@ -412,7 +413,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   /**
    * @inheritdoc
    */
-  public function export(ExportIntent $intent, FieldableEntityInterface $entity=NULL) {
+  public function export(ExportIntent $intent, FieldableEntityInterface $entity = NULL) {
     if ($this->ignoreExport($intent)) {
       return FALSE;
     }

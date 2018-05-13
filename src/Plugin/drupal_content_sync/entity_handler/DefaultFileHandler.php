@@ -7,7 +7,6 @@ use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\drupal_content_sync\ExportIntent;
 use Drupal\drupal_content_sync\ImportIntent;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
-use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\SyncIntent;
 
 /**
@@ -184,11 +183,11 @@ class DefaultFileHandler extends EntityHandlerBase {
   /**
    * @inheritdoc
    */
-  public function export(ExportIntent $intent, FieldableEntityInterface $entity=NULL) {
+  public function export(ExportIntent $intent, FieldableEntityInterface $entity = NULL) {
     /**
      * @var \Drupal\file\FileInterface $entity
      */
-    if(!$entity) {
+    if (!$entity) {
       $entity = $intent->getEntity();
     }
 

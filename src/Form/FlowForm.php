@@ -179,7 +179,7 @@ class FlowForm extends EntityForm {
     $form['#attached']['library'][] = 'drupal_content_sync/flow-form';
 
     /**
-     * @var Flow $flow
+     * @var \Drupal\drupal_content_sync\Entity\Flow $flow
      */
     $flow = $this->entity;
 
@@ -763,7 +763,7 @@ class FlowForm extends EntityForm {
       $sync_entities[$key]['bundle_name'] = $bundle_key;
     }
 
-    //  $is_new = !$this->exists($config->id());
+    // $is_new = !$this->exists($config->id());
     $status = $config->save();
 
     if ($status) {

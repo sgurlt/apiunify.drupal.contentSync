@@ -8,7 +8,6 @@ use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\Pool;
 use Drupal\drupal_content_sync\Exception\SyncException;
-use Drupal\drupal_content_sync\ExportIntent;
 use Drupal\drupal_content_sync\ImportIntent;
 use Drupal\drupal_content_sync\SyncIntent;
 use Drupal\rest\ModifiedResourceResponse;
@@ -184,10 +183,11 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       $items    = [];
 
       foreach ($entities as $entity) {
-        //$sync   = Flow::getFlowsForEntity($entity, ExportIntent::EXPORT_AUTOMATICALLY);
+        // $sync   = Flow::getFlowsForEntity($entity, ExportIntent::EXPORT_AUTOMATICALLY);.
         $result = [];
         // @TODO add export all option
-        $status = FALSE;//$sync->getSerializedEntity($result, $entity, ExportIntent::EXPORT_AUTOMATICALLY);
+        // $sync->getSerializedEntity($result, $entity, ExportIntent::EXPORT_AUTOMATICALLY);
+        $status = FALSE;
         if ($status) {
           $items[] = $result;
         }
@@ -315,7 +315,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         '@not' => 'NO',
         '@clone' => $is_clone ? 'as clone' : '',
         '@message' => t('No pool config matches this request (@api).', [
-          '@api' => $api
+          '@api' => $api,
         ])->render(),
       ]);
       return new ResourceResponse(
@@ -364,7 +364,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     }
 
     try {
-      $intent = new ImportIntent($flow,$pool,$reason,$action,$entity_type_name,$entity_bundle,$data,$is_clone);
+      $intent = new ImportIntent($flow, $pool, $reason, $action, $entity_type_name, $entity_bundle, $data, $is_clone);
       $status = $intent->execute();
     }
     catch (SyncException $e) {

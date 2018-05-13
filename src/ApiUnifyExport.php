@@ -5,16 +5,25 @@ namespace Drupal\drupal_content_sync;
 use Drupal\Core\Url;
 use GuzzleHttp\Exception\RequestException;
 
+/**
+ *
+ */
 abstract class ApiUnifyExport {
   /**
    * @var \GuzzleHttp\Client
    */
   protected $client;
 
+  /**
+   *
+   */
   public function __construct() {
     $this->client = \Drupal::httpClient();
   }
 
+  /**
+   *
+   */
   abstract public function export();
 
   /**
@@ -111,4 +120,5 @@ abstract class ApiUnifyExport {
 
     return $resultUrl->toUriString();
   }
+
 }

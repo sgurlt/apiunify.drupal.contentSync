@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\drupal_content_sync;
 
 use Drupal\Core\Entity\EntityChangedInterface;
@@ -10,7 +11,7 @@ use Drupal\drupal_content_sync\Entity\Pool;
 use Drupal\drupal_content_sync\Exception\SyncException;
 
 /**
- * Class ExportIntent
+ * Class ExportIntent.
  *
  * @package Drupal\drupal_content_sync
  */
@@ -53,8 +54,6 @@ class ExportIntent extends SyncIntent {
    */
   const EXPORT_FORCED = 'forced';
 
-
-
   /**
    * ExportIntent constructor.
    *
@@ -68,8 +67,6 @@ class ExportIntent extends SyncIntent {
     parent::__construct($flow, $pool, $reason, $action, $entity->getEntityTypeId(), $entity->bundle(), $entity->uuid());
     $this->entity = $entity;
   }
-
-
 
   /**
    * Serialize the given entity using the entity export and field export
@@ -126,7 +123,8 @@ class ExportIntent extends SyncIntent {
   /**
    * Export the given entity.
    *
-   * @param ExportIntent $intent The data required to perform the export.
+   * @param ExportIntent $intent
+   *   The data required to perform the export.
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
@@ -159,7 +157,7 @@ class ExportIntent extends SyncIntent {
         foreach ($entity->getTranslationLanguages(FALSE) as $language) {
           $translation = $entity->getTranslation($language->getId());
           /**
-           * @var EntityChangedInterface $translation
+           * @var \Drupal\Core\Entity\EntityChangedInterface $translation
            */
           if ($translation->getChangedTime() > $export) {
             $export = $translation->getChangedTime();
@@ -180,7 +178,7 @@ class ExportIntent extends SyncIntent {
     $entity_bundle = $entity->bundle();
     $entity_uuid   = $entity->uuid();
 
-    $exported   = $this->getPool()->getNewestTimestamp($entity_type,$entity_uuid,FALSE);
+    $exported = $this->getPool()->getNewestTimestamp($entity_type, $entity_uuid, FALSE);
 
     if ($exported) {
       if ($action == SyncIntent::ACTION_CREATE) {
@@ -236,7 +234,7 @@ class ExportIntent extends SyncIntent {
               continue;
             }
 
-            $sub_intent = new ExportIntent($this->flow,$this->pool,self::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_CREATE,$embed_entity);
+            $sub_intent = new ExportIntent($this->flow, $this->pool, self::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_CREATE, $embed_entity);
 
             $sub_intent->execute();
           }
@@ -315,16 +313,13 @@ class ExportIntent extends SyncIntent {
     }
     $this->meta->save();
 
-    $this->pool->setTimestamp($entity_type,$entity_uuid,$export,FALSE);
+    $this->pool->setTimestamp($entity_type, $entity_uuid, $export, FALSE);
     if ($action == SyncIntent::ACTION_DELETE) {
-      $this->pool->markDeleted($entity_type,$entity_uuid);
+      $this->pool->markDeleted($entity_type, $entity_uuid);
     }
 
     return TRUE;
   }
-
-
-
 
   /**
    * @var array
@@ -365,9 +360,6 @@ class ExportIntent extends SyncIntent {
     return FALSE;
   }
 
-
-
-
   /**
    * Helper function to export an entity and display the user the results. If
    * you want to make changes programmatically, use ::exportEntity() instead.
@@ -381,7 +373,7 @@ class ExportIntent extends SyncIntent {
    * @param \Drupal\drupal_content_sync\Entity\Flow $flow
    *   The flow to be used. If none is given, all flows that may export this
    *   entity will be asked to do so for all relevant pools.
-   * @param Pool $pool
+   * @param \Drupal\drupal_content_sync\Entity\Pool $pool
    *   The pool to be used. If not set, all relevant pools for the flow will be
    *   used one after another.
    *
@@ -389,7 +381,7 @@ class ExportIntent extends SyncIntent {
    */
   public static function exportEntityFromUi(EntityInterface $entity, $reason, $action, Flow $flow = NULL, Pool $pool = NULL) {
     if (!$flow) {
-      // TODO Change everywhere that this is an array now
+      // TODO Change everywhere that this is an array now.
       $flows = Flow::getFlowsForEntity($entity, $reason, $action);
       if (!count($flows)) {
         // If this entity has been exported as a dependency, we want to export the
@@ -406,17 +398,17 @@ class ExportIntent extends SyncIntent {
               $entity->getEntityTypeId(),
               $entity->uuid()
             );
-            foreach($flows as $flow) {
+            foreach ($flows as $flow) {
               $has_info = FALSE;
-              foreach($infos as $info) {
-                if($info->getFlow()!==$flow) {
+              foreach ($infos as $info) {
+                if ($info->getFlow() !== $flow) {
                   continue;
                 }
                 if ($info->getLastExport()) {
                   $has_info = TRUE;
                 }
               }
-              if(!$has_info){
+              if (!$has_info) {
                 return TRUE;
               }
             }
@@ -432,24 +424,24 @@ class ExportIntent extends SyncIntent {
       }
 
       $result = FALSE;
-      foreach($flows as $flow) {
-        $result |= self::exportEntityFromUi($entity,$reason,$action,$flow);
+      foreach ($flows as $flow) {
+        $result |= self::exportEntityFromUi($entity, $reason, $action, $flow);
       }
       return $result;
     }
 
-    if(!$pool) {
-      $pools = $flow->getUsedExportPools($entity,$reason,$action);
+    if (!$pool) {
+      $pools = $flow->getUsedExportPools($entity, $reason, $action);
       $result = FALSE;
-      foreach($pools as $pool) {
-        $result |= self::exportEntityFromUi($entity,$reason,$action,$flow,$pool);
+      foreach ($pools as $pool) {
+        $result |= self::exportEntityFromUi($entity, $reason, $action, $flow, $pool);
       }
       return $result;
     }
 
     $messenger = \Drupal::messenger();
     try {
-      $intent = new ExportIntent($flow,$pool,$reason,$action,$entity);
+      $intent = new ExportIntent($flow, $pool, $reason, $action, $entity);
       $status = $intent->execute();
 
       if ($status) {
@@ -478,4 +470,5 @@ class ExportIntent extends SyncIntent {
       return TRUE;
     }
   }
+
 }

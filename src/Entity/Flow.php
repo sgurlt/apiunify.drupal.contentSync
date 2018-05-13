@@ -11,6 +11,7 @@ use Drupal\drupal_content_sync\SyncIntent;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Drupal\Core\Entity\EntityInterface;
+
 /**
  * Defines the Flow entity.
  *
@@ -215,8 +216,10 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    *
    * @param string $entity_type
    * @param string $bundle
-   * @param string $reason {@see Flow::EXPORT_*}
-   * @param string $action {@see ::ACTION_*}
+   * @param string $reason
+   *   {@see Flow::EXPORT_*}.
+   * @param string $action
+   *   {@see ::ACTION_*}.
    *
    * @return \Drupal\drupal_content_sync\Entity\Pool[]
    */
@@ -224,12 +227,12 @@ class Flow extends ConfigEntityBase implements FlowInterface {
     $config = $this->getEntityTypeConfig($entity_type, $bundle);
 
     $result = [];
-    $pools  = Pool::getAll();
+    $pools = Pool::getAll();
 
-    foreach($config['import_pools'] as $id=>$setting) {
+    foreach ($config['import_pools'] as $id => $setting) {
       $pool = $pools[$id];
 
-      if($setting==Pool::POOL_USAGE_FORBID) {
+      if ($setting == Pool::POOL_USAGE_FORBID) {
         continue;
       }
 
@@ -244,34 +247,36 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    * automatically or manually selected.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
-   * @param string $reason {@see Flow::EXPORT_*}
-   * @param string $action {@see ::ACTION_*}
+   * @param string $reason
+   *   {@see Flow::EXPORT_*}.
+   * @param string $action
+   *   {@see ::ACTION_*}.
    *
    * @return \Drupal\drupal_content_sync\Entity\Pool[]
    */
   public function getUsedExportPools(EntityInterface $entity, $reason, $action) {
     $config = $this->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
-    if(!$this->canExportEntity($entity,$reason,$action)) {
+    if (!$this->canExportEntity($entity, $reason, $action)) {
       return [];
     }
 
     $result = [];
-    $pools  = Pool::getAll();
+    $pools = Pool::getAll();
 
-    foreach($config['export_pools'] as $id=>$setting) {
+    foreach ($config['export_pools'] as $id => $setting) {
       $pool = $pools[$id];
 
-      if($setting==Pool::POOL_USAGE_FORBID) {
+      if ($setting == Pool::POOL_USAGE_FORBID) {
         continue;
       }
 
-      if($setting==Pool::POOL_USAGE_FORCE) {
+      if ($setting == Pool::POOL_USAGE_FORCE) {
         $result[] = $pool;
         continue;
       }
 
-      $meta = MetaInformation::getInfoForEntity($entity->getEntityTypeId(),$entity->uuid(),$this,$pool);
-      if($meta && $meta->getLastExport()) {
+      $meta = MetaInformation::getInfoForEntity($entity->getEntityTypeId(), $entity->uuid(), $this, $pool);
+      if ($meta && $meta->getLastExport()) {
         $result[] = $pool;
       }
     }
@@ -394,7 +399,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
       if (!$flow->canImportEntity($entity_type_name, $bundle_name, $reason, $action, $is_clone)) {
         continue;
       }
-      if ($pool && !in_array($pool,$flow->getUsedImportPools($entity_type_name,$bundle_name))) {
+      if ($pool && !in_array($pool, $flow->getUsedImportPools($entity_type_name, $bundle_name))) {
         continue;
       }
 

@@ -2,7 +2,6 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
-use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ExportIntent;
 use Drupal\drupal_content_sync\ImportIntent;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
@@ -37,7 +36,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
   public function import(ImportIntent $intent) {
     $action = $intent->getAction();
     /**
-     * @var FieldableEntityInterface $entity
+     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
      */
     $entity = $intent->getEntity();
 
@@ -99,7 +98,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
   public function export(ExportIntent $intent) {
     $action = $intent->getAction();
     /**
-     * @var FieldableEntityInterface $entity
+     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
      */
     $entity = $intent->getEntity();
 

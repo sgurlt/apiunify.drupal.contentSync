@@ -64,7 +64,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
   public function __construct(Flow $flow) {
     parent::__construct();
 
-    $this->flow   = $flow;
+    $this->flow = $flow;
   }
 
   /**
@@ -287,31 +287,31 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
 
       try {
         $entity_type_pools = [];
-        foreach($type['import_pools'] as $pool_id=>$state) {
-          if(!isset($entity_type_pools[$id])) {
-            $entity_type_pools[$id]  = [];
+        foreach ($type['import_pools'] as $pool_id => $state) {
+          if (!isset($entity_type_pools[$id])) {
+            $entity_type_pools[$id] = [];
           }
           $entity_type_pools[$id]['import'] = $state;
         }
-        foreach($type['export_pools'] as $pool_id=>$state) {
-          if(!isset($entity_type_pools[$id])) {
-            $entity_type_pools[$id]  = [];
+        foreach ($type['export_pools'] as $pool_id => $state) {
+          if (!isset($entity_type_pools[$id])) {
+            $entity_type_pools[$id] = [];
           }
           $entity_type_pools[$id]['export'] = $state;
         }
 
-        foreach($entity_type_pools as $pool_id=>$definition) {
+        foreach ($entity_type_pools as $pool_id => $definition) {
           $pool   = $pools[$pool_id];
           $export = $definition['export'];
           $import = $definition['import'];
 
-          if($export==Pool::POOL_USAGE_FORBID && $import==Pool::POOL_USAGE_FORBID) {
+          if ($export == Pool::POOL_USAGE_FORBID && $import == Pool::POOL_USAGE_FORBID) {
             continue;
           }
 
-          $url      = $pool->getBackendUrl();
-          $api      = $pool->id;
-          $site_id  = $pool->site_id;
+          $url     = $pool->getBackendUrl();
+          $api     = $pool->id;
+          $site_id = $pool->site_id;
 
           $entity_type_id = self::getExternalEntityTypeId($api, $entity_type_name, $bundle_name, $version);
           $entity_type = [
@@ -521,7 +521,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
             'crud' => &$crud_operations,
           ];
 
-          if ($export!=Pool::POOL_USAGE_FORBID && $type['export'] == ExportIntent::EXPORT_AUTOMATICALLY) {
+          if ($export != Pool::POOL_USAGE_FORBID && $type['export'] == ExportIntent::EXPORT_AUTOMATICALLY) {
             $crud_operations['read_list']['url'] = self::getInternalReadListUrl($api, $entity_type_name, $bundle_name, $version);
           }
 
@@ -548,9 +548,9 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
               'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from Pool -> ' . $site_id,
               'options' => [
                 'dependency_connection_id' => self::DEPENDENCY_CONNECTION_ID,
-                'create_entities' => $import!=Pool::POOL_USAGE_FORBID && $type['import'] != ImportIntent::IMPORT_DISABLED,
-                'update_entities' => $import!=Pool::POOL_USAGE_FORBID && $type['import'] != ImportIntent::IMPORT_DISABLED && !$type['import_clone'],
-                'delete_entities' => $import!=Pool::POOL_USAGE_FORBID && $type['import'] != ImportIntent::IMPORT_DISABLED && boolval($type['import_deletion_settings']['import_deletion']),
+                'create_entities' => $import != Pool::POOL_USAGE_FORBID && $type['import'] != ImportIntent::IMPORT_DISABLED,
+                'update_entities' => $import != Pool::POOL_USAGE_FORBID && $type['import'] != ImportIntent::IMPORT_DISABLED && !$type['import_clone'],
+                'delete_entities' => $import != Pool::POOL_USAGE_FORBID && $type['import'] != ImportIntent::IMPORT_DISABLED && boolval($type['import_deletion_settings']['import_deletion']),
                 'clone_entities' => boolval($type['import_clone']),
                 'dependent_entities_only' => $type['import'] == ImportIntent::IMPORT_AS_DEPENDENCY,
                 'update_none_when_loading' => TRUE,
@@ -578,10 +578,10 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
                 // 'delete_entities' => TRUE,
                 // 'clone_entities'  => FALSE,
                 // 'dependent_entities_only'  => FALSE,.
-                'create_entities' => $export!=Pool::POOL_USAGE_FORBID && $type['export'] != ExportIntent::EXPORT_DISABLED,
-                'update_entities' => $export!=Pool::POOL_USAGE_FORBID && $type['export'] != ExportIntent::EXPORT_DISABLED,
-                'delete_entities' => $export!=Pool::POOL_USAGE_FORBID && $type['export'] != ExportIntent::EXPORT_DISABLED && boolval($type['export_deletion_settings']['export_deletion']),
-                'dependent_entities_only' => $export!=Pool::POOL_USAGE_FORBID && $type['export'] == ExportIntent::EXPORT_AS_DEPENDENCY,
+                'create_entities' => $export != Pool::POOL_USAGE_FORBID && $type['export'] != ExportIntent::EXPORT_DISABLED,
+                'update_entities' => $export != Pool::POOL_USAGE_FORBID && $type['export'] != ExportIntent::EXPORT_DISABLED,
+                'delete_entities' => $export != Pool::POOL_USAGE_FORBID && $type['export'] != ExportIntent::EXPORT_DISABLED && boolval($type['export_deletion_settings']['export_deletion']),
+                'dependent_entities_only' => $export != Pool::POOL_USAGE_FORBID && $type['export'] == ExportIntent::EXPORT_AS_DEPENDENCY,
                 'update_none_when_loading' => TRUE,
                 'exclude_reference_properties' => [
                   'pSource',
@@ -715,4 +715,5 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
     );
     $this->client->{'delete'}($url);
   }
+
 }

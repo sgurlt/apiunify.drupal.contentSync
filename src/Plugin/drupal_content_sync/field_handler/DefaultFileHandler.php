@@ -2,11 +2,9 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
-use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\ExportIntent;
 use Drupal\drupal_content_sync\ImportIntent;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
-use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\SyncIntent;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\file\Entity\File;
@@ -38,7 +36,7 @@ class DefaultFileHandler extends FieldHandlerBase {
   public function import(ImportIntent $intent) {
     $action = $intent->getAction();
     /**
-     * @var FieldableEntityInterface $entity
+     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
      */
     $entity = $intent->getEntity();
 
@@ -81,7 +79,7 @@ class DefaultFileHandler extends FieldHandlerBase {
   public function export(ExportIntent $intent) {
     $action = $intent->getAction();
     /**
-     * @var FieldableEntityInterface $entity
+     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
      */
     $entity = $intent->getEntity();
 

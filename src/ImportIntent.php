@@ -2,11 +2,13 @@
 
 namespace Drupal\drupal_content_sync;
 
-
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\Pool;
 
+/**
+ *
+ */
 class ImportIntent extends SyncIntent {
   /**
    * @var string IMPORT_DISABLED
@@ -63,7 +65,7 @@ class ImportIntent extends SyncIntent {
    */
   const IMPORT_UPDATE_FORCE_AND_FORBID_EDITING = 'force_and_forbid_editing';
   /**
-   * @var string IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN
+   * @var stringIMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN
    *   Import all changes and forbid local editors to change the content unless
    *   they check the "override" checkbox. As long as that is checked, we
    *   ignore any incoming updates in favor of the local changes.
@@ -80,7 +82,7 @@ class ImportIntent extends SyncIntent {
    *
    * @param \Drupal\drupal_content_sync\Entity\Flow $flow
    *   {@see SyncIntent::$sync}.
-   * @param Pool $pool
+   * @param \Drupal\drupal_content_sync\Entity\Pool $pool
    *   {@see SyncIntent::$pool}.
    * @param string $reason
    *   {@see Flow::EXPORT_*} or {@see Flow::IMPORT_*}.
@@ -99,7 +101,7 @@ class ImportIntent extends SyncIntent {
    *   Whether the entity should be cloned or referenced (and kept up-to-date).
    */
   public function __construct(Flow $flow, Pool $pool, $reason, $action, $entity_type, $bundle, $data, $is_clone) {
-    parent::__construct($flow,$pool,$reason,$action,$entity_type,$bundle,$data['uuid'],$data['url']);
+    parent::__construct($flow, $pool, $reason, $action, $entity_type, $bundle, $data['uuid'], $data['url']);
 
     $this->clone = $is_clone;
 
@@ -122,7 +124,7 @@ class ImportIntent extends SyncIntent {
       );
     }
 
-    $this->mergeChanges = $this->flow->getEntityTypeConfig($this->entityType,$this->bundle)['import_updates']==ImportIntent::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN &&
+    $this->mergeChanges = $this->flow->getEntityTypeConfig($this->entityType, $this->bundle)['import_updates'] == ImportIntent::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN &&
       $this->meta->isOverriddenLocally();
   }
 
@@ -155,15 +157,15 @@ class ImportIntent extends SyncIntent {
    * @return bool
    */
   public function execute() {
-    $import     = $this->pool->getNewestTimestamp($this->entityType,$this->uuid,TRUE);
-    if(!$import) {
+    $import = $this->pool->getNewestTimestamp($this->entityType, $this->uuid, TRUE);
+    if (!$import) {
       $import = time();
     }
-    elseif($this->action == SyncIntent::ACTION_CREATE) {
+    elseif ($this->action == SyncIntent::ACTION_CREATE) {
       $this->action = SyncIntent::ACTION_UPDATE;
     }
 
-    if($this->pool->isEntityDeleted($this->entityType,$this->uuid)) {
+    if ($this->pool->isEntityDeleted($this->entityType, $this->uuid)) {
       return TRUE;
     }
 
@@ -192,9 +194,9 @@ class ImportIntent extends SyncIntent {
 
     $this->meta->save();
 
-    $this->pool->setTimestamp($this->entityType,$this->uuid,$import,TRUE);
+    $this->pool->setTimestamp($this->entityType, $this->uuid, $import, TRUE);
     if ($this->action == SyncIntent::ACTION_DELETE) {
-      $this->pool->markDeleted($this->entityType,$this->uuid);
+      $this->pool->markDeleted($this->entityType, $this->uuid);
     }
 
     return TRUE;
@@ -224,4 +226,5 @@ class ImportIntent extends SyncIntent {
 
     return !empty($entities[$entity->getEntityTypeId()][$entity->uuid()]);
   }
+
 }
