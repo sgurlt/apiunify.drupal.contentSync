@@ -10,6 +10,7 @@
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\drupal_content_sync\ExportIntent;
+use Drupal\drupal_content_sync\ImportIntent;
 use Drupal\drupal_content_sync\SyncIntent;
 use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\Entity\EntityInterface;
@@ -235,9 +236,12 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
  */
 function _drupal_content_sync_update_pool_selector(array $form, FormStateInterface $form_state) {
   $form_object = $form_state->getFormObject();
-  $entity_type = $form_object->getEntity();
-  $bundle = $entity_type->bundle();
-  $selectable_exportable_flows = Pool::getSelectablePools($entity_type->getEntityTypeId(), $bundle);
+  /**
+   * @var EntityInterface $entity
+   */
+  $entity = $form_object->getEntity();
+  $bundle = $entity->bundle();
+  $selectable_exportable_flows = Pool::getSelectablePools($entity->getEntityTypeId(), $bundle);
 
   $options = $selectable_exportable_flows[$form_state->getValue('dcs_flow_selector')]['pools'];
   $form['dcs_export_group']['dcs_pool_selector']['#options'] = $options;
@@ -277,7 +281,7 @@ function drupal_content_sync_entity_update(EntityInterface $entity) {
  */
 function drupal_content_sync_entity_delete(EntityInterface $entity) {
   if (!Flow::isLocalDeletionAllowed($entity) &&
-    !Flow::entityHasBeenImportedByRemote($entity)) {
+    !ImportIntent::entityHasBeenImportedByRemote($entity)) {
     throw new \Exception($entity->label() . ' cannot be deleted as it has been imported.');
   }
 
@@ -389,7 +393,7 @@ function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormState
     if ($info->isSourceEntity()) {
       continue;
     }
-    $config = Flow::load($info->getEntityTypeConfig())
+    $config = $info->getFlow()
       ->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
     if ($config['import_updates'] == ImportIntent::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING ||
       $config['import_updates'] == ImportIntent::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
@@ -474,6 +478,9 @@ function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormState
 function _drupal_content_sync_override_entity_submit(array $form, FormStateInterface $form_state) {
   $value = boolval($form_state->getValue('dcs_edit_override'));
 
+  /**
+   * @var EntityInterface $entity
+   */
   $entity = $form_state
     ->getFormObject()
     ->getEntity();
@@ -486,7 +493,7 @@ function _drupal_content_sync_override_entity_submit(array $form, FormStateInter
     if (!$info || !$info->getLastImport() || $info->isCloned()) {
       continue;
     }
-    $config = Flow::load($info->getEntityTypeConfig())
+    $config = $info->getFlow()
       ->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
     if ($config['import_updates'] == ImportIntent::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
       if ($value != $info->isOverriddenLocally()) {
@@ -533,24 +540,26 @@ function drupal_content_sync_get_publish_changes_operations(EntityInterface $ent
   /** @var \Drupal\Core\Routing\RedirectDestinationInterface $redirect_destination */
   $redirect_destination = Drupal::service('redirect.destination');
 
-  $flow = Flow::getFlowsForEntity($entity, ExportIntent::EXPORT_MANUALLY);
+  $flows = Flow::getFlowsForEntity($entity, ExportIntent::EXPORT_MANUALLY);
 
-  if (!$flow) {
+  if (!count($flows)) {
     return [];
   }
 
-  $route_parameters = [
-    'sync_id' => $flow->id(),
-    'entity_type' => $entity->getEntityTypeId(),
-    'entity' => $entity->id(),
-  ];
+  foreach($flows as $flow) {
+    $route_parameters = [
+      'sync_id' => $flow->id(),
+      'entity_type' => $entity->getEntityTypeId(),
+      'entity' => $entity->id(),
+    ];
 
-  $operations['publish_changes'] = [
-    'title' => t('Push changes'),
-    'weight' => 150,
-    'url' => Url::fromRoute('drupal_content_sync.publish_changes', $route_parameters),
-    'query' => $redirect_destination->getAsArray(),
-  ];
+    $operations['publish_changes'] = [
+      'title' => t('Push changes'),
+      'weight' => 150,
+      'url' => Url::fromRoute('drupal_content_sync.publish_changes', $route_parameters),
+      'query' => $redirect_destination->getAsArray(),
+    ];
+  }
 
   return $operations;
 }
