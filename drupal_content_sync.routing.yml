@@ -73,6 +73,13 @@ entity.dcs_pool.delete_form:
   requirements:
     _permission: 'administer site configuration'
 
+drupal_content_sync.dcs_pool.pool_required:
+  path: '/admin/config/services/drupal_content_sync/flow/pool-required'
+  defaults:
+    _form: '\Drupal\drupal_content_sync\Form\PoolRequired'
+  requirements:
+    _permission: 'publish drupal content sync changes'
+
 # DCS - Push changes
 drupal_content_sync.publish_changes:
   path: '/drupal-content-sync/publish-changes/{sync_id}/{entity_type}/{entity}'
@@ -98,7 +105,6 @@ node.drupal_content_sync_export_publish_changes_confirm:
     _form: '\Drupal\drupal_content_sync\Form\DrupalContentSyncPushChangesConfirm'
   requirements:
     _permission: 'publish drupal content sync changes'
-
 
 # @ToDo: The dashboard for manual content import is currently not working and needs to be refactored.
 #entity.drupal_content_sync.content:
