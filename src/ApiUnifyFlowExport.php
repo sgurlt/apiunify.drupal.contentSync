@@ -237,11 +237,6 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
   protected function createEntityTypes() {
     global $base_url;
 
-    $entity_types = $this->flow->sync_entities;
-
-    $localConnections = [];
-    $pools = Pool::getAll();
-
     $user = User::load(DRUPAL_CONTENT_SYNC_USER_ID);
     // During the installation from an existing config for some reason DRUPAL_CONTENT_SYNC_USER_ID is not set right after the installation of the module, so we've to double check that...
     // @ToDo: Why?
@@ -270,6 +265,13 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
       $loginData[$key] = \Drupal::service('encryption')
         ->decrypt($value, $encryption_profile);
     }
+
+
+
+    $entity_types = $this->flow->sync_entities;
+
+    $localConnections = [];
+    $pools = Pool::getAll();
 
     foreach ($this->flow->getEntityTypeConfig() as $id => $type) {
       $entity_type_name = $type['entity_type_name'];
@@ -608,7 +610,9 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
    * Delete the synchronizations from this connection.
    */
   public function deleteConfig($removedOnly = TRUE) {
+    return TRUE;
 
+    // @TODO Refactor for pool changes
     $condition   = [
       'operator'  => '==',
       'values'    => [
