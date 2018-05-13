@@ -604,7 +604,8 @@ class Flow extends ConfigEntityBase implements FlowInterface {
     $info = $meta_infos[$this->id];
     if (!$info) {
       $info = MetaInformation::create([
-        'entity_type_config' => $this->id,
+        'flow' => $this->id,
+        'pool' => $this->api,
         'entity_type' => $entity_type_name,
         'entity_uuid' => $uuid,
         'last_import' => 0,
@@ -800,7 +801,8 @@ class Flow extends ConfigEntityBase implements FlowInterface {
     $info = $meta_infos[$this->id];
     if (!$info) {
       $info = MetaInformation::create([
-        'entity_type_config' => $this->id,
+        'flow' => $this->id,
+        'pool' => $this->api,
         'entity_type' => $entity_type,
         'entity_uuid' => $entity_uuid,
         'last_export' => 0,

@@ -19,7 +19,8 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *   base_table = "dcs_meta_info",
  *   entity_keys = {
  *     "id" = "id",
- *     "entity_type_config" = "entity_type_config",
+ *     "flow" = "flow",
+ *     "pool" = "pool",
  *     "entity_uuid" = "entity_uuid",
  *     "entity_type" = "entity_type",
  *     "entity_type_version" = "entity_type_version",
@@ -45,9 +46,13 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
     if (!isset($values['entity_type'])) {
       throw new \Exception(t('The type of the entity is required.'));
     }
-    if (!isset($values['entity_type_config'])) {
-      throw new \Exception(t('The entity type config is required.'));
+    if (!isset($values['flow'])) {
+      throw new \Exception(t('The flow is required.'));
     }
+    if (!isset($values['pool'])) {
+      throw new \Exception(t('The pool is required.'));
+    }
+
 
     /**
      * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
@@ -281,22 +286,21 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   }
 
   /**
-   * Set the entity type config.
+   * Get the flow.
    *
-   * @param string $entity_type_config
+   * @return \Drupal\drupal_content_sync\Entity\Flow
    */
-  public function setEntityTypeConfig($entity_type_config) {
-    $this->set('entity_type_config', $entity_type_config);
-    $this->save();
+  public function getFlow() {
+    return Flow::getAll()[ $this->get('flow')->value ];
   }
 
   /**
-   * Get the entity type config.
+   * Get the pool.
    *
-   * @return string
+   * @return \Drupal\drupal_content_sync\Entity\Pool
    */
-  public function getEntityTypeConfig() {
-    return $this->get('entity_type_config')->value;
+  public function getPool() {
+    return Pool::getAll()[ $this->get('pool')->value ];
   }
 
   /**
@@ -391,9 +395,13 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
 
-    $fields['entity_type_config'] = BaseFieldDefinition::create('string')
-      ->setLabel(t('Entity type config'))
-      ->setDescription(t('The entity type config the meta entity is based on.'));
+    $fields['flow'] = BaseFieldDefinition::create('string')
+      ->setLabel(t('Flow'))
+      ->setDescription(t('The flow the meta entity is based on.'));
+
+    $fields['pool'] = BaseFieldDefinition::create('string')
+      ->setLabel(t('Pool'))
+      ->setDescription(t('The pool the entity is connected to.'));
 
     $fields['entity_uuid'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Entity UUID'))

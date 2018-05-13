@@ -7,6 +7,7 @@
  * @author Edge Box GmbH
  */
 
+use Drupal\drupal_content_sync\DrupalContentSync;
 use Drupal\drupal_content_sync\Exception\SyncException;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
@@ -234,90 +235,12 @@ function _drupal_content_sync_update_pool_selector(array $form, FormStateInterfa
 }
 
 /**
- * Helper function to export an entity and display the user the results. If you
- * want to make changes programmatically, create your own handler instead.
- *
- * @param \Drupal\Core\Entity\EntityInterface $entity
- *   The entity to export.
- * @param string $reason
- *   {@see Flow::EXPORT_*}.
- * @param string $action
- *   {@see Flow::ACTION_*}.
- * @param \Drupal\drupal_content_sync\Entity\Flow $sync
- *   The sync to be used. First matching sync will be used if none is given.
- *
- * @return bool Whether the entity is configured to be exported or not.
- */
-function _drupal_content_sync_export_entity(EntityInterface $entity, $reason, $action, Flow $sync = NULL) {
-  if (!$sync) {
-    $sync = Flow::getExportSynchronizationForEntity($entity, $reason, $action);
-    if (!$sync) {
-      // If this entity has been exported as a dependency, we want to export the
-      // Update and deletion automatically as well.
-      if ($reason == Flow::EXPORT_AUTOMATICALLY &&
-        $action != Flow::ACTION_CREATE) {
-        $sync = Flow::getExportSynchronizationForEntity(
-          $entity,
-          Flow::EXPORT_AS_DEPENDENCY,
-          $action
-        );
-        if ($sync) {
-          $info = MetaInformation::getInfoForEntity(
-            $entity->getEntityTypeId(),
-            $entity->uuid()
-          )[$sync->id];
-          if (!$info || !$info->getLastExport()) {
-            return FALSE;
-          }
-        }
-        else {
-          return FALSE;
-        }
-      }
-      else {
-        return FALSE;
-      }
-    }
-  }
-
-  $messenger = \Drupal::messenger();
-  try {
-    $status = $sync->exportEntity($entity, $reason, $action);
-
-    if ($status) {
-      $messenger->addMessage(t('%label has been exported with Drupal Content Sync.', ['%label' => $entity->label()]));
-      return TRUE;
-    }
-    return FALSE;
-  }
-  catch (SyncException $e) {
-    $message = $e->parentException ? $e->parentException->getMessage() : (
-      $e->errorCode == $e->getMessage() ? '' : $e->getMessage()
-    );
-    if ($message) {
-      $messenger->addWarning(t('Failed to export %label with Drupal Content Sync (%code). Message: %message', [
-        '%label' => $entity->label(),
-        '%code' => $e->errorCode,
-        '%message' => $message,
-      ]));
-    }
-    else {
-      $messenger->addWarning(t('Failed to export %label with Drupal Content Sync (%code).', [
-        '%label' => $entity->label(),
-        '%code' => $e->errorCode,
-      ]));
-    }
-    return TRUE;
-  }
-}
-
-/**
  * Export the entity automatically if configured to do so.
  *
  * @param \Drupal\Core\Entity\EntityInterface $entity
  */
 function drupal_content_sync_entity_insert(EntityInterface $entity) {
-  _drupal_content_sync_export_entity($entity, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_CREATE);
+  DrupalContentSync::exportEntityFromUi($entity, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_CREATE);
 }
 
 /**
@@ -330,7 +253,7 @@ function drupal_content_sync_entity_update(EntityInterface $entity) {
   // before the synchronization was created or the entity could not be
   // exported before for any reason, using ::ACTION_UPDATE would lead to
   // errors. Thus we're just using ::ACTION_CREATE which always works.
-  _drupal_content_sync_export_entity($entity, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_UPDATE);
+  DrupalContentSync::exportEntityFromUi($entity, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_UPDATE);
 }
 
 /**
@@ -347,14 +270,14 @@ function drupal_content_sync_entity_delete(EntityInterface $entity) {
     throw new \Exception($entity->label() . ' cannot be deleted as it has been imported.');
   }
 
-  _drupal_content_sync_export_entity($entity, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_DELETE);
+  DrupalContentSync::exportEntityFromUi($entity, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_DELETE);
 }
 
 /**
  * Implements hook_entity_translation_delete().
  */
 function drupal_content_sync_entity_translation_delete(EntityInterface $translation) {
-  _drupal_content_sync_export_entity($translation, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_DELETE_TRANSLATION);
+  DrupalContentSync::exportEntityFromUi($translation, Flow::EXPORT_AUTOMATICALLY, Flow::ACTION_DELETE_TRANSLATION);
 }
 
 /**
