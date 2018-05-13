@@ -126,13 +126,12 @@ function drupal_content_sync_form_alter(array &$form, FormStateInterface $form_s
 
   // Add pool selection functionality to entity types.
   if ($form_object instanceof ContentEntityForm) {
-
-    $entity_type = $form_object->getEntity();
-    $bundle = $entity_type->bundle();
-    $selectable_exportable_flows = Pool::getSelectablePools($entity_type->getEntityTypeId(), $bundle);
+    $entity = $form_object->getEntity();
+    $bundle = $entity->bundle();
+    $selectable_exportable_flows = Pool::getSelectablePools($entity->getEntityTypeId(), $bundle);
 
     if (!empty($selectable_exportable_flows)) {
-      _drupal_content_sync_add_export_pool_form($form, $selectable_exportable_flows);
+      _drupal_content_sync_add_export_pool_form($form, $selectable_exportable_flows,$entity);
     }
   }
 }
@@ -161,7 +160,7 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
 /**
  *
  */
-function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportable_flows) {
+function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportable_flows,$entity) {
   // Try to show the group right above the status checkbox if it exists.
   if (isset($form['status'])) {
     $weight = $form['status']['#weight'] - 1;
@@ -183,25 +182,31 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
     $form['dcs_export_group']['#group'] = 'advanced';
   }
 
+  $selected_flow = NULL;
+
   // Flow selection.
   if (count($selectable_exportable_flows) === 1) {
-    $ids = array_keys($selectable_exportable_flows);
+    $id = array_keys($selectable_exportable_flows)[0];
     $form['dcs_export_group']['dcs_flow_selector'] = [
       '#title' => t('Export flow selection'),
       '#type' => 'hidden',
-      '#value' => $ids[0],
+      '#value' => $id,
     ];
+    $selected_flow  = Flow::getAll()[$id];
   }
   else {
     $flow_options = [];
     foreach ($selectable_exportable_flows as $flow_id => $selectable_exportable_flow) {
+      if(!$selected_flow) {
+        $selected_flow  = Flow::getAll()[$flow_id];
+      }
       $flow_options[$flow_id] = $selectable_exportable_flow['flow_label'];
     }
 
     $form['dcs_export_group']['dcs_flow_selector'] = [
       '#title' => t('Export flow selection'),
       '#type' => 'select',
-      '#default_value' => '',
+      '#default_value' => $selected_flow->id,
       '#options' => $flow_options,
       '#ajax' => [
         'callback' => '_drupal_content_sync_update_pool_selector',
@@ -212,12 +217,9 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
   }
 
   // Pool selection.
-  // @Todo: Check if an meta entity exists and if so override the default value.
-  // @ToDo: $options is just a temporary workaround.
-  $options = reset($selectable_exportable_flows);
+  $options = $selectable_exportable_flows[$selected_flow->id];
 
   // Get configured widget type for the current active flow.
-  // @ToDo: Must also be based on the meta entity.
   if ($options['widget_type'] == 'single_select' || $options['widget_type'] == 'multi_select') {
     $widget_type = 'select';
   }
@@ -225,12 +227,17 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
     $widget_type = $options['widget_type'];
   }
 
+  $selected_pools = [];
+  foreach($selected_flow->getUsedExportPools($entity,ExportIntent::EXPORT_AUTOMATICALLY,SyncIntent::ACTION_CREATE) as $pool) {
+    $selected_pools[] = $pool->id;
+  }
+
   $form['dcs_export_group']['dcs_pool_selector'] = [
     '#title' => t('Export pool selection'),
     '#prefix' => '<div id="ajax-pool-selector-wrapper">',
     '#suffix' => '</div>',
     '#type' => $widget_type,
-    '#default_value' => [],
+    '#default_value' => $selected_pools,
     '#options' => $options['pools'],
   ];
 
