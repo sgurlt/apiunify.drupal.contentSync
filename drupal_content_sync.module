@@ -161,7 +161,8 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
     if (!empty($selectable_exportable_flows) && isset($entity)) {
       _drupal_content_sync_add_export_pool_form($element['subform'], $selectable_exportable_flows, $entity);
     } else {
-      _drupal_content_sync_add_export_pool_form($element['subform'], $selectable_exportable_flows);
+      $parent = $context['items']->getParent()->getValue();
+      _drupal_content_sync_add_export_pool_form($element['subform'], $selectable_exportable_flows, NULL, $parent);
     }
   }
 }
@@ -169,7 +170,7 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
 /**
  *
  */
-function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportable_flows,$entity = NULL) {
+function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportable_flows, $entity = NULL, $parentEntity=NULL) {
   // Try to show the group right above the status checkbox if it exists.
   if (isset($form['status'])) {
     $weight = $form['status']['#weight'] - 1;
@@ -237,8 +238,18 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
   }
 
   $selected_pools = [];
-  foreach($selected_flow->getUsedExportPools($entity,ExportIntent::EXPORT_AUTOMATICALLY,SyncIntent::ACTION_CREATE) as $pool) {
-    $selected_pools[] = $pool->id;
+  if($entity) {
+    foreach ($selected_flow->getUsedExportPools($entity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_CREATE) as $pool) {
+      $selected_pools[] = $pool->id;
+    }
+  }
+  elseif($parentEntity) {
+    foreach ($selected_flow->getUsedExportPools($parentEntity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_UPDATE) as $pool) {
+      if(!isset($options['pools'][$pool->id])) {
+        continue;
+      }
+      $selected_pools[] = $pool->id;
+    }
   }
 
   $form['dcs_export_group']['dcs_pool_selector'] = [
@@ -254,7 +265,10 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
     $form['dcs_export_group']['dcs_pool_selector']['#multiple'] = TRUE;
   }
 
-  array_unshift($form['actions']['submit']['#submit'], '_drupal_content_sync_set_entity_export');
+  // Entity form submit handler
+  if(isset($form['actions']['submit'])) {
+    array_unshift($form['actions']['submit']['#submit'], '_drupal_content_sync_set_entity_export');
+  }
 }
 
 /**
