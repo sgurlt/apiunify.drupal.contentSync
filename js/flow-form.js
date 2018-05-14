@@ -102,8 +102,30 @@
         }
       });
     },
+    hideRowIfInactive: function(context) {
+      $('[data-drupal-selector="edit-sync-entities"] tbody > tr', context).each(function (i,el) {
+        var $tr = $(el);
+        var $handler = $('[name*="handler"]', $tr);
+        var handler_val = $handler.val();
+
+        if (undefined === handler_val) {
+          return;
+        }
+
+        if ('ignore' === handler_val) {
+          $($handler).closest('td')
+            .nextAll('td')
+            .hide();
+        } else {
+          $($handler).closest('td')
+            .nextAll('td')
+            .show();
+        }
+      });
+    },
     attach: function (context, settings) {
       Drupal.behaviors.drupalContentSyncForm.drawPreviewSelect(context, true);
+      Drupal.behaviors.drupalContentSyncForm.hideRowIfInactive(context);
 
       $(document)
         .once('sync_import_change')
@@ -123,6 +145,6 @@
           Drupal.behaviors.drupalContentSyncForm.drawPreviewSelect(context, false);
         });
     }
-  };
+  }
 
 })(jQuery, drupalSettings);
