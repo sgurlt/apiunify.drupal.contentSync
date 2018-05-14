@@ -136,12 +136,12 @@ abstract class SyncIntent {
         'flags' => 0,
         'source_url' => $source_url,
       ]);
-      if (!$source_url) {
+      if (!$source_url && $this instanceof ExportIntent) {
         $this->meta->isSourceEntity(TRUE);
       }
     }
     elseif(!$this->meta->getLastExport() && !$this->meta->getLastImport()) {
-      if (!$source_url) {
+      if (!$source_url && $this instanceof ExportIntent) {
         $this->meta->isSourceEntity(TRUE);
       }
     }

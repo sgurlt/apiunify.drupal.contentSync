@@ -400,7 +400,13 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    *   "map" storage (so basic types that can be serialized).
    */
   public function setData($key, $value) {
-    $data    = $this->get('data')->getValue()[0];
+    $data    = $this->get('data')->getValue();
+    if( !empty($data) ) {
+      $data = $data[0];
+    }
+    else {
+      $data = [];
+    }
     $storage = &$data;
 
     if (!is_array($key)) {

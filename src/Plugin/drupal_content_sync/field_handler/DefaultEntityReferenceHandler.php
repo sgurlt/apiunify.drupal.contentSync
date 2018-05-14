@@ -206,7 +206,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
         }
       }
 
-      if (!$merge || $overwrite_ids !== $last_overwrite_values) {
+      if (!$merge || !$intent->shouldMergeChanges() || $overwrite_ids !== $last_overwrite_values) {
         $entity->set($this->fieldName, count($reference_ids) ? $reference_ids : NULL);
         $intent->setMetaData([
           'field',

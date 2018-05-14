@@ -101,7 +101,7 @@ class ImportIntent extends SyncIntent {
    *   Whether the entity should be cloned or referenced (and kept up-to-date).
    */
   public function __construct(Flow $flow, Pool $pool, $reason, $action, $entity_type, $bundle, $data, $is_clone) {
-    parent::__construct($flow, $pool, $reason, $action, $entity_type, $bundle, $data['uuid'], $data['url']);
+    parent::__construct($flow, $pool, $reason, $action, $entity_type, $bundle, $data['uuid'], isset($data['url'])?$data['url']:'');
 
     $this->clone = $is_clone;
 
