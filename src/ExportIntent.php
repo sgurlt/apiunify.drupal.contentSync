@@ -170,7 +170,7 @@ class ExportIntent extends SyncIntent {
     // export as the result of this request will already tell API Unify it has
     // been deleted. Otherwise API Unify will return a reasonable 404 for
     // deletions.
-    if (ImportIntent::entityHasBeenImportedByRemote($entity)) {
+    if (ImportIntent::entityHasBeenImportedByRemote($entity->getEntityTypeId(),$entity->uuid())) {
       return FALSE;
     }
 

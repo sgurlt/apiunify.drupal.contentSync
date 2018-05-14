@@ -84,12 +84,7 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
         'pool'        => $pool->id,
       ]);
 
-    // Now extend with existing meta information entities.
-    foreach ($entities as $info) {
-      $result[$info->getFlow()->id] = $info;
-    }
-
-    return $result;
+    return $entities;
   }
 
   /**

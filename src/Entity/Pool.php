@@ -4,6 +4,7 @@ namespace Drupal\drupal_content_sync\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Site\Settings;
 use Drupal\drupal_content_sync\ApiUnifyPoolExport;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -90,6 +91,11 @@ class Pool extends ConfigEntityBase implements PoolInterface {
    */
   public function preSave(EntityStorageInterface $storage) {
     parent::preSave($storage);
+
+    $dcs_settings = Settings::get('drupal_content_sync');
+    if (!is_null($dcs_settings) && isset($dcs_settings['pools'][$this->id]['site_id'])) {
+      $this->set('site_id', $dcs_settings['pools'][$this->id]['site_id']);
+    }
 
     $exporter = new ApiUnifyPoolExport($this);
     $exporter->remove(TRUE);

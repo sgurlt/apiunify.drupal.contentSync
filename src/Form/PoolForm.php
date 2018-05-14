@@ -73,8 +73,8 @@ class PoolForm extends EntityForm {
     if (!is_null($pool->id)) {
       $config_machine_name = $pool->id;
       $dcs_settings = Settings::get('drupal_content_sync');
-      if (!is_null($dcs_settings) && isset($dcs_settings[$pool->id])) {
-        $site_id = $dcs_settings[$pool->id];
+      if (!is_null($dcs_settings) && isset($dcs_settings['pools'][$pool->id]['site_id'])) {
+        $site_id = $dcs_settings['pools'][$pool->id]['site_id'];
       }
     }
     if (!isset($config_machine_name)) {

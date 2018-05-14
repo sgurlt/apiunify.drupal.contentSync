@@ -172,7 +172,7 @@ class ImportIntent extends SyncIntent {
     $config = $this->flow->getEntityTypeConfig($this->entityType, $this->bundle);
     $handler = $this->flow->getEntityTypeHandler($config);
 
-    self::entityHasBeenImportedByRemote(NULL, $this->entityType, $this->uuid);
+    self::entityHasBeenImportedByRemote($this->entityType, $this->uuid);
 
     $result = $handler->import($this);
 
@@ -208,23 +208,23 @@ class ImportIntent extends SyncIntent {
    * request telling API Unify it has been created/updated/deleted
    * (it will know as a result of this current request).
    *
-   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
-   *   The entity to check against.
-   * @param string $set_entity_type
-   *   Set instead of get.
-   * @param string $set_entity_uuid
-   *   Set instead of get.
+   * @param string $entity_type
+   *   The entity type.
+   * @param string $entity_uuid
+   *   The entity UUID.
+   * @param bool $set
+   *   If TRUE, this entity will be set to have been imported at this request.
    *
    * @return bool
    */
-  public static function entityHasBeenImportedByRemote(FieldableEntityInterface $entity, $set_entity_type = NULL, $set_entity_uuid = NULL) {
+  public static function entityHasBeenImportedByRemote($entity_type, $entity_uuid, $set=FALSE) {
     static $entities = [];
 
-    if ($set_entity_type && $set_entity_uuid) {
-      return $entities[$set_entity_type][$set_entity_uuid] = TRUE;
+    if ($set) {
+      return $entities[$entity_type][$entity_uuid] = TRUE;
     }
 
-    return !empty($entities[$entity->getEntityTypeId()][$entity->uuid()]);
+    return !empty($entities[$entity_type][$entity_uuid]);
   }
 
 }

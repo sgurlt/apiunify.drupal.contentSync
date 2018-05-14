@@ -2,7 +2,6 @@
 
 namespace Drupal\drupal_content_sync;
 
-use Drupal\Core\Site\Settings;
 use Drupal\drupal_content_sync\Entity\Pool;
 use GuzzleHttp\Exception\RequestException;
 
@@ -37,11 +36,6 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
    */
   public function __construct(Pool $pool) {
     parent::__construct();
-
-    $dcs_settings = Settings::get('drupal_content_sync');
-    if (!is_null($dcs_settings) && isset($dcs_settings[$pool->id])) {
-      $pool->site_id = $dcs_settings[$pool->id];
-    }
 
     $this->pool = $pool;
   }

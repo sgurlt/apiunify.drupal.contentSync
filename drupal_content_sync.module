@@ -352,7 +352,7 @@ function drupal_content_sync_entity_update(EntityInterface $entity) {
  */
 function drupal_content_sync_entity_delete(EntityInterface $entity) {
   if (!Flow::isLocalDeletionAllowed($entity) &&
-    !ImportIntent::entityHasBeenImportedByRemote($entity)) {
+    !ImportIntent::entityHasBeenImportedByRemote($entity->getEntityTypeId(),$entity->uuid())) {
     throw new \Exception($entity->label() . ' cannot be deleted as it has been imported.');
   }
 
