@@ -20,6 +20,7 @@ use Drupal\Core\Render\Element;
 use Drupal\Core\Entity\ContentEntityDeleteForm;
 use Drupal\drupal_content_sync\Entity\MetaInformation;
 use Drupal\drupal_content_sync\Entity\Pool;
+use Drupal\paragraphs\Entity\Paragraph;
 
 /**
  * @var int DRUPAL_CONTENT_SYNC_USER_ID The user to perform updates with.
@@ -145,13 +146,21 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
   // https://www.drupal.org/project/paragraphs/issues/2868155#comment-12610258
   $entity_type = 'paragraph';
   $bundle = $element['#paragraph_type'];
+  if (!empty($context['items'])) {
+    $delta = $context['delta'];
+    if (isset($context['items']->get($delta)->target_id)) {
+      $entity = Paragraph::load($context['items']->get($delta)->target_id);
+    }
+  }
 
   // If not bundle is given, the previous mentioned commit is
   // not added to the project.
   if (!is_null($bundle)) {
     $selectable_exportable_flows = Pool::getSelectablePools($entity_type, $bundle);
 
-    if (!empty($selectable_exportable_flows)) {
+    if (!empty($selectable_exportable_flows) && isset($entity)) {
+      _drupal_content_sync_add_export_pool_form($element['subform'], $selectable_exportable_flows, $entity);
+    } else {
       _drupal_content_sync_add_export_pool_form($element['subform'], $selectable_exportable_flows);
     }
   }
@@ -160,7 +169,7 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
 /**
  *
  */
-function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportable_flows,$entity) {
+function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportable_flows,$entity = NULL) {
   // Try to show the group right above the status checkbox if it exists.
   if (isset($form['status'])) {
     $weight = $form['status']['#weight'] - 1;
