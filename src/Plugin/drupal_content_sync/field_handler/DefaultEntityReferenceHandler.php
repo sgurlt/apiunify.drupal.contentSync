@@ -9,6 +9,7 @@ use Drupal\drupal_content_sync\ImportIntent;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\SyncIntent;
 use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\paragraphs\Entity\Paragraph;
 
 /**
  * Providing a minimalistic implementation for any field type.
@@ -203,6 +204,18 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
 
           $reference_ids = $merged;
           $ids           = $merged_ids;
+        }
+      }
+
+      if($this->fieldDefinition->getSetting('target_type')=='paragraph') {
+        foreach ($reference_ids as $def) {
+          $paragraph = Paragraph::load($def['target_id']);
+          if(!$paragraph->getParentEntity()) {
+            /**
+             * @var \Drupal\Core\Entity\ContentEntityInterface $entity
+             */
+            $paragraph->setParentEntity($entity,$this->fieldName);
+          }
         }
       }
 
