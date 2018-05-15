@@ -192,8 +192,13 @@ abstract class SyncIntent {
    *   The entity of the intent, if it already exists locally.
    */
   public function getEntity() {
-    return $this->entity ? $this->entity : \Drupal::service('entity.repository')
-      ->loadEntityByUuid($this->entityType, $this->uuid);
+    if(!$this->entity) {
+      $this->setEntity(
+        \Drupal::service('entity.repository')
+          ->loadEntityByUuid($this->entityType, $this->uuid)
+      );
+    }
+    return $this->entity;
   }
 
   /**
@@ -205,10 +210,22 @@ abstract class SyncIntent {
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
   public function setEntity(EntityInterface $entity) {
-    if ($this->entity && $entity != $this->entity) {
+    if($entity == $this->entity) {
+      return $this->entity;
+    }
+    if ($this->entity) {
       throw new SyncException(SyncException::CODE_INTERNAL_ERROR, NULL, "Attempting to re-set existing entity.");
     }
     $this->entity = $entity;
+    if($this->entity) {
+      if($this->activeLanguage) {
+        $this->entity = $this->entity->getTranslation($this->activeLanguage);
+      }
+      else {
+        $this->entity = $this->entity->getUntranslated();
+      }
+    }
+    return $this->entity;
   }
 
   /**
@@ -268,6 +285,14 @@ abstract class SyncIntent {
    */
   public function changeTranslationLanguage($language = NULL) {
     $this->activeLanguage = $language;
+    if($this->entity) {
+      if($language) {
+        $this->entity = $this->entity->getTranslation($language);
+      }
+      else {
+        $this->entity = $this->entity->getUntranslated();
+      }
+    }
   }
 
   /**

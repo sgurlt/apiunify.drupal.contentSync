@@ -149,6 +149,7 @@ class ExportIntent extends SyncIntent {
 
     if ($entity instanceof TranslatableInterface) {
       $entity = $entity->getUntranslated();
+      $this->entity = $entity;
     }
     $export = time();
     if ($entity instanceof EntityChangedInterface) {
@@ -206,10 +207,10 @@ class ExportIntent extends SyncIntent {
     if (!self::$exported) {
       self::$exported = [];
     }
-    if (isset(self::$exported[$action][$entity_type][$entity_bundle][$entity_uuid])) {
+    if (isset(self::$exported[$action][$entity_type][$entity_bundle][$entity_uuid][$this->pool->id])) {
       return TRUE;
     }
-    self::$exported[$action][$entity_type][$entity_bundle][$entity_uuid] = TRUE;
+    self::$exported[$action][$entity_type][$entity_bundle][$entity_uuid][$this->pool->id] = TRUE;
 
     $body = NULL;
 
@@ -225,18 +226,34 @@ class ExportIntent extends SyncIntent {
                * @var \Drupal\Core\Entity\FieldableEntityInterface $embed_entity
                */
               $embed_entity = $entity_repository->loadEntityByUuid($data[SyncIntent::ENTITY_TYPE_KEY], $data[SyncIntent::UUID_KEY]);
+
+              // If this entity was newly created, it won't have any export groups
+              // selected, unless they're FORCED. In this case we add default sync
+              // groups based on the parent entity, as you would expect.
+              $meta_infos = MetaInformation::getInfosForEntity($embed_entity->getEntityTypeId(),$embed_entity->uuid());
+              if(!count($meta_infos)) {
+                if ($this->flow->canExportEntity($embed_entity, ExportIntent::EXPORT_AS_DEPENDENCY)) {
+                  foreach ($this->flow->getUsedExportPools($entity, $this->getReason(), $this->getAction()) as $pool) {
+                    $meta = MetaInformation::create([
+                      'flow' => $this->flow->id,
+                      'pool' => $pool->id,
+                      'entity_type' => $embed_entity->getEntityTypeId(),
+                      'entity_uuid' => $embed_entity->uuid(),
+                      'entity_type_version' => Flow::getEntityTypeVersion($embed_entity->getEntityTypeId(), $embed_entity->bundle()),
+                      'flags' => 0,
+                      'source_url' => NULL,
+                    ]);
+                    $meta->isExportEnabled(TRUE);
+                    $meta->save();
+                  }
+                }
+              }
+
+              ExportIntent::exportEntity($embed_entity,self::EXPORT_AS_DEPENDENCY,SyncIntent::ACTION_CREATE);
             }
             catch (\Exception $e) {
               throw new SyncException(SyncException::CODE_UNEXPECTED_EXCEPTION, $e);
             }
-
-            if (!$this->flow->supportsEntity($embed_entity)) {
-              continue;
-            }
-
-            $sub_intent = new ExportIntent($this->flow, $this->pool, self::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_CREATE, $embed_entity);
-
-            $sub_intent->execute();
           }
         }
       }
@@ -337,12 +354,14 @@ class ExportIntent extends SyncIntent {
    *   The entity type to check for.
    * @param string $uuid
    *   The UUID of the entity in question.
+   * @param string $pool
+   *   The pool to export to.
    * @param null|string $action
    *   See ::ACTION_*.
    *
    * @return bool
    */
-  public static function isExporting($entity_type, $uuid, $action = NULL) {
+  public static function isExporting($entity_type, $uuid, $pool, $action = NULL) {
     foreach (self::$exported as $do => $types) {
       if ($action ? $do != $action : $do == SyncIntent::ACTION_DELETE) {
         continue;
@@ -351,7 +370,7 @@ class ExportIntent extends SyncIntent {
         continue;
       }
       foreach ($types[$entity_type] as $bundle => $entities) {
-        if (!empty($entities[$uuid])) {
+        if (!empty($entities[$uuid][$pool])) {
           return TRUE;
         }
       }
@@ -361,8 +380,7 @@ class ExportIntent extends SyncIntent {
   }
 
   /**
-   * Helper function to export an entity and display the user the results. If
-   * you want to make changes programmatically, use ::exportEntity() instead.
+   * Helper function to export an entity and throw errors if anything fails.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity to export.
@@ -378,10 +396,10 @@ class ExportIntent extends SyncIntent {
    *   used one after another.
    *
    * @return bool Whether the entity is configured to be exported or not.
+   * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
-  public static function exportEntityFromUi(EntityInterface $entity, $reason, $action, Flow $flow = NULL, Pool $pool = NULL) {
+  public static function exportEntity(EntityInterface $entity, $reason, $action, Flow $flow = NULL, Pool $pool = NULL) {
     if (!$flow) {
-      // TODO Change everywhere that this is an array now.
       $flows = Flow::getFlowsForEntity($entity, $reason, $action);
       if (!count($flows)) {
         // If this entity has been exported as a dependency, we want to export the
@@ -406,6 +424,7 @@ class ExportIntent extends SyncIntent {
                 }
                 if ($info->getLastExport()) {
                   $has_info = TRUE;
+                  break;
                 }
               }
               if (!$has_info) {
@@ -425,7 +444,7 @@ class ExportIntent extends SyncIntent {
 
       $result = FALSE;
       foreach ($flows as $flow) {
-        $result |= self::exportEntityFromUi($entity, $reason, $action, $flow);
+        $result |= self::exportEntity($entity, $reason, $action, $flow);
       }
       return $result;
     }
@@ -434,15 +453,45 @@ class ExportIntent extends SyncIntent {
       $pools = $flow->getUsedExportPools($entity, $reason, $action);
       $result = FALSE;
       foreach ($pools as $pool) {
-        $result |= self::exportEntityFromUi($entity, $reason, $action, $flow, $pool);
+        $result |= self::exportEntity($entity, $reason, $action, $flow, $pool);
       }
       return $result;
     }
 
+    $intent = new ExportIntent($flow, $pool, $reason, $action, $entity);
+    $status = $intent->execute();
+
+    //drupal_set_message($action.' '.$entity->getEntityTypeId().' '.$entity->uuid().' with '.$flow->id.' to '.$pool->id.' as '.$reason.': '.($status?'SUCCESS':'FAILURE'));
+
+    if ($status) {
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
+   * Helper function to export an entity and display the user the results. If
+   * you want to make changes programmatically, use ::exportEntity() instead.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to export.
+   * @param string $reason
+   *   {@see Flow::EXPORT_*}.
+   * @param string $action
+   *   {@see ::ACTION_*}.
+   * @param \Drupal\drupal_content_sync\Entity\Flow $flow
+   *   The flow to be used. If none is given, all flows that may export this
+   *   entity will be asked to do so for all relevant pools.
+   * @param \Drupal\drupal_content_sync\Entity\Pool $pool
+   *   The pool to be used. If not set, all relevant pools for the flow will be
+   *   used one after another.
+   *
+   * @return bool Whether the entity is configured to be exported or not.
+   */
+  public static function exportEntityFromUi(EntityInterface $entity, $reason, $action, Flow $flow = NULL, Pool $pool = NULL) {
     $messenger = \Drupal::messenger();
     try {
-      $intent = new ExportIntent($flow, $pool, $reason, $action, $entity);
-      $status = $intent->execute();
+      $status = self::exportEntity($entity,$reason,$action,$flow,$pool);
 
       if ($status) {
         $messenger->addMessage(t('%label has been exported with Drupal Content Sync.', ['%label' => $entity->label()]));
@@ -452,7 +501,7 @@ class ExportIntent extends SyncIntent {
     }
     catch (SyncException $e) {
       $message = $e->parentException ? $e->parentException->getMessage() : (
-      $e->errorCode == $e->getMessage() ? '' : $e->getMessage()
+        $e->errorCode == $e->getMessage() ? '' : $e->getMessage()
       );
       if ($message) {
         $messenger->addWarning(t('Failed to export %label with Drupal Content Sync (%code). Message: %message', [

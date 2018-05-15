@@ -564,4 +564,18 @@ class Flow extends ConfigEntityBase implements FlowInterface {
     return $handler;
   }
 
+  /**
+   * Get the settings for the given field.
+   *
+   * @param $entity_type_name
+   * @param $bundle_name
+   * @param $field_name
+   *
+   * @return array
+   */
+  public function getFieldHandlerConfig($entity_type_name, $bundle_name, $field_name) {
+    $key = $entity_type_name . '-' . $bundle_name . '-' . $field_name;
+    return $this->sync_entities[$key];
+  }
+
 }

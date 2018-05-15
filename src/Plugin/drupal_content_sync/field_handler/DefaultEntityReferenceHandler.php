@@ -40,6 +40,10 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     return TRUE;
   }
 
+  protected function shouldExportReferencedEntities() {
+    return !empty($this->settings['handler_settings']['export_referenced_entities']) && $this->settings['handler_settings']['export_referenced_entities'] === 0 ? 0 : 1;
+  }
+
   /**
    * @inheritdoc
    */
@@ -48,7 +52,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       'export_referenced_entities' => [
         '#type' => 'checkbox',
         '#title' => 'Export referenced entities',
-        '#default_value' => !empty($this->settings['handler_settings']['export_referenced_entities']) && $this->settings['handler_settings']['export_referenced_entities'] === 0 ? 0 : 1,
+        '#default_value' => $this->shouldExportReferencedEntities(),
       ],
     ];
 
@@ -270,9 +274,9 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     $data   = $entity->get($this->fieldName)->getValue();
     $result = [];
 
-    $export_referenced_entities = empty($this->settings['handler_settings']['export_referenced_entities']);
+    $export_referenced_entities = $this->shouldExportReferencedEntities();
 
-    foreach ($data as $value) {
+    foreach ($data as $delta=>$value) {
       if (empty($value['target_id'])) {
         continue;
       }
@@ -286,6 +290,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       }
 
       if ($export_referenced_entities) {
+        _drupal_content_sync_save_temp_meta($intent->getEntityType(), $intent->getUuid(), $this->fieldName, $delta, $reference->getEntityTypeId(), $reference->bundle(), $reference->uuid() );
         $result[] = $intent->embedEntity($reference);
       }
       else {

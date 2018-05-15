@@ -243,7 +243,7 @@ class FlowForm extends EntityForm {
     $input = $form_state->getValue('sync_entities');
 
     foreach ($entity_types as $type_key => $entity_type) {
-      // This entity type hasn't contained any fields.
+      // This entity type doesn't contain any fields.
       if (!isset($field_map[$type_key])) {
         continue;
       }

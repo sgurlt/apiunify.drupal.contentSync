@@ -53,6 +53,12 @@ define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
 function drupal_content_sync_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
   $form_object = $form_state->getFormObject();
 
+  switch ($form_id) {
+    case 'user_form':
+      $form['actions']['submit']['#submit'][] = 'drupal_content_sync_user_password_submit';
+      break;
+  }
+
   if ($form_object instanceof ContentEntityDeleteForm) {
     if (!empty($form_state->getUserInput()['confirm'])) {
       return;
@@ -116,17 +122,10 @@ function drupal_content_sync_form_alter(array &$form, FormStateInterface $form_s
       }
     }
   }
-
-  switch ($form_id) {
-    case 'user_form':
-      $form['actions']['submit']['#submit'][] = 'drupal_content_sync_user_password_submit';
-      break;
-  }
-
-  _drupal_content_sync_form_alter_disabled_fields($form, $form_state, $form_id);
-
   // Add pool selection functionality to entity types.
-  if ($form_object instanceof ContentEntityForm) {
+  else if ($form_object instanceof ContentEntityForm) {
+    _drupal_content_sync_form_alter_disabled_fields($form, $form_state, $form_id);
+
     $entity = $form_object->getEntity();
     $bundle = $entity->bundle();
     $selectable_exportable_flows = Pool::getSelectablePools($entity->getEntityTypeId(), $bundle);
@@ -141,7 +140,6 @@ function drupal_content_sync_form_alter(array &$form, FormStateInterface $form_s
  *
  */
 function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter(&$element, &$form_state, $context) {
-
   // This code is based on:
   // https://www.drupal.org/project/paragraphs/issues/2868155#comment-12610258
   $entity_type = 'paragraph';
@@ -158,11 +156,14 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
   if (!is_null($bundle)) {
     $selectable_exportable_flows = Pool::getSelectablePools($entity_type, $bundle);
 
-    if (!empty($selectable_exportable_flows) && isset($entity)) {
-      _drupal_content_sync_add_export_pool_form($element['subform'], $selectable_exportable_flows, $entity);
-    } else {
-      $parent = $context['items']->getParent()->getValue();
-      _drupal_content_sync_add_export_pool_form($element['subform'], $selectable_exportable_flows, NULL, $parent);
+    if (!empty($selectable_exportable_flows)) {
+      if (isset($entity)) {
+        _drupal_content_sync_add_export_pool_form($element['subform'], $selectable_exportable_flows, $entity);
+      }
+      else {
+        $parent = $context['items']->getParent()->getValue();
+        _drupal_content_sync_add_export_pool_form($element['subform'], $selectable_exportable_flows, NULL, $parent);
+      }
     }
   }
 }
@@ -242,6 +243,9 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
     foreach ($selected_flow->getUsedExportPools($entity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_CREATE) as $pool) {
       $selected_pools[] = $pool->id;
     }
+    foreach ($selected_flow->getUsedExportPools($entity, ExportIntent::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_CREATE) as $pool) {
+      $selected_pools[] = $pool->id;
+    }
   }
   elseif($parentEntity) {
     foreach ($selected_flow->getUsedExportPools($parentEntity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_UPDATE) as $pool) {
@@ -267,7 +271,70 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
 
   // Entity form submit handler
   if(isset($form['actions']['submit'])) {
-    array_unshift($form['actions']['submit']['#submit'], '_drupal_content_sync_set_entity_export');
+    if(!empty($form['actions']['submit']['#submit'])) {
+      array_unshift($form['actions']['submit']['#submit'], '_drupal_content_sync_set_entity_export');
+    }
+    else {
+      $form['actions']['submit']['#submit'][] = '_drupal_content_sync_set_entity_export';
+    }
+  }
+}
+
+function _drupal_content_sync_temp_meta_storage($entity_type,$uuid,$field_name,$delta,$flow_id=NULL,$pool_ids=NULL) {
+  static $field_storage   = [];
+
+  if($flow_id && $pool_ids) {
+    $data = [
+      'flow_id'   => $flow_id,
+      'pool_ids'  => $pool_ids,
+    ];
+    $field_storage[$entity_type][$uuid][$field_name][$delta] = $data;
+  }
+  else {
+    if(!empty($field_storage[$entity_type][$uuid][$field_name])) {
+      return $field_storage[$entity_type][$uuid][$field_name][$delta];
+    }
+  }
+
+  return NULL;
+}
+
+function _drupal_content_sync_save_temp_meta($parent_entity_type,$parent_uuid,$parent_field_name,$parent_field_delta,$entity_type,$bundle,$uuid) {
+  $data = _drupal_content_sync_temp_meta_storage($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta);
+  _drupal_content_sync_save_meta($entity_type,$bundle,$uuid,$data['flow_id'],$data['pool_ids']);
+}
+
+function _drupal_content_sync_save_meta($entity_type,$bundle,$uuid,$flow_id,$pool_ids) {
+  $pools  = Pool::getAll();
+  $flow   = $flow_id;
+  $flow   = Flow::getAll()[$flow];
+  $values = $pool_ids;
+
+  foreach ($values as $pool_id=>$selected) {
+    $pool = $pools[$pool_id];
+    $meta = MetaInformation::getInfoForEntity($entity_type,$uuid,$flow,$pool);
+    if(!$selected) {
+      if($meta) {
+        $meta->isExportEnabled(FALSE);
+        $meta->save();
+      }
+      continue;
+    }
+
+    $meta = MetaInformation::getInfoForEntity($entity_type,$uuid,$flow,$pool);
+    if(!$meta) {
+      $meta = MetaInformation::create([
+        'flow' => $flow->id,
+        'pool' => $pool->id,
+        'entity_type' => $entity_type,
+        'entity_uuid' => $uuid,
+        'entity_type_version' => Flow::getEntityTypeVersion($entity_type, $bundle),
+        'flags' => 0,
+        'source_url' => NULL,
+      ]);
+    }
+    $meta->isExportEnabled(TRUE);
+    $meta->save();
   }
 }
 
@@ -281,14 +348,14 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
  * @param \Drupal\Core\Form\FormStateInterface $form_state
  */
 function _drupal_content_sync_set_entity_export(array $form, FormStateInterface $form_state) {
-  $flow = $form_state->getValue('dcs_flow_selector');
-  if(!$flow){
+  $flow_id = $form_state->getValue('dcs_flow_selector');
+  if(!$flow_id){
     return;
   }
-  $flow   = Flow::getAll()[$flow];
+
+  $flow = Flow::getAll()[$flow_id];
 
   $values = $form_state->getValue('dcs_pool_selector');
-  $pools  = Pool::getAll();
 
   /**
    * @var EntityInterface $entity
@@ -297,31 +364,27 @@ function _drupal_content_sync_set_entity_export(array $form, FormStateInterface 
     ->getFormObject()
     ->getEntity();
 
-  foreach ($values as $pool_id=>$selected) {
-    $pool = $pools[$pool_id];
-    $meta = MetaInformation::getInfoForEntity($entity->getEntityTypeId(),$entity->uuid(),$flow,$pool);
-    if(!$selected) {
-      if($meta) {
-        $meta->isExportEnabled(FALSE);
-        $meta->save();
-      }
-      continue;
-    }
+  $uuid = $entity->uuid();
 
-    $meta = MetaInformation::getInfoForEntity($entity->getEntityTypeId(),$entity->uuid(),$flow,$pool);
-    if(!$meta) {
-      $meta = MetaInformation::create([
-        'flow' => $flow->id,
-        'pool' => $pool->id,
-        'entity_type' => $entity->getEntityTypeId(),
-        'entity_uuid' => $entity->uuid(),
-        'entity_type_version' => Flow::getEntityTypeVersion($entity->getEntityTypeId(), $entity->bundle()),
-        'flags' => 0,
-        'source_url' => NULL,
-      ]);
+  _drupal_content_sync_save_meta($entity->getEntityTypeId(), $entity->bundle(), $uuid, $flow_id, $values);
+
+  $entityFieldManager = \Drupal::service('entity_field.manager');
+  /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
+  $fields = $entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
+  foreach($fields as $name=>$definition) {
+    if($definition->getType()=='entity_reference_revisions') {
+      $config = $flow->getFieldHandlerConfig($entity->getEntityTypeId(), $entity->bundle(), $name);
+      $export = !empty($config['handler_settings']['export_referenced_entities']) && $config['handler_settings']['export_referenced_entities'] === 0 ? 0 : 1;
+      if($export) {
+        $subform = &$form[$name]['widget'];
+        $count   = $subform['#max_delta'];
+        for($i=0;$i<=$count;$i++) {
+          $refflow    = $form_state->getValue([$name,$i,'subform','dcs_export_group','dcs_flow_selector']);
+          $refvalues  = $form_state->getValue([$name,$i,'subform','dcs_export_group','dcs_pool_selector']);
+          _drupal_content_sync_temp_meta_storage($entity->getEntityTypeId(),$uuid,$name,$i,$refflow,$refvalues);
+        }
+      }
     }
-    $meta->isExportEnabled(TRUE);
-    $meta->save();
   }
 }
 

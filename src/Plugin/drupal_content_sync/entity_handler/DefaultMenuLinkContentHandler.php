@@ -148,7 +148,7 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
           }
           $exported = TRUE;
         }
-        if (!$exported && !ExportIntent::isExporting($link_entity_type, $reference->uuid())) {
+        if (!$exported && !ExportIntent::isExporting($link_entity_type, $reference->uuid(), $intent->getPool())) {
           return TRUE;
         }
       }

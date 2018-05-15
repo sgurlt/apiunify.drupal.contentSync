@@ -266,10 +266,17 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       $entity->set($label, $intent->getField('title'));
     }
 
+    $static_fields = $this->getStaticFields();
+
     foreach ($field_definitions as $key => $field) {
       $handler = $this->flow->getFieldHandler($type, $bundle, $key);
 
       if (!$handler) {
+        continue;
+      }
+
+      // This field cannot be updated
+      if(in_array($key, $static_fields) && $intent->getAction()!=SyncIntent::ACTION_CREATE) {
         continue;
       }
 
@@ -407,6 +414,22 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       $entity_type_entity->getKey('bundle'),
       $entity_type_entity->getKey('uuid'),
       $entity_type_entity->getKey('label'),
+      'revision_default',
+      'revision_translation_affected',
+      'content_translation_source',
+      'content_translation_outdated',
+    ];
+  }
+
+  /**
+   * Get a list of fields that can't be updated.
+   *
+   * @return string[]
+   */
+  protected function getStaticFields() {
+    return [
+      'default_langcode',
+      'langcode'
     ];
   }
 
@@ -425,23 +448,6 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     // Base info.
     $intent->setField('title', $entity->label());
 
-    // Translations.
-    if (!$intent->getActiveLanguage() &&
-      $entity instanceof TranslatableInterface) {
-      $languages = array_keys($entity->getTranslationLanguages(FALSE));
-
-      foreach ($languages as $language) {
-        $intent->changeTranslationLanguage($language);
-        /**
-         * @var \Drupal\Core\Entity\FieldableEntityInterface $translation
-         */
-        $translation = $entity->getTranslation($language);
-        $this->export($intent, $translation);
-      }
-
-      $intent->changeTranslationLanguage();
-    }
-
     // Menu items.
     $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
     $menu_items = $menu_link_manager->loadLinksByRoute('entity.' . $this->entityTypeName . '.canonical', [$this->entityTypeName => $entity->id()]);
@@ -450,13 +456,12 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         continue;
       }
 
+      /**
+       * @var \Drupal\menu_link_content\Entity\MenuLinkContent $item
+       */
       $item = \Drupal::service('entity.repository')
         ->loadEntityByUuid('menu_link_content', $menu_item->getDerivativeId());
       if (!$item) {
-        continue;
-      }
-
-      if (!$this->flow->canExportEntity($item, ExportIntent::EXPORT_AS_DEPENDENCY)) {
         continue;
       }
 
@@ -494,6 +499,23 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       }
 
       $handler->export($intent);
+    }
+
+    // Translations.
+    if (!$intent->getActiveLanguage() &&
+      $entity instanceof TranslatableInterface) {
+      $languages = array_keys($entity->getTranslationLanguages(FALSE));
+
+      foreach ($languages as $language) {
+        $intent->changeTranslationLanguage($language);
+        /**
+         * @var \Drupal\Core\Entity\FieldableEntityInterface $translation
+         */
+        $translation = $entity->getTranslation($language);
+        $this->export($intent, $translation);
+      }
+
+      $intent->changeTranslationLanguage();
     }
 
     return TRUE;
