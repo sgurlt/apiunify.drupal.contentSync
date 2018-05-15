@@ -193,10 +193,11 @@ abstract class SyncIntent {
    */
   public function getEntity() {
     if(!$this->entity) {
-      $this->setEntity(
-        \Drupal::service('entity.repository')
-          ->loadEntityByUuid($this->entityType, $this->uuid)
-      );
+      $entity = \Drupal::service('entity.repository')
+        ->loadEntityByUuid($this->entityType, $this->uuid);
+      if($entity) {
+        $this->setEntity($entity);
+      }
     }
     return $this->entity;
   }

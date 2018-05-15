@@ -64,14 +64,15 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
    */
   public function ignoreImport(ImportIntent $intent) {
     $action = $intent->getAction();
+    if($action==SyncIntent::ACTION_DELETE) {
+      return parent::ignoreImport($intent);
+    }
 
     // Not published? Ignore this revision then.
     if ((empty($intent->getField('enabled')) || !$intent->getField('enabled')[0]['value']) && $this->settings['handler_settings']['ignore_unpublished']) {
       // Unless it's a delete, then it won't have a status and is independent
       // of published state, so we don't ignore the import.
-      if ($action != SyncIntent::ACTION_DELETE) {
-        return TRUE;
-      }
+      return TRUE;
     }
 
     if (!empty($this->settings['handler_settings']['restrict_menus'])) {
@@ -84,7 +85,7 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
     $link = $intent->getField('link');
     if (isset($link[0]['uri'])) {
       $uri = $link[0]['uri'];
-      preg_match('/^internal:/([a-z_0-9]+)\/([a-z0-9-]+)$/', $uri, $found);
+      preg_match('@^internal:/([a-z_0-9]+)\/([a-z0-9-]+)$@', $uri, $found);
       if (!empty($found)) {
         $intent->setField('enabled', [['value' => 0]]);
       }

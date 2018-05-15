@@ -294,7 +294,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
 
     if (empty($entity_types[$entity_type_name])) {
       return new ResourceResponse(
-        ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)->render()], self::CODE_NOT_FOUND
+        $action == SyncIntent::ACTION_DELETE ? NULL : ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)->render()], self::CODE_NOT_FOUND
       );
     }
 
@@ -319,7 +319,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         ])->render(),
       ]);
       return new ResourceResponse(
-        ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)->render()], self::CODE_NOT_FOUND
+        $action == SyncIntent::ACTION_DELETE ? NULL : ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)->render()], self::CODE_NOT_FOUND
       );
     }
 
@@ -339,7 +339,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         ])->render(),
       ]);
       return new ResourceResponse(
-        ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)->render()], self::CODE_NOT_FOUND
+        $action == SyncIntent::ACTION_DELETE ? NULL : ['message' => t(self::TYPE_HAS_NOT_BEEN_FOUND)->render()], self::CODE_NOT_FOUND
       );
     }
 
@@ -359,7 +359,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         ])->render(),
       ]);
       return new ResourceResponse(
-        ['message' => t(self::TYPE_HAS_INCOMPATIBLE_VERSION)->render()], self::CODE_NOT_FOUND
+        $action == SyncIntent::ACTION_DELETE ? NULL : ['message' => t(self::TYPE_HAS_INCOMPATIBLE_VERSION)->render()], self::CODE_NOT_FOUND
       );
     }
 
@@ -395,7 +395,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       ]);
 
       return new ResourceResponse(
-        [
+        $action == SyncIntent::ACTION_DELETE ? NULL : [
           'message' => t('SyncException @code: @message',
             [
               '@code'     => $e->errorCode,
@@ -421,7 +421,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       ]);
 
       return new ResourceResponse(
-        [
+        $action == SyncIntent::ACTION_DELETE ? NULL : [
           'message' => t('Unexpected error: @message', ['@message' => $e->getMessage()])->render(),
         ], 500
       );
@@ -434,7 +434,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     }
     else {
       return new ResourceResponse(
-        [
+        $action == SyncIntent::ACTION_DELETE ? NULL : [
           'message' => t('Entity is not configured to be imported yet.')->render(),
         ], 404
       );
