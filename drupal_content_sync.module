@@ -32,6 +32,34 @@ define('DRUPAL_CONTENT_SYNC_USER_ID', \Drupal::service('keyvalue.database')->get
 define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
 
 /**
+ * Add a submit handler to the form in case paragraphs are embedded within it.
+ *
+ * @param $form
+ * @param $element
+ *
+ * @return bool
+ */
+function _drupal_content_sync_add_embedded_entity_submit_handler(&$form, &$element) {
+  if (!empty($element['dcs_edit_override']) && $element !== $form) {
+    // Submit button is not available yet, so we temporarily store the handler
+    // in the form array and set it later when the buttons are available.
+    $form['actions']['submit']['#submit'][] = '_drupal_content_sync_override_embedded_entity_submit';
+    return TRUE;
+  }
+
+  foreach($element as &$item) {
+    if(!is_array($item)) {
+      continue;
+    }
+    if(_drupal_content_sync_add_embedded_entity_submit_handler($form,$item)) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+/**
  * 1) Make sure the user is informed that content will not only be deleted on
  * this * instance but also on all connected instances if configured that way.
  *
@@ -52,6 +80,8 @@ define('DRUPAL_CONTENT_SYNC_PROFILE_NAME', 'drupal_content_sync');
  */
 function drupal_content_sync_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
   $form_object = $form_state->getFormObject();
+
+  _drupal_content_sync_add_embedded_entity_submit_handler($form,$form);
 
   switch ($form_id) {
     case 'user_form':
@@ -124,9 +154,11 @@ function drupal_content_sync_form_alter(array &$form, FormStateInterface $form_s
   }
   // Add pool selection functionality to entity types.
   else if ($form_object instanceof ContentEntityForm) {
-    _drupal_content_sync_form_alter_disabled_fields($form, $form_state, $form_id);
+    $entity = $form_object
+      ->getEntity();
 
-    $entity = $form_object->getEntity();
+    _drupal_content_sync_form_alter_disabled_fields($form, $entity);
+
     $bundle = $entity->bundle();
     $selectable_exportable_flows = Pool::getSelectablePools($entity->getEntityTypeId(), $bundle);
 
@@ -137,23 +169,38 @@ function drupal_content_sync_form_alter(array &$form, FormStateInterface $form_s
 }
 
 /**
- *
+ * Add additional meta information fields to paragraph items.
  */
-function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter(&$element, &$form_state, $context) {
+function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter(&$element, &$form_state, &$context) {
+  // The parent entity of the paragraph
+  $parent = $context['items']->getParent()->getValue();
+
   // This code is based on:
   // https://www.drupal.org/project/paragraphs/issues/2868155#comment-12610258
   $entity_type = 'paragraph';
   $bundle = $element['#paragraph_type'];
+  $delta = $context['delta'];
   if (!empty($context['items'])) {
-    $delta = $context['delta'];
     if (isset($context['items']->get($delta)->target_id)) {
       $entity = Paragraph::load($context['items']->get($delta)->target_id);
     }
   }
 
+  if($entity) {
+    _drupal_content_sync_embedded_entity_temp_storage($parent->getEntityTypeId(),$parent->uuid(),$context['items']->getName(),$delta,$entity);
+    _drupal_content_sync_form_alter_disabled_fields($element, $entity);
+  }
+
   // If not bundle is given, the previous mentioned commit is
   // not added to the project.
   if (!is_null($bundle)) {
+    // If the parent entity isn't exported, there's no need to handle these
+    // paragraphs at all.
+    $auto_export = (bool)count(Flow::getFlowsForEntity($parent,ExportIntent::EXPORT_AUTOMATICALLY));
+    if(!$auto_export && !MetaInformation::getLastExportForEntity($parent)) {
+      return;
+    }
+
     $selectable_exportable_flows = Pool::getSelectablePools($entity_type, $bundle);
 
     if (!empty($selectable_exportable_flows)) {
@@ -161,7 +208,6 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
         _drupal_content_sync_add_export_pool_form($element['subform'], $selectable_exportable_flows, $entity);
       }
       else {
-        $parent = $context['items']->getParent()->getValue();
         _drupal_content_sync_add_export_pool_form($element['subform'], $selectable_exportable_flows, NULL, $parent);
       }
     }
@@ -169,7 +215,7 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
 }
 
 /**
- *
+ * Add the export widgets to the form, providing flow and pool selection.
  */
 function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportable_flows, $entity = NULL, $parentEntity=NULL) {
   // Try to show the group right above the status checkbox if it exists.
@@ -280,64 +326,6 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
   }
 }
 
-function _drupal_content_sync_temp_meta_storage($entity_type,$uuid,$field_name,$delta,$flow_id=NULL,$pool_ids=NULL) {
-  static $field_storage   = [];
-
-  if($flow_id && $pool_ids) {
-    $data = [
-      'flow_id'   => $flow_id,
-      'pool_ids'  => $pool_ids,
-    ];
-    $field_storage[$entity_type][$uuid][$field_name][$delta] = $data;
-  }
-  else {
-    if(!empty($field_storage[$entity_type][$uuid][$field_name])) {
-      return $field_storage[$entity_type][$uuid][$field_name][$delta];
-    }
-  }
-
-  return NULL;
-}
-
-function _drupal_content_sync_save_temp_meta($parent_entity_type,$parent_uuid,$parent_field_name,$parent_field_delta,$entity_type,$bundle,$uuid) {
-  $data = _drupal_content_sync_temp_meta_storage($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta);
-  _drupal_content_sync_save_meta($entity_type,$bundle,$uuid,$data['flow_id'],$data['pool_ids']);
-}
-
-function _drupal_content_sync_save_meta($entity_type,$bundle,$uuid,$flow_id,$pool_ids) {
-  $pools  = Pool::getAll();
-  $flow   = $flow_id;
-  $flow   = Flow::getAll()[$flow];
-  $values = $pool_ids;
-
-  foreach ($values as $pool_id=>$selected) {
-    $pool = $pools[$pool_id];
-    $meta = MetaInformation::getInfoForEntity($entity_type,$uuid,$flow,$pool);
-    if(!$selected) {
-      if($meta) {
-        $meta->isExportEnabled(FALSE);
-        $meta->save();
-      }
-      continue;
-    }
-
-    $meta = MetaInformation::getInfoForEntity($entity_type,$uuid,$flow,$pool);
-    if(!$meta) {
-      $meta = MetaInformation::create([
-        'flow' => $flow->id,
-        'pool' => $pool->id,
-        'entity_type' => $entity_type,
-        'entity_uuid' => $uuid,
-        'entity_type_version' => Flow::getEntityTypeVersion($entity_type, $bundle),
-        'flags' => 0,
-        'source_url' => NULL,
-      ]);
-    }
-    $meta->isExportEnabled(TRUE);
-    $meta->save();
-  }
-}
-
 /**
  * Meta Information update.
  *
@@ -349,24 +337,20 @@ function _drupal_content_sync_save_meta($entity_type,$bundle,$uuid,$flow_id,$poo
  */
 function _drupal_content_sync_set_entity_export(array $form, FormStateInterface $form_state) {
   $flow_id = $form_state->getValue('dcs_flow');
-  if(!$flow_id){
-    return;
+  if($flow_id) {
+    $values = $form_state->getValue('dcs_pool');
+
+    /**
+     * @var EntityInterface $entity
+     */
+    $entity = $form_state
+      ->getFormObject()
+      ->getEntity();
+
+    $uuid = $entity->uuid();
+
+    MetaInformation::saveSelectedExportPoolInfo($entity->getEntityTypeId(), $entity->bundle(), $uuid, $flow_id, $values);
   }
-
-  $flow = Flow::getAll()[$flow_id];
-
-  $values = $form_state->getValue('dcs_pool');
-
-  /**
-   * @var EntityInterface $entity
-   */
-  $entity = $form_state
-    ->getFormObject()
-    ->getEntity();
-
-  $uuid = $entity->uuid();
-
-  _drupal_content_sync_save_meta($entity->getEntityTypeId(), $entity->bundle(), $uuid, $flow_id, $values);
 
   $entityFieldManager = \Drupal::service('entity_field.manager');
   /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
@@ -379,15 +363,17 @@ function _drupal_content_sync_set_entity_export(array $form, FormStateInterface 
         $refflow    = $form_state->getValue([$name,$i,'subform','dcs_export_group','dcs_flow']);
         $refvalues  = $form_state->getValue([$name,$i,'subform','dcs_export_group','dcs_pool']);
         if(!empty($refflow) && !empty($refvalues)) {
-          _drupal_content_sync_temp_meta_storage($entity->getEntityTypeId(),$uuid,$name,$i,$refflow,$refvalues);
+          MetaInformation::accessTemporaryExportPoolInfoForField($entity->getEntityTypeId(),$uuid,$name,$i,$refflow,$refvalues);
         }
+
+
       }
     }
   }
 }
 
 /**
- * Ajax callback.
+ * Ajax callback to render the pools after flow selection.
  */
 function _drupal_content_sync_update_pool_selector(array $form, FormStateInterface $form_state) {
   $form_object = $form_state->getFormObject();
@@ -512,29 +498,9 @@ function drupal_content_sync_encrypt_values(array $values) {
  * @see \drupal_content_sync_form_alter()
  *
  * @param array $form
- * @param \Drupal\Core\Form\FormStateInterface $form_state
- * @param string $form_id
+ * @param EntityInterface $entity
  */
-function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormStateInterface $form_state, $form_id) {
-  $form_object = $form_state
-    ->getFormObject();
-
-  if (!($form_object instanceof ContentEntityForm)) {
-    return;
-  }
-
-  if ($form_object instanceof ContentEntityDeleteForm) {
-    return;
-  }
-
-  $entity = $form_object
-    ->getEntity();
-
-  // @TODO Check why this is NULL in some cases
-  if (!$entity) {
-    return;
-  }
-
+function _drupal_content_sync_form_alter_disabled_fields(array &$form, EntityInterface $entity) {
   $meta_infos = MetaInformation::getInfosForEntity(
     $entity->getEntityTypeId(),
     $entity->uuid()
@@ -611,6 +577,8 @@ function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormState
     }
   }
 
+  $is_embedded = $entity->getEntityTypeId()=='paragraph';
+
   if ($allow_overrides) {
     $form['dcs_edit_override'] = [
       '#type' => 'checkbox',
@@ -618,7 +586,7 @@ function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormState
       '#weight' => -10000,
       '#title' => t('Overwrite locally and ignore future remote updates'),
       '#description' => t('%label has been imported and future remote updates would overwrite local changes.<br>Checking this will make sure that future remote updates will be ignored so your local changes persist.', [
-        '%label' => $entity->label(),
+        '%label' => $is_embedded ? t('This content') : $entity->label(),
       ]) .
         (count($merged_fields) ? '<br>'.t('Changes to @name will still be merged.',['@name'=>implode(', ',$merged_fields)]) : '') .
         ($import_deletion ? '<br><strong>'.t('If the remote content is deleted, this content will also be deleted locally.').'</strong>' : ''),
@@ -630,7 +598,7 @@ function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormState
     $form['#attached']['library'][] = 'drupal_content_sync/entity-form';
     $form['actions']['submit']['#submit'][] = '_drupal_content_sync_override_entity_submit';
   }
-  else {
+  elseif(!$is_embedded) {
     $messenger = \Drupal::messenger();
     $messenger->addWarning(t('%label cannot be edited as it has been imported.', [
       '%label' => $entity->label(),
@@ -675,6 +643,90 @@ function _drupal_content_sync_override_entity_submit(array $form, FormStateInter
         // from API Unify.
       }
       break;
+    }
+  }
+}
+
+/**
+ * As we don't have access to the paragraphs items on form submit, we have
+ * to store them temporarily on form build (widget form alter) and later
+ * retrieve them on submit.
+ *
+ * @param string $parent_entity_type The embedding entity type.
+ * @param string $parent_uuid The embedding entity UUID.
+ * @param string $field_name The field name on the parent entity.
+ * @param int $delta The field value delta.
+ * @param EntityInterface|null $entity The entity to set.
+ *
+ * @return EntityInterface|null The stored value for the field/delta
+ */
+function _drupal_content_sync_embedded_entity_temp_storage($parent_entity_type,$parent_uuid,$field_name,$delta,$entity=NULL) {
+  static $storage = [];
+
+  if($entity) {
+    $storage[$parent_entity_type][$parent_uuid][$field_name][$delta] = $entity;
+  }
+
+  if(isset($storage[$parent_entity_type][$parent_uuid][$field_name][$delta])) {
+    return $storage[$parent_entity_type][$parent_uuid][$field_name][$delta];
+  }
+
+  return NULL;
+}
+
+/**
+ * Meta Information update.
+ *
+ * Update the MetaInformation for the given entity, setting
+ * the MetaInformation::FLAG_EDIT_OVERRIDE flag accordingly.
+ *
+ * @param array $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ */
+function _drupal_content_sync_override_embedded_entity_submit(array $form, FormStateInterface $form_state) {
+  /**
+   * @var EntityInterface $entity
+   */
+  $entity = $form_state
+    ->getFormObject()
+    ->getEntity();
+
+  $entityFieldManager = \Drupal::service('entity_field.manager');
+  /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
+  $fields = $entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
+  foreach($fields as $name=>$definition) {
+    if($definition->getType()=='entity_reference_revisions') {
+      $subform = &$form[$name]['widget'];
+      $count   = $subform['#max_delta'];
+      for($i=0;$i<=$count;$i++) {
+        $value = boolval($form_state->getValue([$name,$i,'dcs_edit_override']));
+
+        $embedded_entity = _drupal_content_sync_embedded_entity_temp_storage($entity->getEntityTypeId(),$entity->uuid(),$name,$i);
+        if(!$embedded_entity) {
+          continue;
+        }
+
+        $meta_infos = MetaInformation::getInfosForEntity(
+          $embedded_entity->getEntityTypeId(),
+          $embedded_entity->uuid()
+        );
+        foreach ($meta_infos as $info) {
+          if (!$info || !$info->getLastImport() || $info->isCloned()) {
+            continue;
+          }
+          $config = $info->getFlow()
+            ->getEntityTypeConfig($embedded_entity->getEntityTypeId(), $embedded_entity->bundle());
+          if ($config['import_updates'] == ImportIntent::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
+            if ($value != $info->isOverriddenLocally()) {
+              $info->isOverriddenLocally($value);
+              $info->save();
+              // TODO: If changed to "Don't override", we should re-import the entity
+              // from API Unify.
+            }
+            break;
+          }
+        }
+      }
     }
   }
 }

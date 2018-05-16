@@ -293,7 +293,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
         $result[] = $intent->embedEntity($reference,TRUE);
       }
       else {
-        _drupal_content_sync_save_temp_meta($intent->getEntityType(), $intent->getUuid(), $this->fieldName, $delta, $reference->getEntityTypeId(), $reference->bundle(), $reference->uuid() );
+        MetaInformation::saveSelectedExportPoolInfoForField($intent->getEntityType(), $intent->getUuid(), $this->fieldName, $delta, $reference->getEntityTypeId(), $reference->bundle(), $reference->uuid() );
         $result[] = $intent->embedEntityDefinition(
           $reference->getEntityTypeId(),
           $reference->bundle(),

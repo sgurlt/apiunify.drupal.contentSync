@@ -3,6 +3,7 @@
 namespace Drupal\drupal_content_sync\Entity;
 
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityChangedTrait;
@@ -138,6 +139,75 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
       ]);
 
     return reset($entities);
+  }
+
+  public static function getLastExportForEntity(FieldableEntityInterface $entity) {
+    $meta_infos = MetaInformation::getInfosForEntity($entity->getEntityTypeId(),$entity->uuid());
+    $latest = NULL;
+    foreach($meta_infos as $info) {
+      if($info->getLastExport() && (!$latest || $info->getLastExport()>$latest)) {
+        $latest = $info->getLastExport();
+      }
+    }
+    return $latest;
+  }
+
+  public static function accessTemporaryExportPoolInfoForField($entity_type, $uuid, $field_name, $delta, $set_flow_id=NULL, $set_pool_ids=NULL) {
+    static $field_storage   = [];
+
+    if($set_flow_id && $set_pool_ids) {
+      $data = [
+        'flow_id'   => $set_flow_id,
+        'pool_ids'  => $set_pool_ids,
+      ];
+      $field_storage[$entity_type][$uuid][$field_name][$delta] = $data;
+    }
+    else {
+      if(!empty($field_storage[$entity_type][$uuid][$field_name])) {
+        return $field_storage[$entity_type][$uuid][$field_name][$delta];
+      }
+    }
+
+    return NULL;
+  }
+
+  public static function saveSelectedExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta, $entity_type, $bundle, $uuid) {
+    $data = MetaInformation::accessTemporaryExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta);
+    MetaInformation::saveSelectedExportPoolInfo($entity_type,$bundle,$uuid,$data['flow_id'],$data['pool_ids']);
+  }
+
+  public static function saveSelectedExportPoolInfo($entity_type,$bundle,$uuid,$flow_id,$pool_ids) {
+    $pools  = Pool::getAll();
+    $flow   = $flow_id;
+    $flow   = Flow::getAll()[$flow];
+    $values = $pool_ids;
+
+    foreach ($values as $pool_id=>$selected) {
+      $pool = $pools[$pool_id];
+      $meta = MetaInformation::getInfoForEntity($entity_type,$uuid,$flow,$pool);
+      if(!$selected) {
+        if($meta) {
+          $meta->isExportEnabled(FALSE);
+          $meta->save();
+        }
+        continue;
+      }
+
+      $meta = MetaInformation::getInfoForEntity($entity_type,$uuid,$flow,$pool);
+      if(!$meta) {
+        $meta = MetaInformation::create([
+          'flow' => $flow->id,
+          'pool' => $pool->id,
+          'entity_type' => $entity_type,
+          'entity_uuid' => $uuid,
+          'entity_type_version' => Flow::getEntityTypeVersion($entity_type, $bundle),
+          'flags' => 0,
+          'source_url' => NULL,
+        ]);
+      }
+      $meta->isExportEnabled(TRUE);
+      $meta->save();
+    }
   }
 
   /**
