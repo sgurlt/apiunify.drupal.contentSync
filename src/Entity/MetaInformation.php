@@ -32,12 +32,13 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
 
   use EntityChangedTrait;
 
-  const FLAG_CLONED               = 0x00000001;
-  const FLAG_DELETED              = 0x00000002;
-  const FLAG_USER_ALLOWED_EXPORT  = 0x00000004;
-  const FLAG_EDIT_OVERRIDE        = 0x00000008;
-  const FLAG_IS_SOURCE_ENTITY     = 0x00000010;
-  const FLAG_EXPORT_ENABLED       = 0x00000020;
+  const FLAG_CLONED                     = 0x00000001;
+  const FLAG_DELETED                    = 0x00000002;
+  const FLAG_USER_ALLOWED_EXPORT        = 0x00000004;
+  const FLAG_EDIT_OVERRIDE              = 0x00000008;
+  const FLAG_IS_SOURCE_ENTITY           = 0x00000010;
+  const FLAG_EXPORT_ENABLED             = 0x00000020;
+  const FLAG_DEPENDENCY_EXPORT_ENABLED  = 0x00000040;
 
   /**
    * {@inheritdoc}
@@ -192,19 +193,27 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    * Returns the information if the entity has been chosen by the user to
    * be exported with this flow and pool.
    *
-   * @param bool $set
+   * @param bool $setExportEnabled
    *   Optional parameter to set the value for ExportEnabled.
+   * @param bool $setDependencyExportEnabled
+   *   Optional parameter to set the value for DependencyExportEnabled.
    *
    * @return bool
    */
-  public function isExportEnabled($set = NULL) {
-    if ($set === TRUE) {
+  public function isExportEnabled($setExportEnabled = NULL,$setDependencyExportEnabled = NULL) {
+    if ($setExportEnabled === TRUE) {
       $this->set('flags', $this->get('flags')->value | self::FLAG_EXPORT_ENABLED);
     }
-    elseif ($set === FALSE) {
+    elseif ($setExportEnabled === FALSE) {
       $this->set('flags', $this->get('flags')->value & ~self::FLAG_EXPORT_ENABLED);
     }
-    return (bool) ($this->get('flags')->value & self::FLAG_EXPORT_ENABLED);
+    if ($setDependencyExportEnabled === TRUE) {
+      $this->set('flags', $this->get('flags')->value | self::FLAG_DEPENDENCY_EXPORT_ENABLED);
+    }
+    elseif ($setDependencyExportEnabled === FALSE) {
+      $this->set('flags', $this->get('flags')->value & ~self::FLAG_DEPENDENCY_EXPORT_ENABLED);
+    }
+    return (bool) ($this->get('flags')->value & (self::FLAG_EXPORT_ENABLED | self::FLAG_DEPENDENCY_EXPORT_ENABLED));
   }
 
   /**

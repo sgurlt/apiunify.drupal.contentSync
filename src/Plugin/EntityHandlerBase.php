@@ -465,7 +465,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         continue;
       }
 
-      $intent->embedEntity($item);
+      $intent->embedEntity($item,FALSE);
     }
 
     // Preview.

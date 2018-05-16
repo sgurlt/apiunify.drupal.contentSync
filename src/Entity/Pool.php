@@ -275,6 +275,7 @@ class Pool extends ConfigEntityBase implements PoolInterface {
 
       }
     }
+
     foreach ($configs as $config_id => $config) {
       if (in_array('allow', $config['flow']['export_pools'])) {
         $selectable_pools[$config_id]['flow_label'] = $config['flow_label'];

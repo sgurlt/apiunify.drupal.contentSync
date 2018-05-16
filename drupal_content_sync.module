@@ -198,7 +198,7 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
   // Flow selection.
   if (count($selectable_exportable_flows) === 1) {
     $id = array_keys($selectable_exportable_flows)[0];
-    $form['dcs_export_group']['dcs_flow_selector'] = [
+    $form['dcs_export_group']['dcs_flow'] = [
       '#title' => t('Export flow selection'),
       '#type' => 'hidden',
       '#value' => $id,
@@ -214,7 +214,7 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
       $flow_options[$flow_id] = $selectable_exportable_flow['flow_label'];
     }
 
-    $form['dcs_export_group']['dcs_flow_selector'] = [
+    $form['dcs_export_group']['dcs_flow'] = [
       '#title' => t('Export flow selection'),
       '#type' => 'select',
       '#default_value' => $selected_flow->id,
@@ -256,8 +256,8 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
     }
   }
 
-  $form['dcs_export_group']['dcs_pool_selector'] = [
-    '#title' => t('Export pool selection'),
+  $form['dcs_export_group']['dcs_pool'] = [
+    '#title' => t('Export pool'),
     '#prefix' => '<div id="ajax-pool-selector-wrapper">',
     '#suffix' => '</div>',
     '#type' => $widget_type,
@@ -266,7 +266,7 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
   ];
 
   if ($options['widget_type'] == 'multi_select') {
-    $form['dcs_export_group']['dcs_pool_selector']['#multiple'] = TRUE;
+    $form['dcs_export_group']['dcs_pool']['#multiple'] = TRUE;
   }
 
   // Entity form submit handler
@@ -348,14 +348,14 @@ function _drupal_content_sync_save_meta($entity_type,$bundle,$uuid,$flow_id,$poo
  * @param \Drupal\Core\Form\FormStateInterface $form_state
  */
 function _drupal_content_sync_set_entity_export(array $form, FormStateInterface $form_state) {
-  $flow_id = $form_state->getValue('dcs_flow_selector');
+  $flow_id = $form_state->getValue('dcs_flow');
   if(!$flow_id){
     return;
   }
 
   $flow = Flow::getAll()[$flow_id];
 
-  $values = $form_state->getValue('dcs_pool_selector');
+  $values = $form_state->getValue('dcs_pool');
 
   /**
    * @var EntityInterface $entity
@@ -373,14 +373,12 @@ function _drupal_content_sync_set_entity_export(array $form, FormStateInterface 
   $fields = $entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
   foreach($fields as $name=>$definition) {
     if($definition->getType()=='entity_reference_revisions') {
-      $config = $flow->getFieldHandlerConfig($entity->getEntityTypeId(), $entity->bundle(), $name);
-      $export = !empty($config['handler_settings']['export_referenced_entities']) && $config['handler_settings']['export_referenced_entities'] === 0 ? 0 : 1;
-      if($export) {
-        $subform = &$form[$name]['widget'];
-        $count   = $subform['#max_delta'];
-        for($i=0;$i<=$count;$i++) {
-          $refflow    = $form_state->getValue([$name,$i,'subform','dcs_export_group','dcs_flow_selector']);
-          $refvalues  = $form_state->getValue([$name,$i,'subform','dcs_export_group','dcs_pool_selector']);
+      $subform = &$form[$name]['widget'];
+      $count   = $subform['#max_delta'];
+      for($i=0;$i<=$count;$i++) {
+        $refflow    = $form_state->getValue([$name,$i,'subform','dcs_export_group','dcs_flow']);
+        $refvalues  = $form_state->getValue([$name,$i,'subform','dcs_export_group','dcs_pool']);
+        if(!empty($refflow) && !empty($refvalues)) {
           _drupal_content_sync_temp_meta_storage($entity->getEntityTypeId(),$uuid,$name,$i,$refflow,$refvalues);
         }
       }
@@ -400,10 +398,10 @@ function _drupal_content_sync_update_pool_selector(array $form, FormStateInterfa
   $bundle = $entity->bundle();
   $selectable_exportable_flows = Pool::getSelectablePools($entity->getEntityTypeId(), $bundle);
 
-  $options = $selectable_exportable_flows[$form_state->getValue('dcs_flow_selector')]['pools'];
-  $form['dcs_export_group']['dcs_pool_selector']['#options'] = $options;
+  $options = $selectable_exportable_flows[$form_state->getValue('dcs_flow')]['pools'];
+  $form['dcs_export_group']['dcs_pool']['#options'] = $options;
 
-  return $form['dcs_export_group']['dcs_pool_selector'];
+  return $form['dcs_export_group']['dcs_pool'];
 }
 
 /**

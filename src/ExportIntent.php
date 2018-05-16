@@ -219,6 +219,7 @@ class ExportIntent extends SyncIntent {
       $proceed = $this->serialize($body);
 
       if ($proceed) {
+        $embedded_entities = [];
         if (!empty($body['embed_entities'])) {
           foreach ($body['embed_entities'] as $data) {
             try {
@@ -226,36 +227,90 @@ class ExportIntent extends SyncIntent {
                * @var \Drupal\Core\Entity\FieldableEntityInterface $embed_entity
                */
               $embed_entity = $entity_repository->loadEntityByUuid($data[SyncIntent::ENTITY_TYPE_KEY], $data[SyncIntent::UUID_KEY]);
+              $all_pools    = Pool::getAll();
+              $pools        = $this->flow->getUsedExportPools($entity, $this->getReason(), $this->getAction());
+              $flows        = Flow::getAll();
+              $version      = Flow::getEntityTypeVersion($embed_entity->getEntityTypeId(), $embed_entity->bundle());
 
-              // If this entity was newly created, it won't have any export groups
-              // selected, unless they're FORCED. In this case we add default sync
-              // groups based on the parent entity, as you would expect.
-              $meta_infos = MetaInformation::getInfosForEntity($embed_entity->getEntityTypeId(),$embed_entity->uuid());
-              if(!count($meta_infos)) {
-                if ($this->flow->canExportEntity($embed_entity, ExportIntent::EXPORT_AS_DEPENDENCY)) {
-                  foreach ($this->flow->getUsedExportPools($entity, $this->getReason(), $this->getAction()) as $pool) {
-                    $meta = MetaInformation::create([
-                      'flow' => $this->flow->id,
-                      'pool' => $pool->id,
-                      'entity_type' => $embed_entity->getEntityTypeId(),
-                      'entity_uuid' => $embed_entity->uuid(),
-                      'entity_type_version' => Flow::getEntityTypeVersion($embed_entity->getEntityTypeId(), $embed_entity->bundle()),
-                      'flags' => 0,
-                      'source_url' => NULL,
-                    ]);
-                    $meta->isExportEnabled(TRUE);
-                    $meta->save();
+              foreach($flows as $flow) {
+                if(!$flow->canExportEntity($entity,self::EXPORT_AS_DEPENDENCY,SyncIntent::ACTION_CREATE)) {
+                  continue;
+                }
+
+                foreach($flow->getEntityTypeConfig($embed_entity->getEntityTypeId(),$embed_entity->bundle())['export_pools'] as $pool_id=>$behavior) {
+                  if($behavior==Pool::POOL_USAGE_FORBID) {
+                    continue;
+                  }
+
+                  // If this entity was newly created, it won't have any export groups
+                  // selected, unless they're FORCED. In this case we add default sync
+                  // groups based on the parent entity, as you would expect
+                  if($data[SyncIntent::AUTO_EXPORT_KEY]) {
+                    if (!isset($pools[$pool_id])) {
+                      $pool = $all_pools[$pool_id];
+                      $info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
+                      if ($info) {
+                        $info->isExportEnabled(NULL, FALSE);
+                        $info->save();
+                      }
+
+                      continue;
+                    }
+
+                    $pool = $pools[$pool_id];
+                    $info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
+
+                    if (!$info) {
+                      $info = MetaInformation::create([
+                        'flow' => $flow->id,
+                        'pool' => $pool->id,
+                        'entity_type' => $embed_entity->getEntityTypeId(),
+                        'entity_uuid' => $embed_entity->uuid(),
+                        'entity_type_version' => $version,
+                        'flags' => 0,
+                      ]);
+                    }
+
+                    $info->isExportEnabled(NULL, TRUE);
+                    $info->save();
+                  }
+                  else {
+                    $pool     = $all_pools[$pool_id];
+                    $info     = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
+                    if( !$info || !$info->isExportEnabled() ) {
+                      continue;
+                    }
+                  }
+
+                  if (ExportIntent::exportEntity($embed_entity, self::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_CREATE, $flow, $pool)) {
+                    $definition = $data;
+                    $definition[SyncIntent::API_KEY] = $pool->id;
+                    $definition[SyncIntent::SOURCE_CONNECTION_ID_KEY] = ApiUnifyFlowExport::getExternalConnectionId(
+                      $pool->id,
+                      $pool->site_id,
+                      $embed_entity->getEntityTypeId(),
+                      $embed_entity->bundle(),
+                      $version
+                    );
+                    $definition[SyncIntent::POOL_CONNECTION_ID_KEY] = ApiUnifyFlowExport::getExternalConnectionId(
+                      $pool->id,
+                      ApiUnifyPoolExport::POOL_SITE_ID,
+                      $embed_entity->getEntityTypeId(),
+                      $embed_entity->bundle(),
+                      $version
+                    );
+                    $embedded_entities[] = $definition;
                   }
                 }
               }
-
-              ExportIntent::exportEntity($embed_entity,self::EXPORT_AS_DEPENDENCY,SyncIntent::ACTION_CREATE);
             }
             catch (\Exception $e) {
               throw new SyncException(SyncException::CODE_UNEXPECTED_EXCEPTION, $e);
             }
           }
         }
+
+        $body['embed_entities'] = $embedded_entities;
       }
     }
 

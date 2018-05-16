@@ -271,13 +271,13 @@ class Flow extends ConfigEntityBase implements FlowInterface {
       }
 
       if ($setting == Pool::POOL_USAGE_FORCE) {
-        $result[] = $pool;
+        $result[$id] = $pool;
         continue;
       }
 
       $meta = MetaInformation::getInfoForEntity($entity->getEntityTypeId(), $entity->uuid(), $this, $pool);
       if ($meta && $meta->isExportEnabled()) {
-        $result[] = $pool;
+        $result[$id] = $pool;
       }
     }
 

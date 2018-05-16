@@ -60,16 +60,18 @@ abstract class SyncIntent {
    * @var string BUNDLE_KEY               The bundle of the referenced entity.
    * @var string VERSION_KEY              The version of the entity type of the referenced entity.
    * @var string UUID_KEY                 The UUID of the referenced entity.
+   * @var string AUTO_EXPORT_KEY          Whether or not to automatically export the referenced entity as well.
    * @var string SOURCE_CONNECTION_ID_KEY The API Unify connection ID of the referenced entity.
    * @var string POOL_CONNECTION_ID_KEY   The API Unify connection ID of the pool for this api + entity type + bundle.
    */
-  const API_KEY                  = 'api';
-  const ENTITY_TYPE_KEY          = 'type';
-  const BUNDLE_KEY               = 'bundle';
-  const VERSION_KEY              = 'version';
-  const UUID_KEY                 = 'uuid';
-  const SOURCE_CONNECTION_ID_KEY = 'connection_id';
-  const POOL_CONNECTION_ID_KEY   = 'next_connection_id';
+  const API_KEY                   = 'api';
+  const ENTITY_TYPE_KEY           = 'type';
+  const BUNDLE_KEY                = 'bundle';
+  const VERSION_KEY               = 'version';
+  const UUID_KEY                  = 'uuid';
+  const AUTO_EXPORT_KEY           = 'auto_export';
+  const SOURCE_CONNECTION_ID_KEY  = 'connection_id';
+  const POOL_CONNECTION_ID_KEY    = 'next_connection_id';
 
   /**
    * @var string ACTION_CREATE
@@ -317,12 +319,15 @@ abstract class SyncIntent {
    *   The bundle of the referenced entity.
    * @param string $uuid
    *   The UUID of the referenced entity.
+   * @param bool $auto_export
+   *   Whether the referenced entity should be exported automatically to all
+   *   it's pools as well.
    * @param array $details
    *   Additional details you would like to export.
    *
    * @return array The definition to be exported.
    */
-  public function getEmbedEntityDefinition($entity_type, $bundle, $uuid, $details = NULL) {
+  public function getEmbedEntityDefinition($entity_type, $bundle, $uuid, $auto_export=FALSE, $details = NULL) {
     $version = Flow::getEntityTypeVersion($entity_type, $bundle);
 
     return array_merge([
@@ -331,6 +336,7 @@ abstract class SyncIntent {
       self::UUID_KEY          => $uuid,
       self::BUNDLE_KEY        => $bundle,
       self::VERSION_KEY       => $version,
+      self::AUTO_EXPORT_KEY   => $auto_export,
       self::SOURCE_CONNECTION_ID_KEY => ApiUnifyFlowExport::getExternalConnectionId(
         $this->pool->id,
         $this->pool->site_id,
@@ -360,6 +366,8 @@ abstract class SyncIntent {
    *   {@see SyncIntent::getEmbedEntityDefinition}.
    * @param string $uuid
    *   {@see SyncIntent::getEmbedEntityDefinition}.
+   * @param bool $auto_export
+   *   {@see SyncIntent::getEmbedEntityDefinition}.
    * @param array $details
    *   {@see SyncIntent::getEmbedEntityDefinition}.
    *
@@ -369,7 +377,7 @@ abstract class SyncIntent {
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
-  public function embedEntityDefinition($entity_type, $bundle, $uuid, $details = NULL) {
+  public function embedEntityDefinition($entity_type, $bundle, $uuid, $auto_export=FALSE, $details = NULL) {
     // Prevent circle references without middle man.
     if ($entity_type == $this->entityType && $uuid == $this->uuid) {
       throw new SyncException(
@@ -383,13 +391,13 @@ abstract class SyncIntent {
     foreach ($this->embedEntities as $definition) {
       if ($definition[self::ENTITY_TYPE_KEY] == $entity_type && $definition[self::UUID_KEY] == $uuid) {
         return $this->getEmbedEntityDefinition(
-          $entity_type, $bundle, $uuid, $details
+          $entity_type, $bundle, $uuid, $auto_export, $details
         );
       }
     }
 
     return $this->embedEntities[] = $this->getEmbedEntityDefinition(
-      $entity_type, $bundle, $uuid, $details
+      $entity_type, $bundle, $uuid, $auto_export, $details
     );
   }
 
@@ -398,6 +406,8 @@ abstract class SyncIntent {
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The referenced entity to export as well.
+   * @param bool $auto_export
+   *   {@see SyncIntent::getEmbedEntityDefinition}.
    * @param array $details
    *   {@see SyncIntent::getEmbedEntityDefinition}.
    *
@@ -405,11 +415,12 @@ abstract class SyncIntent {
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
-  public function embedEntity($entity, $details = NULL) {
+  public function embedEntity($entity, $auto_export=FALSE, $details = NULL) {
     return $this->embedEntityDefinition(
       $entity->getEntityTypeId(),
       $entity->bundle(),
       $entity->uuid(),
+      $auto_export,
       $details
     );
   }

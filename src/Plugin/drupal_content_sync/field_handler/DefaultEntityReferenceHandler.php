@@ -41,7 +41,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
   }
 
   protected function shouldExportReferencedEntities() {
-    return !empty($this->settings['handler_settings']['export_referenced_entities']) && $this->settings['handler_settings']['export_referenced_entities'] === 0 ? 0 : 1;
+    return isset($this->settings['handler_settings']['export_referenced_entities']) && $this->settings['handler_settings']['export_referenced_entities'] === 0 ? 0 : 1;
   }
 
   /**
@@ -60,7 +60,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       $options['merge_local_changes'] = [
         '#type' => 'checkbox',
         '#title' => 'Merge local changes',
-        '#default_value' => !empty($this->settings['handler_settings']['merge_local_changes']) && $this->settings['handler_settings']['merge_local_changes'] === 0 ? 0 : 1,
+        '#default_value' => isset($this->settings['handler_settings']['merge_local_changes']) && $this->settings['handler_settings']['merge_local_changes'] === 0 ? 0 : 1,
       ];
     }
 
@@ -290,14 +290,15 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       }
 
       if ($export_referenced_entities) {
-        _drupal_content_sync_save_temp_meta($intent->getEntityType(), $intent->getUuid(), $this->fieldName, $delta, $reference->getEntityTypeId(), $reference->bundle(), $reference->uuid() );
-        $result[] = $intent->embedEntity($reference);
+        $result[] = $intent->embedEntity($reference,TRUE);
       }
       else {
+        _drupal_content_sync_save_temp_meta($intent->getEntityType(), $intent->getUuid(), $this->fieldName, $delta, $reference->getEntityTypeId(), $reference->bundle(), $reference->uuid() );
         $result[] = $intent->embedEntityDefinition(
           $reference->getEntityTypeId(),
           $reference->bundle(),
-          $reference->uuid()
+          $reference->uuid(),
+          FALSE
         );
       }
     }

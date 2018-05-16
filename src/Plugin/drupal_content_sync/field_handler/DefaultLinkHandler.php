@@ -122,7 +122,6 @@ class DefaultLinkHandler extends FieldHandlerBase {
         ];
       }
       else {
-        // @TODO Add option "auto export / import" just as reference fields do
         $link_entity_type = $found[1];
         $link_entity_id   = $found[2];
         $entity_manager   = \Drupal::entityTypeManager();
@@ -140,7 +139,8 @@ class DefaultLinkHandler extends FieldHandlerBase {
         $result[] = $intent->getEmbedEntityDefinition(
           $link_entity->getEntityTypeId(),
           $link_entity->bundle(),
-          $link_entity->uuid()
+          $link_entity->uuid(),
+          FALSE // @TODO Add option "auto export / import" just as reference fields do
         );
       }
     }
