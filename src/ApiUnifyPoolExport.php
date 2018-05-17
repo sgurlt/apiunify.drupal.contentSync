@@ -103,7 +103,7 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
       // Create the instance entity.
       $this->sendEntityRequest($url . '/api_unify-api_unify-instance-0_1', [
         'json' => [
-          'id' => $this->pool->site_id,
+          'id' => $this->pool->id . '-' . $this->pool->site_id,
           'api_id' => $this->pool->id . '-' . ApiUnifyPoolExport::CUSTOM_API_VERSION,
         ],
       ]);
