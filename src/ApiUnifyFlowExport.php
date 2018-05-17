@@ -542,56 +542,59 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
           $localConnections[] = $local_connection_id;
 
           // Create a synchronization from the pool to the local connection.
-          $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
-            'json' => [
-              'id' => $local_connection_id . '--to--drupal',
-              'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from Pool -> ' . $site_id,
-              'options' => [
-                'dependency_connection_id' => self::DEPENDENCY_CONNECTION_ID,
-                'create_entities' => $import != Pool::POOL_USAGE_FORBID && $type['import'] != ImportIntent::IMPORT_DISABLED,
-                'update_entities' => $import != Pool::POOL_USAGE_FORBID && $type['import'] != ImportIntent::IMPORT_DISABLED && !$type['import_clone'],
-                'delete_entities' => $import != Pool::POOL_USAGE_FORBID && $type['import'] != ImportIntent::IMPORT_DISABLED && boolval($type['import_deletion_settings']['import_deletion']),
-                'clone_entities' => boolval($type['import_clone']),
-                'dependent_entities_only' => $type['import'] == ImportIntent::IMPORT_AS_DEPENDENCY,
-                'update_none_when_loading' => TRUE,
-                'exclude_reference_properties' => [
-                  'pSource',
+          if($import != Pool::POOL_USAGE_FORBID) {
+            $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
+              'json' => [
+                'id' => $local_connection_id . '--to--drupal',
+                'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from Pool -> ' . $site_id,
+                'options' => [
+                  'dependency_connection_id' => self::DEPENDENCY_CONNECTION_ID,
+                  'create_entities' => $type['import'] != ImportIntent::IMPORT_DISABLED,
+                  'update_entities' => $type['import'] != ImportIntent::IMPORT_DISABLED && !$type['import_clone'],
+                  'delete_entities' => $type['import'] != ImportIntent::IMPORT_DISABLED && boolval($type['import_deletion_settings']['import_deletion']),
+                  'clone_entities' => boolval($type['import_clone']),
+                  'dependent_entities_only' => $type['import'] == ImportIntent::IMPORT_AS_DEPENDENCY,
+                  'update_none_when_loading' => TRUE,
+                  'exclude_reference_properties' => [
+                    'pSource',
+                  ],
                 ],
+                'status' => 'READY',
+                'source_connection_id' => $pool_connection_id,
+                'destination_connection_id' => $local_connection_id,
               ],
-              'status' => 'READY',
-              'source_connection_id' => $pool_connection_id,
-              'destination_connection_id' => $local_connection_id,
-            ],
-          ]);
-
-          $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
-            'json' => [
-              'id' => $local_connection_id . '--to--pool',
-              'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from ' . $site_id . ' -> Pool',
-              'options' => [
-                'dependency_connection_id' => self::POOL_DEPENDENCY_CONNECTION_ID,
-                // As entities will only be sent to API Unify if the sync config
-                // allows it, the synchronization entity doesn't need to filter
-                // any further
-                // 'create_entities' => TRUE,
-                // 'update_entities' => TRUE,
-                // 'delete_entities' => TRUE,
-                // 'clone_entities'  => FALSE,
-                // 'dependent_entities_only'  => FALSE,.
-                'create_entities' => $export != Pool::POOL_USAGE_FORBID && $type['export'] != ExportIntent::EXPORT_DISABLED,
-                'update_entities' => $export != Pool::POOL_USAGE_FORBID && $type['export'] != ExportIntent::EXPORT_DISABLED,
-                'delete_entities' => $export != Pool::POOL_USAGE_FORBID && $type['export'] != ExportIntent::EXPORT_DISABLED && boolval($type['export_deletion_settings']['export_deletion']),
-                'dependent_entities_only' => $export != Pool::POOL_USAGE_FORBID && $type['export'] == ExportIntent::EXPORT_AS_DEPENDENCY,
-                'update_none_when_loading' => TRUE,
-                'exclude_reference_properties' => [
-                  'pSource',
+            ]);
+          }
+          if($export != Pool::POOL_USAGE_FORBID) {
+            $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
+              'json' => [
+                'id' => $local_connection_id . '--to--pool',
+                'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from ' . $site_id . ' -> Pool',
+                'options' => [
+                  'dependency_connection_id' => self::POOL_DEPENDENCY_CONNECTION_ID,
+                  // As entities will only be sent to API Unify if the sync config
+                  // allows it, the synchronization entity doesn't need to filter
+                  // any further
+                  // 'create_entities' => TRUE,
+                  // 'update_entities' => TRUE,
+                  // 'delete_entities' => TRUE,
+                  // 'clone_entities'  => FALSE,
+                  // 'dependent_entities_only'  => FALSE,.
+                  'create_entities' => $type['export'] != ExportIntent::EXPORT_DISABLED,
+                  'update_entities' => $type['export'] != ExportIntent::EXPORT_DISABLED,
+                  'delete_entities' => $type['export'] != ExportIntent::EXPORT_DISABLED && boolval($type['export_deletion_settings']['export_deletion']),
+                  'dependent_entities_only' => $export != Pool::POOL_USAGE_FORBID && $type['export'] == ExportIntent::EXPORT_AS_DEPENDENCY,
+                  'update_none_when_loading' => TRUE,
+                  'exclude_reference_properties' => [
+                    'pSource',
+                  ],
                 ],
+                'status' => 'READY',
+                'source_connection_id' => $local_connection_id,
+                'destination_connection_id' => $pool_connection_id,
               ],
-              'status' => 'READY',
-              'source_connection_id' => $local_connection_id,
-              'destination_connection_id' => $pool_connection_id,
-            ],
-          ]);
+            ]);
+          }
         }
       }
       catch (RequestException $e) {
