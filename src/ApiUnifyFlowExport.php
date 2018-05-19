@@ -535,7 +535,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
               'usage' => 'EXTERNAL',
               'status' => 'READY',
               'entity_type_id' => $entity_type_id,
-              'instance_id' => $pool->id . '-' . $site_id,
+              'instance_id' => $site_id,
               'options' => $connection_options,
             ],
           ]);
