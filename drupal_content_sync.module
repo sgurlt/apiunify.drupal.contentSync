@@ -171,7 +171,21 @@ function drupal_content_sync_form_alter(array &$form, FormStateInterface $form_s
 /**
  * Add additional meta information fields to paragraph items.
  */
+function drupal_content_sync_field_widget_paragraphs_browser_previewer_form_alter(&$element, &$form_state, &$context) {
+  _drupal_content_sync_paragraphs_export_settings_form($element, $form_state, $context);
+}
+
+/**
+ * Add additional meta information fields to paragraph items.
+ */
 function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter(&$element, &$form_state, &$context) {
+  _drupal_content_sync_paragraphs_export_settings_form($element, $form_state, $context);
+}
+
+/**
+ * Add the Export settings for to the several Paragraph widget types.
+ */
+function _drupal_content_sync_paragraphs_export_settings_form(&$element, &$form_state, &$context) {
   // The parent entity of the paragraph
   $parent = $context['items']->getParent()->getValue();
 
@@ -213,7 +227,6 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
     }
   }
 }
-
 /**
  * Add the export widgets to the form, providing flow and pool selection.
  */
