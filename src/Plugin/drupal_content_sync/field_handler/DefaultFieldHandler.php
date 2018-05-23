@@ -40,6 +40,9 @@ class DefaultFieldHandler extends FieldHandlerBase {
       "timestamp",
       "text_long",
       "metatag",
+      "list_string",
+      "list_float",
+      "list_integer",
     ];
     return in_array($field->getType(), $allowed) !== FALSE;
   }
