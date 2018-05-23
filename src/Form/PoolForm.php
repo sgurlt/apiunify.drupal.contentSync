@@ -61,24 +61,40 @@ class PoolForm extends EntityForm {
       ],
       '#disabled' => !$pool->isNew(),
     ];
-    $form['backend_url'] = [
-      '#type' => 'url',
-      '#title' => $this->t('Drupal Content Sync URL'),
-      '#default_value' => $pool->getBackendUrl(),
-      '#description' => $this->t("The Drupal Content Sync backend URL."),
-      '#required' => TRUE,
-    ];
 
-    // Check if the site id got set within the settings*.php.
+    // Check if the site id or backend_url got set within the settings*.php.
     if (!is_null($pool->id)) {
       $config_machine_name = $pool->id;
       $dcs_settings = Settings::get('drupal_content_sync');
       if (!is_null($dcs_settings) && isset($dcs_settings['pools'][$pool->id]['site_id'])) {
         $site_id = $dcs_settings['pools'][$pool->id]['site_id'];
       }
+      if (!is_null($dcs_settings) && isset($dcs_settings['pools'][$pool->id]['backend_url'])) {
+        $backend_url = $dcs_settings['pools'][$pool->id]['backend_url'];
+      }
     }
     if (!isset($config_machine_name)) {
       $config_machine_name = '<machine_name_of_the_configuration>';
+    }
+
+    $form['backend_url'] = [
+      '#type' => 'url',
+      '#title' => $this->t('Drupal Content Sync URL'),
+      '#default_value' => $pool->getBackendUrl(),
+      '#description' => $this->t("The Drupal Content Sync backend URL.<br>
+      The backend url can be overwritten within your environment specific settings.php file by using <i>@settings</i>.", [
+        '@settings' => '$settings["drupal_content_sync"]["pools"]["' . $config_machine_name . '"]["backend_url"] = "http://drupal-content-sync-example.de:8691/rest"',
+        '@config_machine_name' => $config_machine_name,
+      ]),
+      '#required' => TRUE,
+    ];
+
+    // If the backend_url is set within the settings.php,
+    // the form field is disabled.
+    if (isset($backend_url)) {
+      $form['backend_url']['#disabled'] = TRUE;
+      $form['backend_url']['#default_value'] = $backend_url;
+      $form['backend_url']['#description'] = $this->t('The backend url is set within the environment specific settings.php file.');
     }
 
     $form['site_id'] = [
@@ -102,7 +118,7 @@ class PoolForm extends EntityForm {
     if (isset($site_id)) {
       $form['site_id']['#disabled'] = TRUE;
       $form['site_id']['#default_value'] = $site_id;
-      $form['site_id']['#description'] = $this->t('Site identifier ist set with the environment specific settings.php file.');
+      $form['site_id']['#description'] = $this->t('Site identifier is set within the environment specific settings.php file.');
     }
 
     return $form;
