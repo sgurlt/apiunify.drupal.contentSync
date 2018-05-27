@@ -297,14 +297,16 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
     $widget_type = $options['widget_type'];
   }
 
+  $exported_pools = [];
   $selected_pools = [];
   if($entity) {
     foreach ($selected_flow->getUsedExportPools($entity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_CREATE) as $pool) {
-      $selected_pools[] = $pool->id;
+      $exported_pools[] = $pool->id;
     }
     foreach ($selected_flow->getUsedExportPools($entity, ExportIntent::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_CREATE) as $pool) {
-      $selected_pools[] = $pool->id;
+      $exported_pools[] = $pool->id;
     }
+    $selected_pools = $exported_pools;
   }
   elseif($parentEntity) {
     foreach ($selected_flow->getUsedExportPools($parentEntity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_UPDATE) as $pool) {
@@ -322,6 +324,7 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
     '#type' => $widget_type,
     '#default_value' => $selected_pools,
     '#options' => $options['pools'],
+    '#disabled' => !empty($exported_pools),
   ];
 
   if ($options['widget_type'] == 'multi_select') {
