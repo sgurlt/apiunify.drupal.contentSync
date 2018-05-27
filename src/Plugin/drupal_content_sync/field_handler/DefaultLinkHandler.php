@@ -62,7 +62,9 @@ class DefaultLinkHandler extends FieldHandlerBase {
           $reference = $intent->loadEmbeddedEntity($link_element);
           if ($reference) {
             $result[] = [
-              'uri' => 'entity:' . $reference->getEntityTypeId() . '/' . $reference->id(),
+              'uri'     => 'entity:' . $reference->getEntityTypeId() . '/' . $reference->id(),
+              'title'   => $link_element['title'],
+              'options' => $link_element['options'],
             ];
             $intent->setField('enabled', [['value' => 1]]);
             $entity->set('enabled', 1);
@@ -75,13 +77,17 @@ class DefaultLinkHandler extends FieldHandlerBase {
           // now available entity reference by ID.
           elseif ($entity instanceof MenuLinkContent && $this->fieldName == 'link') {
             $result[] = [
-              'uri' => 'internal:/' . $link_element[SyncIntent::ENTITY_TYPE_KEY] . '/' . $link_element[SyncIntent::UUID_KEY],
+              'uri'     => 'internal:/' . $link_element[SyncIntent::ENTITY_TYPE_KEY] . '/' . $link_element[SyncIntent::UUID_KEY],
+              'title'   => $link_element['title'],
+              'options' => $link_element['options'],
             ];
           }
         }
         else {
           $result[] = [
-            'uri' => $link_element['uri'],
+            'uri'     => $link_element['uri'],
+            'title'   => $link_element['title'],
+            'options' => $link_element['options'],
           ];
         }
       }
@@ -119,6 +125,8 @@ class DefaultLinkHandler extends FieldHandlerBase {
       if (empty($found)) {
         $result[] = [
           'uri'     => $uri,
+          'title'   => $value['title'],
+          'options' => $value['options'],
         ];
       }
       else {
@@ -140,7 +148,12 @@ class DefaultLinkHandler extends FieldHandlerBase {
           $link_entity->getEntityTypeId(),
           $link_entity->bundle(),
           $link_entity->uuid(),
-          FALSE // @TODO Add option "auto export / import" just as reference fields do
+          // @TODO Add option "auto export / import" just as reference fields do
+          FALSE,
+          [
+            'title'   => $value['title'],
+            'options' => $value['options'],
+          ]
         );
       }
     }
