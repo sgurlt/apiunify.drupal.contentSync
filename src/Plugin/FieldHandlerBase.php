@@ -126,31 +126,6 @@ abstract class FieldHandlerBase extends PluginBase implements ContainerFactoryPl
   }
 
   /**
-   * Advanced entity type definition settings for the Node.js backend. You
-   * can usually ignore these. By default it will create a new allowed field
-   * in API Unify for the entity type that is:
-   * - stored in the filesystem if it is a file field
-   * - stored in the database otherwise
-   * - required if the field is required by Drupal as well
-   * - modifiable if the field is not set to "read only" in Drupal.
-   *
-   * @param array $definition
-   *   The definition to extend.
-   */
-  public function updateEntityTypeDefinition(&$definition) {
-    $definition['new_property_lists']['details'][$this->fieldName] = 'value';
-    $definition['new_property_lists']['database'][$this->fieldName] = 'value';
-
-    if ($this->fieldDefinition->isRequired()) {
-      $definition['new_property_lists']['required'][$this->fieldName] = 'value';
-    }
-
-    if (!$this->fieldDefinition->isReadOnly()) {
-      $definition['new_property_lists']['modifiable'][$this->fieldName] = 'value';
-    }
-  }
-
-  /**
    * @inheritdoc
    */
   public function import(ImportIntent $intent) {

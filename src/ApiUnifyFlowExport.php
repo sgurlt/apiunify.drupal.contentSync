@@ -441,14 +441,20 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
             'api_id' => $api . '-' . ApiUnifyPoolExport::CUSTOM_API_VERSION,
           ];
 
-          $handler->updateEntityTypeDefinition($entity_type);
+          $forbidden = $handler->getForbiddenFields();
 
           foreach ($fields as $key => $field) {
-            if (!isset($entity_types[$id . '-' . $key]) || $entity_types[$id . '-' . $key]['handler'] == Flow::HANDLER_IGNORE) {
+            if (!isset($entity_types[$id . '-' . $key])) {
               continue;
             }
 
-            $field_handler = $this->flow->getFieldHandler($entity_type_name, $bundle_name, $key);
+            if(in_array($key,$forbidden)) {
+              continue;
+            }
+
+            if(isset($entity_type['new_properties'][$key])) {
+              continue;
+            }
 
             $entity_type['new_properties'][$key] = [
               'type' => 'object',
@@ -456,10 +462,25 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
               'multiple' => TRUE,
             ];
 
-            $field_handler->updateEntityTypeDefinition($entity_type);
+            $entity_type['new_property_lists']['details'][$key] = 'value';
+            $entity_type['new_property_lists']['database'][$key] = 'value';
+
+            $entityFieldManager = \Drupal::service('entity_field.manager');
+            $field_definition = $entityFieldManager->getFieldDefinitions($entity_type_name, $bundle_name)[$key];
+
+            if ($field_definition->isRequired()) {
+              $entity_type['new_property_lists']['required'][$key] = 'value';
+            }
+
+            if (!$field_definition->isReadOnly()) {
+              $entity_type['new_property_lists']['modifiable'][$key] = 'value';
+            }
           }
 
-          // @TODO Actually entity type definition must be pool-based, not flow-based
+          // TODO entity types should also contain the entity type handler in their machine name, preventing the following potential errors:
+          // - Different flows may use different entity type handlers, resulting in different entity type definitions for the same entity type
+          // - Changing the entity type handler must change the entity type definition which will not work if we don't update the machine name
+          $handler->updateEntityTypeDefinition($entity_type);
 
           // Create the entity type.
           $this->sendEntityRequest($url . '/api_unify-api_unify-entity_type-0_1', [

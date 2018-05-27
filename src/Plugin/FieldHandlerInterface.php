@@ -68,18 +68,6 @@ interface FieldHandlerInterface extends PluginInspectionInterface {
   public function getHandlerSettings();
 
   /**
-   * Update the entity type definition.
-   *
-   * Advanced entity type definition settings for API Unify backend. You
-   * can usually ignore these.
-   *
-   * @param $definition
-   *   The definition to be sent to API Unify.
-   *   {@see ApiUnifyConfig}
-   */
-  public function updateEntityTypeDefinition(&$definition);
-
-  /**
    * @param \Drupal\drupal_content_sync\SyncIntent $intent
    *   The request containing all exported data.
    *
