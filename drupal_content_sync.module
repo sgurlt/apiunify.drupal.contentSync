@@ -157,7 +157,7 @@ function drupal_content_sync_form_alter(array &$form, FormStateInterface $form_s
     $entity = $form_object
       ->getEntity();
 
-    _drupal_content_sync_form_alter_disabled_fields($form, $entity);
+    _drupal_content_sync_form_alter_disabled_fields($form, $form_state, $entity);
 
     $bundle = $entity->bundle();
     $selectable_exportable_flows = Pool::getSelectablePools($entity->getEntityTypeId(), $bundle);
@@ -185,7 +185,7 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
 /**
  * Add the Export settings for to the several Paragraph widget types.
  */
-function _drupal_content_sync_paragraphs_export_settings_form(&$element, &$form_state, &$context) {
+function _drupal_content_sync_paragraphs_export_settings_form(&$element, FormStateInterface &$form_state, &$context) {
   // The parent entity of the paragraph
   $parent = $context['items']->getParent()->getValue();
 
@@ -202,7 +202,7 @@ function _drupal_content_sync_paragraphs_export_settings_form(&$element, &$form_
 
   if($entity) {
     _drupal_content_sync_embedded_entity_temp_storage($parent->getEntityTypeId(),$parent->uuid(),$context['items']->getName(),$delta,$entity);
-    _drupal_content_sync_form_alter_disabled_fields($element, $entity);
+    _drupal_content_sync_form_alter_disabled_fields($element, $form_state, $entity);
   }
 
   // If not bundle is given, the previous mentioned commit is
@@ -514,9 +514,12 @@ function drupal_content_sync_encrypt_values(array $values) {
  * @see \drupal_content_sync_form_alter()
  *
  * @param array $form
+ * @param FormStateInterface $form_state The form state to get default values from.
  * @param EntityInterface $entity
  */
-function _drupal_content_sync_form_alter_disabled_fields(array &$form, EntityInterface $entity) {
+function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormStateInterface $form_state, EntityInterface $entity) {
+  $value = boolval($form_state->getValue('dcs_edit_override')) || boolval($form_state->getUserInput()["dcs_edit_override"]);
+
   $meta_infos = MetaInformation::getInfosForEntity(
     $entity->getEntityTypeId(),
     $entity->uuid()
@@ -537,7 +540,7 @@ function _drupal_content_sync_form_alter_disabled_fields(array &$form, EntityInt
     if ($config['import_updates'] == ImportIntent::IMPORT_UPDATE_FORCE_AND_FORBID_EDITING ||
       $config['import_updates'] == ImportIntent::IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN) {
       $behavior = $config['import_updates'];
-      $overridden = $info->isOverriddenLocally();
+      $overridden = $info->isOverriddenLocally() || $value;
       $import_deletion = boolval($config['import_deletion_settings']['import_deletion']);
 
       /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
