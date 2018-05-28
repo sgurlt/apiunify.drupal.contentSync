@@ -82,15 +82,19 @@ drupal_content_sync.dcs_pool.pool_required:
 
 # DCS - Push changes
 drupal_content_sync.publish_changes:
-  path: '/drupal-content-sync/publish-changes/{sync_id}/{entity_type}/{entity}'
+  path: '/drupal-content-sync/publish-changes/{flow_id}/{entity}/{entity_type}'
   defaults:
     _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSyncPushChanges::pushChanges'
   requirements:
     _permission: 'publish drupal content sync changes'
   options:
     parameters:
+      flow_id:
+        type: string
       entity:
-        type: entity:{entity_type}
+        type: integer
+      entity_type:
+        type: string
 
 drupal_content_sync.publish_changes_entities:
   path: '/drupal-content-sync/publish-changes/entities'
