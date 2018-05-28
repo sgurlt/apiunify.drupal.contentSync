@@ -183,6 +183,13 @@ function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter
 }
 
 /**
+ * Add additional meta information fields to paragraph items.
+ */
+function drupal_content_sync_field_widget_paragraphs_form_alter(&$element, &$form_state, &$context) {
+  _drupal_content_sync_paragraphs_export_settings_form($element, $form_state, $context);
+}
+
+/**
  * Add the Export settings for to the several Paragraph widget types.
  */
 function _drupal_content_sync_paragraphs_export_settings_form(&$element, FormStateInterface &$form_state, &$context) {
@@ -200,7 +207,7 @@ function _drupal_content_sync_paragraphs_export_settings_form(&$element, FormSta
     }
   }
 
-  if($entity) {
+  if ($entity) {
     _drupal_content_sync_embedded_entity_temp_storage($parent->getEntityTypeId(),$parent->uuid(),$context['items']->getName(),$delta,$entity);
     _drupal_content_sync_form_alter_disabled_fields($element, $form_state, $entity);
   }
@@ -317,13 +324,24 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
     }
   }
 
+  $single = $options['widget_type']=='single_select' || $options['widget_type']=='radios';
+  $pool_list = [];
+  if($single) {
+    $pool_list['ignore'] = t('None');
+    $default_value = empty($selected_pools) ? 'ignore' : $selected_pools[0];
+  }
+  else {
+    $default_value = $selected_pools;
+  }
+  $pool_list = array_merge($pool_list,$options['pools']);
+
   $form['dcs_export_group']['dcs_pool'] = [
     '#title' => t('Export pool'),
     '#prefix' => '<div id="ajax-pool-selector-wrapper">',
     '#suffix' => '</div>',
     '#type' => $widget_type,
-    '#default_value' => $selected_pools,
-    '#options' => $options['pools'],
+    '#default_value' => $default_value,
+    '#options' => $pool_list,
     '#disabled' => !empty($exported_pools),
   ];
 
@@ -356,6 +374,20 @@ function _drupal_content_sync_set_entity_export(array $form, FormStateInterface 
   if($flow_id) {
     $values = $form_state->getValue('dcs_pool');
 
+    $processed = [];
+    if (is_array($values)) {
+      foreach($values as $id=>$selected) {
+        if($selected && $id!=='ignore') {
+          $processed[] = $id;
+        }
+      }
+    }
+    else {
+      if($values!=='ignore') {
+        $processed[] = $values;
+      }
+    }
+
     /**
      * @var EntityInterface $entity
      */
@@ -365,7 +397,7 @@ function _drupal_content_sync_set_entity_export(array $form, FormStateInterface 
 
     $uuid = $entity->uuid();
 
-    MetaInformation::saveSelectedExportPoolInfo($entity->getEntityTypeId(), $entity->bundle(), $uuid, $flow_id, $values);
+    MetaInformation::saveSelectedExportPoolInfo($entity->getEntityTypeId(), $entity->bundle(), $uuid, $flow_id, $processed);
   }
 
   $entityFieldManager = \Drupal::service('entity_field.manager');

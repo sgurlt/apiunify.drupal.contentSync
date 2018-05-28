@@ -173,40 +173,56 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
 
   public static function saveSelectedExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta, $entity_type, $bundle, $uuid) {
     $data = MetaInformation::accessTemporaryExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta);
-    MetaInformation::saveSelectedExportPoolInfo($entity_type,$bundle,$uuid,$data['flow_id'],$data['pool_ids']);
+
+    $values = $data['pool_ids'];
+
+    $processed = [];
+    if (is_array($values)) {
+      foreach($values as $id=>$selected) {
+        if($selected && $id!=='ignore') {
+          $processed[] = $id;
+        }
+      }
+    }
+    else {
+      if($values!=='ignore') {
+        $processed[] = $values;
+      }
+    }
+
+    MetaInformation::saveSelectedExportPoolInfo($entity_type,$bundle,$uuid,$data['flow_id'],$processed);
   }
 
   public static function saveSelectedExportPoolInfo($entity_type,$bundle,$uuid,$flow_id,$pool_ids) {
-    $pools  = Pool::getAll();
-    $flow   = $flow_id;
-    $flow   = Flow::getAll()[$flow];
-    $values = $pool_ids;
+    $flow   = Flow::getAll()[$flow_id];
+    $pools = Pool::getAll();
 
-    foreach ($values as $pool_id=>$selected) {
-      $pool = $pools[$pool_id];
+    $entity_type_pools = Pool::getSelectablePools($entity_type, $bundle)[$flow_id]['pools'];
+    foreach ($entity_type_pools as $entity_type_pool_id => $config) {
+      $pool = $pools[$entity_type_pool_id];
       $meta = MetaInformation::getInfoForEntity($entity_type,$uuid,$flow,$pool);
-      if(!$selected) {
-        if($meta) {
-          $meta->isExportEnabled(FALSE);
-          $meta->save();
+      if(in_array($entity_type_pool_id,$pool_ids)) {
+        if(!$meta) {
+          $meta = MetaInformation::create([
+            'flow' => $flow->id,
+            'pool' => $pool->id,
+            'entity_type' => $entity_type,
+            'entity_uuid' => $uuid,
+            'entity_type_version' => Flow::getEntityTypeVersion($entity_type, $bundle),
+            'flags' => 0,
+            'source_url' => NULL,
+          ]);
         }
+        $meta->isExportEnabled(TRUE);
+        $meta->save();
+
         continue;
       }
 
-      $meta = MetaInformation::getInfoForEntity($entity_type,$uuid,$flow,$pool);
-      if(!$meta) {
-        $meta = MetaInformation::create([
-          'flow' => $flow->id,
-          'pool' => $pool->id,
-          'entity_type' => $entity_type,
-          'entity_uuid' => $uuid,
-          'entity_type_version' => Flow::getEntityTypeVersion($entity_type, $bundle),
-          'flags' => 0,
-          'source_url' => NULL,
-        ]);
+      if($meta) {
+        $meta->isExportEnabled(FALSE);
+        $meta->save();
       }
-      $meta->isExportEnabled(TRUE);
-      $meta->save();
     }
   }
 
