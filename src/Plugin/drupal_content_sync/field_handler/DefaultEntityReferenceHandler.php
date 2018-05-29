@@ -2,6 +2,8 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\drupal_content_sync\Entity\MetaInformation;
 use Drupal\drupal_content_sync\ExportIntent;
@@ -293,7 +295,6 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
         $result[] = $intent->embedEntity($reference,TRUE);
       }
       else {
-        MetaInformation::saveSelectedExportPoolInfoForField($intent->getEntityType(), $intent->getUuid(), $this->fieldName, $delta, $reference->getEntityTypeId(), $reference->bundle(), $reference->uuid() );
         $result[] = $intent->embedEntityDefinition(
           $reference->getEntityTypeId(),
           $reference->bundle(),
@@ -306,6 +307,47 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     $intent->setField($this->fieldName, $result);
 
     return TRUE;
+  }
+
+  /**
+   * Save the export settings the user selected for paragraphs.
+   *
+   * @param EntityInterface $entity
+   */
+  public static function saveEmbeddedExportPools(FieldableEntityInterface $entity) {
+    // Make sure paragraph export settings are saved as well..
+    $entityTypeManager = \Drupal::entityTypeManager();
+    $entityFieldManager = \Drupal::service('entity_field.manager');
+    /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
+    $fields = $entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
+    foreach ($fields as $name => $definition) {
+      if ($definition->getType() == 'entity_reference_revisions') {
+        $reference_type = $definition
+          ->getFieldStorageDefinition()
+          ->getPropertyDefinition('entity')
+          ->getTargetDefinition()
+          ->getEntityTypeId();
+        $storage = $entityTypeManager
+          ->getStorage($reference_type);
+
+        $data   = $entity->get($name)->getValue();
+        foreach ($data as $delta=>$value) {
+          if (empty($value['target_id'])) {
+            continue;
+          }
+
+          $target_id = $value['target_id'];
+          $reference = $storage
+            ->load($target_id);
+
+          if (!$reference) {
+            continue;
+          }
+
+          MetaInformation::saveSelectedExportPoolInfoForField($entity->getEntityTypeId(),$entity->uuid(),$name,$delta,$reference->getEntityTypeId(),$reference->bundle(),$reference->uuid());
+        }
+      }
+    }
   }
 
 }

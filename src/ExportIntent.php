@@ -53,6 +53,12 @@ class ExportIntent extends SyncIntent {
    *   - used as $action
    */
   const EXPORT_FORCED = 'forced';
+  /**
+   * @var string EXPORT_ANY
+   *   Only used as a filter to check if the Flow exports this entity in any
+   *   way.
+   */
+  const EXPORT_ANY = 'any';
 
   /**
    * ExportIntent constructor.
@@ -233,7 +239,7 @@ class ExportIntent extends SyncIntent {
               $version      = Flow::getEntityTypeVersion($embed_entity->getEntityTypeId(), $embed_entity->bundle());
 
               foreach($flows as $flow) {
-                if(!$flow->canExportEntity($entity,self::EXPORT_AS_DEPENDENCY,SyncIntent::ACTION_CREATE)) {
+                if(!$flow->canExportEntity($embed_entity,self::EXPORT_AS_DEPENDENCY,SyncIntent::ACTION_CREATE)) {
                   continue;
                 }
 
@@ -482,7 +488,7 @@ class ExportIntent extends SyncIntent {
                   break;
                 }
               }
-              if (!$has_info) {
+              if ($has_info) {
                 return TRUE;
               }
             }
