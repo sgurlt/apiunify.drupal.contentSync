@@ -386,7 +386,7 @@ class ExportIntent extends SyncIntent {
       throw new SyncException(SyncException::CODE_EXPORT_REQUEST_FAILED);
     }
 
-    if (!$this->meta->getLastExport() && !$this->meta->getLastImport()) {
+    if (!$this->meta->getLastExport() && !$this->meta->getLastImport() && isset($body['url'])) {
       $this->meta->set('source_url', $body['url']);
     }
     $this->meta->save();
