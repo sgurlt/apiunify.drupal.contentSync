@@ -11,6 +11,7 @@ use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\drupal_content_sync\ExportIntent;
 use Drupal\drupal_content_sync\ImportIntent;
+use Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler\DefaultEntityReferenceHandler;
 use Drupal\drupal_content_sync\SyncIntent;
 use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\Entity\EntityInterface;
@@ -217,7 +218,7 @@ function _drupal_content_sync_paragraphs_export_settings_form(&$element, FormSta
   if (!is_null($bundle)) {
     // If the parent entity isn't exported, there's no need to handle these
     // paragraphs at all.
-    $auto_export = (bool)count(Flow::getFlowsForEntity($parent,ExportIntent::EXPORT_AUTOMATICALLY));
+    $auto_export = (bool)count(Flow::getFlowsForEntity($parent,ExportIntent::EXPORT_ANY));
     if(!$auto_export && !MetaInformation::getLastExportForEntity($parent)) {
       return;
     }
@@ -307,19 +308,13 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
   $exported_pools = [];
   $selected_pools = [];
   if($entity) {
-    foreach ($selected_flow->getUsedExportPools($entity, ExportIntent::EXPORT_MANUALLY, SyncIntent::ACTION_CREATE) as $pool) {
-      $exported_pools[] = $pool->id;
-    }
-    foreach ($selected_flow->getUsedExportPools($entity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_CREATE) as $pool) {
-      $exported_pools[] = $pool->id;
-    }
-    foreach ($selected_flow->getUsedExportPools($entity, ExportIntent::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_CREATE) as $pool) {
+    foreach ($selected_flow->getUsedExportPools($entity, ExportIntent::EXPORT_ANY, SyncIntent::ACTION_CREATE) as $pool) {
       $exported_pools[] = $pool->id;
     }
     $selected_pools = $exported_pools;
   }
   elseif($parentEntity) {
-    foreach ($selected_flow->getUsedExportPools($parentEntity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_UPDATE) as $pool) {
+    foreach ($selected_flow->getUsedExportPools($parentEntity, ExportIntent::EXPORT_ANY, SyncIntent::ACTION_UPDATE) as $pool) {
       if(!isset($options['pools'][$pool->id])) {
         continue;
       }
@@ -416,8 +411,6 @@ function _drupal_content_sync_set_entity_export(array $form, FormStateInterface 
         if(!empty($refflow) && !empty($refvalues)) {
           MetaInformation::accessTemporaryExportPoolInfoForField($entity->getEntityTypeId(),$uuid,$name,$i,$refflow,$refvalues);
         }
-
-
       }
     }
   }
@@ -447,6 +440,10 @@ function _drupal_content_sync_update_pool_selector(array $form, FormStateInterfa
  * @param \Drupal\Core\Entity\EntityInterface $entity
  */
 function drupal_content_sync_entity_insert(EntityInterface $entity) {
+  if($entity instanceof \Drupal\Core\Entity\FieldableEntityInterface) {
+    DefaultEntityReferenceHandler::saveEmbeddedExportPools($entity);
+  }
+
   ExportIntent::exportEntityFromUi($entity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_CREATE);
 }
 
@@ -456,6 +453,10 @@ function drupal_content_sync_entity_insert(EntityInterface $entity) {
  * @param \Drupal\Core\Entity\EntityInterface $entity
  */
 function drupal_content_sync_entity_update(EntityInterface $entity) {
+  if($entity instanceof \Drupal\Core\Entity\FieldableEntityInterface) {
+    DefaultEntityReferenceHandler::saveEmbeddedExportPools($entity);
+  }
+
   // This is actually an update, but for the case this entity existed
   // before the synchronization was created or the entity could not be
   // exported before for any reason, using ::ACTION_UPDATE would lead to
@@ -832,7 +833,7 @@ function drupal_content_sync_get_publish_changes_operations(EntityInterface $ent
     ];
 
     $operations['publish_changes'] = [
-      'title' => t('Push changes - '.$flow->name),
+      'title' => t('Push changes - %name',['%name'=>$flow->name]),
       'weight' => 150,
       'url' => Url::fromRoute('drupal_content_sync.publish_changes', $route_parameters),
       'query' => $redirect_destination->getAsArray(),

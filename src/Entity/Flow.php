@@ -247,7 +247,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    * automatically or manually selected.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
-   * @param string $reason
+   * @param string|null $reason
    *   {@see Flow::EXPORT_*}.
    * @param string $action
    *   {@see ::ACTION_*}.
@@ -301,6 +301,10 @@ class Flow extends ConfigEntityBase implements FlowInterface {
 
     if ($action == SyncIntent::ACTION_DELETE && !boolval($config['export_deletion_settings']['export_deletion'])) {
       return FALSE;
+    }
+
+    if($reason===ExportIntent::EXPORT_ANY) {
+      return TRUE;
     }
 
     /**
