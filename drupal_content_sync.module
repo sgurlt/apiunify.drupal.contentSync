@@ -212,13 +212,18 @@ function _drupal_content_sync_paragraphs_export_settings_form(&$element, FormSta
     _drupal_content_sync_form_alter_disabled_fields($element, $form_state, $entity);
   }
 
-  // If not bundle is given, the previous mentioned commit is
+  // If no bundle is given, the previous mentioned commit is
   // not added to the project.
   if (!is_null($bundle)) {
     // If the parent entity isn't exported, there's no need to handle these
     // paragraphs at all.
+
+    // @ToDo: Review.
+
     $auto_export = (bool)count(Flow::getFlowsForEntity($parent,ExportIntent::EXPORT_AUTOMATICALLY));
-    if(!$auto_export && !MetaInformation::getLastExportForEntity($parent)) {
+    $manual_export = (bool)count(Flow::getFlowsForEntity($parent,ExportIntent::EXPORT_MANUALLY));
+    $dependent_export = (bool)count(Flow::getFlowsForEntity($parent,ExportIntent::EXPORT_AS_DEPENDENCY));
+    if(!$auto_export && !$manual_export && !$dependent_export && !MetaInformation::getLastExportForEntity($parent)) {
       return;
     }
 
