@@ -209,7 +209,6 @@ function _drupal_content_sync_paragraphs_export_settings_form(&$element, FormSta
   }
 
   if ($entity) {
-    _drupal_content_sync_embedded_entity_temp_storage($parent->getEntityTypeId(),$parent->uuid(),$context['items']->getName(),$delta,$entity);
     _drupal_content_sync_form_alter_disabled_fields($element, $form_state, $entity);
   }
 
@@ -652,6 +651,14 @@ function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormState
         'data-dcs-edit-override-id' => $id,
       ],
     ];
+    $form['dcs_edit_override__entity_type'] = [
+      '#type'   => 'hidden',
+      '#value'  => $entity->getEntityTypeId(),
+    ];
+    $form['dcs_edit_override__entity_uuid'] = [
+      '#type'   => 'hidden',
+      '#value'  => $entity->uuid(),
+    ];
     $form['#attached']['library'][] = 'drupal_content_sync/entity-form';
     $form['actions']['submit']['#submit'][] = '_drupal_content_sync_override_entity_submit';
   }
@@ -705,33 +712,6 @@ function _drupal_content_sync_override_entity_submit(array $form, FormStateInter
 }
 
 /**
- * As we don't have access to the paragraphs items on form submit, we have
- * to store them temporarily on form build (widget form alter) and later
- * retrieve them on submit.
- *
- * @param string $parent_entity_type The embedding entity type.
- * @param string $parent_uuid The embedding entity UUID.
- * @param string $field_name The field name on the parent entity.
- * @param int $delta The field value delta.
- * @param EntityInterface|null $entity The entity to set.
- *
- * @return EntityInterface|null The stored value for the field/delta
- */
-function _drupal_content_sync_embedded_entity_temp_storage($parent_entity_type,$parent_uuid,$field_name,$delta,$entity=NULL) {
-  static $storage = [];
-
-  if($entity) {
-    $storage[$parent_entity_type][$parent_uuid][$field_name][$delta] = $entity;
-  }
-
-  if(isset($storage[$parent_entity_type][$parent_uuid][$field_name][$delta])) {
-    return $storage[$parent_entity_type][$parent_uuid][$field_name][$delta];
-  }
-
-  return NULL;
-}
-
-/**
  * Meta Information update.
  *
  * Update the MetaInformation for the given entity, setting
@@ -757,8 +737,14 @@ function _drupal_content_sync_override_embedded_entity_submit(array $form, FormS
       $count   = $subform['#max_delta'];
       for($i=0;$i<=$count;$i++) {
         $value = boolval($form_state->getValue([$name,$i,'dcs_edit_override']));
+        $embedded_entity_type = $form_state->getValue([$name,$i,'dcs_edit_override__entity_type']);
+        $embedded_entity_uuid = $form_state->getValue([$name,$i,'dcs_edit_override__entity_uuid']);
 
-        $embedded_entity = _drupal_content_sync_embedded_entity_temp_storage($entity->getEntityTypeId(),$entity->uuid(),$name,$i);
+        $embedded_entity = \Drupal::service('entity.repository')
+          ->loadEntityByUuid(
+            $embedded_entity_type,
+            $embedded_entity_uuid
+          );
         if(!$embedded_entity) {
           continue;
         }
