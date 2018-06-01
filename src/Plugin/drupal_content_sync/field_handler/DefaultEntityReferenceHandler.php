@@ -274,6 +274,20 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       ->getStorage($reference_type);
 
     $data   = $entity->get($this->fieldName)->getValue();
+    if(!$data && $this->fieldName=='menu_link') {
+      $menu_link_manager  = \Drupal::service('plugin.manager.menu.link');
+      $links = $menu_link_manager->loadLinksByRoute('entity.'.$entity->getEntityTypeId().'.canonical', array($entity->getEntityTypeId() => $entity->id()));
+      $data  = [];
+      foreach($links as $link) {
+        $uuid   = $link->getDerivativeId();
+        $item   = \Drupal::service('entity.repository')
+          ->loadEntityByUuid('menu_link_content', $uuid);
+        $data[] = [
+          'target_id' => $item->id(),
+        ];
+      }
+    }
+
     $result = [];
 
     $export_referenced_entities = $this->shouldExportReferencedEntities();

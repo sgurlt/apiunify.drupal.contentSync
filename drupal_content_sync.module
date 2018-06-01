@@ -225,7 +225,7 @@ function _drupal_content_sync_paragraphs_export_settings_form(&$element, FormSta
       return;
     }
 
-    $selectable_exportable_flows = Pool::getSelectablePools($entity_type, $bundle);
+    $selectable_exportable_flows = Pool::getSelectablePools($entity_type, $bundle, $parent, $context['items']->getName());
 
     if (!empty($selectable_exportable_flows)) {
       if (isset($entity)) {

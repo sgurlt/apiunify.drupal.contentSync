@@ -388,8 +388,12 @@ abstract class SyncIntent {
     }
 
     // Already included? Just return the definition then.
-    foreach ($this->embedEntities as $definition) {
+    foreach ($this->embedEntities as &$definition) {
       if ($definition[self::ENTITY_TYPE_KEY] == $entity_type && $definition[self::UUID_KEY] == $uuid) {
+        // Overwrite auto export flag if it should be set now.
+        if(!$definition[self::AUTO_EXPORT_KEY] && $auto_export) {
+          $definition[self::AUTO_EXPORT_KEY]  = TRUE;
+        }
         return $this->getEmbedEntityDefinition(
           $entity_type, $bundle, $uuid, $auto_export, $details
         );

@@ -239,7 +239,8 @@ class ExportIntent extends SyncIntent {
               $version      = Flow::getEntityTypeVersion($embed_entity->getEntityTypeId(), $embed_entity->bundle());
 
               foreach($flows as $flow) {
-                if(!$flow->canExportEntity($embed_entity,self::EXPORT_AS_DEPENDENCY,SyncIntent::ACTION_CREATE)) {
+                if(!$flow->canExportEntity($embed_entity,self::EXPORT_AS_DEPENDENCY,SyncIntent::ACTION_CREATE) &&
+                  !$flow->canExportEntity($embed_entity,self::EXPORT_AUTOMATICALLY,SyncIntent::ACTION_CREATE)) {
                   continue;
                 }
 
@@ -463,44 +464,7 @@ class ExportIntent extends SyncIntent {
     if (!$flow) {
       $flows = Flow::getFlowsForEntity($entity, $reason, $action);
       if (!count($flows)) {
-        // If this entity has been exported as a dependency, we want to export the
-        // Update and deletion automatically as well.
-        if ($reason == ExportIntent::EXPORT_AUTOMATICALLY &&
-          $action != SyncIntent::ACTION_CREATE) {
-          $flows = Flow::getFlowsForEntity(
-            $entity,
-            ExportIntent::EXPORT_AS_DEPENDENCY,
-            $action
-          );
-          if (count($flows)) {
-            $infos = MetaInformation::getInfosForEntity(
-              $entity->getEntityTypeId(),
-              $entity->uuid()
-            );
-            foreach ($flows as $flow) {
-              $has_info = FALSE;
-              foreach ($infos as $info) {
-                if ($info->getFlow() !== $flow) {
-                  continue;
-                }
-                if ($info->getLastExport()) {
-                  $has_info = TRUE;
-                  break;
-                }
-              }
-              if ($has_info) {
-                return TRUE;
-              }
-            }
-            return FALSE;
-          }
-          else {
-            return FALSE;
-          }
-        }
-        else {
-          return FALSE;
-        }
+        return FALSE;
       }
 
       $result = FALSE;
