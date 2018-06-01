@@ -55,6 +55,13 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
   public static function getInternalUrl($api_id, $entity_type_name, $bundle_name, $version, $entity_uuid = NULL) {
     global $base_url;
 
+    // Check if the base_url is overwritten within the settings.
+    $dcs_settings = \Drupal::config('drupal_content_sync.settings');
+    $dcs_base_url = $dcs_settings->get('dcs_base_url');
+    if(isset($dcs_settings) && $dcs_base_url != '') {
+      $base_url = $dcs_base_url;
+    }
+
     $url = sprintf('%s/rest/dcs/%s/%s/%s/%s',
       $base_url,
       $api_id,

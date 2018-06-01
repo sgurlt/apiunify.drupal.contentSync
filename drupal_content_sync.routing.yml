@@ -80,6 +80,15 @@ drupal_content_sync.dcs_pool.pool_required:
   requirements:
     _permission: 'publish drupal content sync changes'
 
+# General settings
+drupal_content_sync.settings_form:
+  path: '/admin/config/services/drupal_content_sync/settings'
+  defaults:
+    _form: '\Drupal\drupal_content_sync\Form\SettingsForm'
+    _title: 'Settings - Drupal Content Sync'
+  requirements:
+    _permission: 'administer site configuration'
+
 # DCS - Push changes
 drupal_content_sync.publish_changes:
   path: '/drupal-content-sync/publish-changes/{flow_id}/{entity}/{entity_type}'
