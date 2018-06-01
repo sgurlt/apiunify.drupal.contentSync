@@ -6,7 +6,7 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Form handler for the Pool add and edit forms.
+ * DCS general settings form.
  */
 class SettingsForm extends ConfigFormBase {
 
