@@ -172,22 +172,17 @@ function drupal_content_sync_form_alter(array &$form, FormStateInterface $form_s
 /**
  * Add additional meta information fields to paragraph items.
  */
-function drupal_content_sync_field_widget_paragraphs_browser_previewer_form_alter(&$element, &$form_state, &$context) {
-  _drupal_content_sync_paragraphs_export_settings_form($element, $form_state, $context);
-}
-
-/**
- * Add additional meta information fields to paragraph items.
- */
-function drupal_content_sync_field_widget_entity_reference_paragraphs_form_alter(&$element, &$form_state, &$context) {
-  _drupal_content_sync_paragraphs_export_settings_form($element, $form_state, $context);
-}
-
-/**
- * Add additional meta information fields to paragraph items.
- */
-function drupal_content_sync_field_widget_paragraphs_form_alter(&$element, &$form_state, &$context) {
-  _drupal_content_sync_paragraphs_export_settings_form($element, $form_state, $context);
+function drupal_content_sync_field_widget_form_alter(&$element, \Drupal\Core\Form\FormStateInterface $form_state, $context) {
+  $widget = $context['widget']->getPluginId();
+  $paragraph_widgets = [
+    'paragraphs_browser_previewer',
+    'entity_reference_paragraphs',
+    'paragraphs',
+    'paragraphs_browser',
+  ];
+  if (in_array($widget, $paragraph_widgets)) {
+    _drupal_content_sync_paragraphs_export_settings_form($element, $form_state, $context);
+  }
 }
 
 /**
