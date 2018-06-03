@@ -237,6 +237,16 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
   protected function createEntityTypes() {
     global $base_url;
 
+    // @ToDo: Move to method.
+    // Check if the base_url is overwritten within the settings.
+    $dcs_settings = \Drupal::config('drupal_content_sync.settings');
+    $dcs_base_url = $dcs_settings->get('dcs_base_url');
+    if(isset($dcs_settings) && $dcs_base_url != '') {
+      $export_url  = $dcs_base_url;
+    } else {
+      $export_url = $base_url;
+    }
+
     $user = User::load(DRUPAL_CONTENT_SYNC_USER_ID);
     // During the installation from an existing config for some reason DRUPAL_CONTENT_SYNC_USER_ID is not set right after the installation of the module, so we've to double check that...
     // @ToDo: Why?
@@ -537,7 +547,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
               'type' => 'drupal8_services',
               'username' => $loginData['userName'],
               'password' => $loginData['userPass'],
-              'base_url' => $base_url,
+              'base_url' => $export_url,
             ],
             'crud' => &$crud_operations,
           ];
