@@ -8,6 +8,7 @@ use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\Core\Url;
 use Drupal\user\Entity\User;
 use GuzzleHttp\Exception\RequestException;
+use Drupal\drupal_content_sync\Form\PoolForm;
 
 /**
  * Class ApiUnifyConfig used to export the Synchronization config to the API
@@ -322,6 +323,10 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
           $url     = $pool->getBackendUrl();
           $api     = $pool->id;
           $site_id = $pool->site_id;
+
+          if (strlen($site_id) > PoolForm::siteIdMaxLength) {
+            throw new \Exception(t('The site id of pool '.$pool_id.' is having more then '.PoolForm::siteIdMaxLength.' characters. This is not allowed due to backend limitations and will result in an exception when it is trying to be exported.'));
+          }
 
           $entity_type_id = self::getExternalEntityTypeId($api, $entity_type_name, $bundle_name, $version);
           $entity_type = [

@@ -4,6 +4,7 @@ namespace Drupal\drupal_content_sync;
 
 use Drupal\drupal_content_sync\Entity\Pool;
 use GuzzleHttp\Exception\RequestException;
+use Drupal\drupal_content_sync\Form\PoolForm;
 
 /**
  *
@@ -89,6 +90,10 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
    */
   public function export() {
     $url = $this->pool->getBackendUrl();
+
+    if (strlen($this->pool->site_id) > PoolForm::siteIdMaxLength) {
+      throw new \Exception(t('The site id of pool '.$this->pool->id().' is having more then '.PoolForm::siteIdMaxLength.' characters. This is not allowed due to backend limitations and will result in an exception when it is trying to be exported.'));
+    }
 
     // Check if a connection to Drupal Content Sync can be established.
     try {

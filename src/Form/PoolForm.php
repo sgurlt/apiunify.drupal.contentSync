@@ -74,7 +74,12 @@ class PoolForm extends EntityForm {
       if (!is_null($dcs_settings) && isset($dcs_settings['pools'][$pool->id]['site_id'])) {
 
         // When it is set, we anyway need to ensure that it is not having more then PoolForm::siteIdMaxLength characters.
-        $site_id = substr($dcs_settings['pools'][$pool->id]['site_id'], 0, PoolForm::siteIdMaxLength-1);
+        $site_id = $dcs_settings['pools'][$pool->id]['site_id'];
+        if (strlen($site_id) > PoolForm::siteIdMaxLength) {
+          $messenger = \Drupal::messenger();
+          $warning = 'The site id is having more then '.PoolForm::siteIdMaxLength.' characters. This is not allowed due to backend limitations and will result in an exception when it is trying to be exported.';
+          $messenger->addWarning(t($warning));
+        }
       }
       if (!is_null($dcs_settings) && isset($dcs_settings['pools'][$pool->id]['backend_url'])) {
         $backend_url = $dcs_settings['pools'][$pool->id]['backend_url'];

@@ -4,6 +4,7 @@ namespace Drupal\drupal_content_sync\Controller;
 
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\drupal_content_sync\Form\PoolForm;
 
 /**
  * Provides a listing of Pool.
@@ -32,6 +33,12 @@ class PoolListBuilder extends ConfigEntityListBuilder {
     $row['id'] = $entity->id();
     $row['site_id'] = $entity->site_id;
     $row['backend_url'] = $entity->backend_url;
+
+    if (strlen($entity->site_id) > PoolForm::siteIdMaxLength) {
+      $messenger = \Drupal::messenger();
+      $warning = 'The site id of pool '.$entity->id().' is having more then '.PoolForm::siteIdMaxLength.' characters. This is not allowed due to backend limitations and will result in an exception when it is trying to be exported.';
+      $messenger->addWarning(t($warning));
+    }
 
     // You probably want a few more properties here...
     return $row + parent::buildRow($entity);
