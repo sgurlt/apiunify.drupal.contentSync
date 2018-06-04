@@ -196,6 +196,12 @@ class ExportIntent extends SyncIntent {
       if ($action == SyncIntent::ACTION_UPDATE) {
         $action = SyncIntent::ACTION_CREATE;
       }
+      // If the entity was deleted but has never been exported before,
+      // exporting the deletion action doesn't make sense as it doesn't even
+      // exist remotely.
+      elseif ($action == SyncIntent::ACTION_DELETE) {
+        return FALSE;
+      }
     }
 
     // If the entity didn't change, it doesn't have to be re-exported.
