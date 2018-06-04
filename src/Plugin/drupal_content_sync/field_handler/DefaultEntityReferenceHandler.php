@@ -328,7 +328,10 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
    *
    * @param EntityInterface $entity
    */
-  public static function saveEmbeddedExportPools(FieldableEntityInterface $entity) {
+  public static function saveEmbeddedExportPools(FieldableEntityInterface $entity,$parent_entity=NULL,$tree_position=[]) {
+    if(!$parent_entity) {
+      $parent_entity = $entity;
+    }
     // Make sure paragraph export settings are saved as well..
     $entityTypeManager = \Drupal::entityTypeManager();
     $entityFieldManager = \Drupal::service('entity_field.manager');
@@ -358,7 +361,9 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
             continue;
           }
 
-          MetaInformation::saveSelectedExportPoolInfoForField($entity->getEntityTypeId(),$entity->uuid(),$name,$delta,$reference->getEntityTypeId(),$reference->bundle(),$reference->uuid());
+          MetaInformation::saveSelectedExportPoolInfoForField($parent_entity->getEntityTypeId(),$parent_entity->uuid(),$name,$delta,$reference->getEntityTypeId(),$reference->bundle(),$reference->uuid(),$tree_position);
+
+          self::saveEmbeddedExportPools($reference,$parent_entity,array_merge($tree_position,[$name,$delta,'subform']));
         }
       }
     }

@@ -43,6 +43,7 @@ class DefaultFieldHandler extends FieldHandlerBase {
       "list_string",
       "list_float",
       "list_integer",
+      "viewfield",
     ];
     return in_array($field->getType(), $allowed) !== FALSE;
   }

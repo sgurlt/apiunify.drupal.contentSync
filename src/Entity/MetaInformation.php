@@ -152,7 +152,7 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
     return $latest;
   }
 
-  public static function accessTemporaryExportPoolInfoForField($entity_type, $uuid, $field_name, $delta, $set_flow_id=NULL, $set_pool_ids=NULL) {
+  public static function accessTemporaryExportPoolInfoForField($entity_type, $uuid, $field_name, $delta, $set_flow_id=NULL, $set_pool_ids=NULL, $tree_position=[]) {
     static $field_storage   = [];
 
     if($set_flow_id && $set_pool_ids) {
@@ -160,19 +160,40 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
         'flow_id'   => $set_flow_id,
         'pool_ids'  => $set_pool_ids,
       ];
-      $field_storage[$entity_type][$uuid][$field_name][$delta] = $data;
+      if(!isset($field_storage[$entity_type][$uuid])) {
+        $field_storage[$entity_type][$uuid] = [];
+      }
+      $setter = &$field_storage[$entity_type][$uuid];
+      foreach($tree_position as $name) {
+        if(!isset($setter[$name])) {
+          $setter[$name] = [];
+        }
+        $setter = &$setter[$name];
+      }
+      if(!isset($setter[$field_name][$delta])) {
+        $setter[$field_name][$delta] = [];
+      }
+      $setter = &$setter[$field_name][$delta];
+      $setter = $data;
     }
     else {
-      if(!empty($field_storage[$entity_type][$uuid][$field_name])) {
-        return $field_storage[$entity_type][$uuid][$field_name][$delta];
+      if(!empty($field_storage[$entity_type][$uuid])) {
+        $value = $field_storage[$entity_type][$uuid];
+        foreach($tree_position as $name) {
+          if(!isset($value[$name])) {
+            return NULL;
+          }
+          $value = $value[$name];
+        }
+        return isset($value[$field_name][$delta]) ? $value[$field_name][$delta] : NULL;
       }
     }
 
     return NULL;
   }
 
-  public static function saveSelectedExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta, $entity_type, $bundle, $uuid) {
-    $data = MetaInformation::accessTemporaryExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta);
+  public static function saveSelectedExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta, $entity_type, $bundle, $uuid,$tree_position=[]) {
+    $data = MetaInformation::accessTemporaryExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta,NULL,NULL,$tree_position);
 
     $values = $data['pool_ids'];
 

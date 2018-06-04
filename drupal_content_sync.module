@@ -397,15 +397,37 @@ function _drupal_content_sync_set_entity_export(array $form, FormStateInterface 
   $entityFieldManager = \Drupal::service('entity_field.manager');
   /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
   $fields = $entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
+
+  _drupal_content_sync_set_entity_export_subform($entity,$form,$form_state,$fields);
+}
+
+/**
+ * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
+ * @param array $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ * @param \Drupal\Core\Field\FieldDefinitionInterface[] $fields
+ * @param array $tree_position
+ */
+function _drupal_content_sync_set_entity_export_subform(\Drupal\Core\Entity\FieldableEntityInterface $entity, array $form, FormStateInterface $form_state,array $fields,$tree_position=[]) {
+  $entityFieldManager = \Drupal::service('entity_field.manager');
+
   foreach($fields as $name=>$definition) {
     if($definition->getType()=='entity_reference_revisions') {
       $subform = &$form[$name]['widget'];
       $count   = $subform['#max_delta'];
       for($i=0;$i<=$count;$i++) {
-        $refflow    = $form_state->getValue([$name,$i,'subform','dcs_export_group','dcs_flow']);
-        $refvalues  = $form_state->getValue([$name,$i,'subform','dcs_export_group','dcs_pool']);
+        $refflow    = $form_state->getValue(array_merge($tree_position,[$name,$i,'subform','dcs_export_group','dcs_flow']));
+        $refvalues  = $form_state->getValue(array_merge($tree_position,[$name,$i,'subform','dcs_export_group','dcs_pool']));
         if(!empty($refflow) && !empty($refvalues)) {
-          MetaInformation::accessTemporaryExportPoolInfoForField($entity->getEntityTypeId(),$uuid,$name,$i,$refflow,$refvalues);
+          MetaInformation::accessTemporaryExportPoolInfoForField($entity->getEntityTypeId(),$entity->uuid(),$name,$i,$refflow,$refvalues,$tree_position);
+        }
+        if(!empty($subform[$i]['subform'])) {
+          $entity_type = $definition->getSetting('target_type');
+          $bundle = $subform[$i]['#paragraph_type'];
+          /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
+          $fields = $entityFieldManager->getFieldDefinitions($entity_type, $bundle);
+
+          _drupal_content_sync_set_entity_export_subform($entity,$subform[$i]['subform'],$form_state,$fields,array_merge($tree_position,[$name,$i,'subform']));
         }
       }
     }
@@ -731,6 +753,10 @@ function _drupal_content_sync_override_embedded_entity_submit(array $form, FormS
     ->getFormObject()
     ->getEntity();
 
+  _drupal_content_sync_override_embedded_entity_save_meta($entity,$form,$form_state);
+}
+
+function _drupal_content_sync_override_embedded_entity_save_meta(\Drupal\Core\Entity\FieldableEntityInterface $entity, array $form, FormStateInterface $form_state, $tree_position=[]) {
   $entityFieldManager = \Drupal::service('entity_field.manager');
   /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $fields */
   $fields = $entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
@@ -739,9 +765,9 @@ function _drupal_content_sync_override_embedded_entity_submit(array $form, FormS
       $subform = &$form[$name]['widget'];
       $count   = $subform['#max_delta'];
       for($i=0;$i<=$count;$i++) {
-        $value = boolval($form_state->getValue([$name,$i,'dcs_edit_override']));
-        $embedded_entity_type = $form_state->getValue([$name,$i,'dcs_edit_override__entity_type']);
-        $embedded_entity_uuid = $form_state->getValue([$name,$i,'dcs_edit_override__entity_uuid']);
+        $value = boolval($form_state->getValue(array_merge($tree_position,[$name,$i,'dcs_edit_override'])));
+        $embedded_entity_type = $form_state->getValue(array_merge($tree_position,[$name,$i,'dcs_edit_override__entity_type']));
+        $embedded_entity_uuid = $form_state->getValue(array_merge($tree_position,[$name,$i,'dcs_edit_override__entity_uuid']));
 
         $embedded_entity = \Drupal::service('entity.repository')
           ->loadEntityByUuid(
@@ -750,6 +776,10 @@ function _drupal_content_sync_override_embedded_entity_submit(array $form, FormS
           );
         if(!$embedded_entity) {
           continue;
+        }
+
+        if(!empty($subform['subform'])) {
+          _drupal_content_sync_override_embedded_entity_save_meta($embedded_entity,$subform['subform'],$form_state,[$name,$i,'subform']);
         }
 
         $meta_infos = MetaInformation::getInfosForEntity(
