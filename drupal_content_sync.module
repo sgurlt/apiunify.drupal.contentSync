@@ -475,6 +475,8 @@ function drupal_content_sync_entity_delete(EntityInterface $entity) {
   }
 
   ExportIntent::exportEntityFromUi($entity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_DELETE);
+  // If the entity has been deleted, there will be no "push changes" button, so this content has to be deleted automatically as well.
+  ExportIntent::exportEntityFromUi($entity, ExportIntent::EXPORT_MANUALLY, SyncIntent::ACTION_DELETE);
 }
 
 /**
