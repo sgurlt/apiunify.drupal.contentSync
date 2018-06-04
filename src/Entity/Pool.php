@@ -92,11 +92,6 @@ class Pool extends ConfigEntityBase implements PoolInterface {
   public function preSave(EntityStorageInterface $storage) {
     parent::preSave($storage);
 
-    $dcs_settings = Settings::get('drupal_content_sync');
-    if (!is_null($dcs_settings) && isset($dcs_settings['pools'][$this->id]['site_id'])) {
-      $this->set('site_id', $dcs_settings['pools'][$this->id]['site_id']);
-    }
-
     $exporter = new ApiUnifyPoolExport($this);
     $exporter->remove(TRUE);
 

@@ -16,6 +16,11 @@ use Drupal\Core\Site\Settings;
 class PoolForm extends EntityForm {
 
   /**
+   * @var int Defines the max length for the siteID. This must be limited due to the maximum characters allowed for table names within mongo db.
+   */
+  const siteIdMaxLength = 20;
+
+  /**
    * Constructs an PoolForm object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManager $entityTypeManager
@@ -67,7 +72,9 @@ class PoolForm extends EntityForm {
       $config_machine_name = $pool->id;
       $dcs_settings = Settings::get('drupal_content_sync');
       if (!is_null($dcs_settings) && isset($dcs_settings['pools'][$pool->id]['site_id'])) {
-        $site_id = $dcs_settings['pools'][$pool->id]['site_id'];
+
+        // When it is set, we anyway need to ensure that it is not having more then PoolForm::siteIdMaxLength characters.
+        $site_id = substr($dcs_settings['pools'][$pool->id]['site_id'], 0, PoolForm::siteIdMaxLength-1);
       }
       if (!is_null($dcs_settings) && isset($dcs_settings['pools'][$pool->id]['backend_url'])) {
         $backend_url = $dcs_settings['pools'][$pool->id]['backend_url'];
@@ -101,7 +108,7 @@ class PoolForm extends EntityForm {
       '#type' => 'textfield',
       '#title' => $this->t('Site identifier'),
       '#default_value' => $pool->getSiteId(),
-      '#description' => $this->t("This identifier will be used to identify the origin of entities on other sites and is used as a machine name for identification. 
+      '#description' => $this->t("This identifier will be used to identify the origin of entities on other sites and is used as a machine name for identification. Due to backend limitations, it can not have more then @max_length characters.
       Once connected, you cannot change this identifier. Typically you want to use the fully qualified domain name of this website as an identifier.<br>
       The Site identifier can be overwritten within your environment specific settings.php file by using <i>@settings</i>.<br>
       If you do so, you should exclude the Site identifier for this configuration from the configuration import/export by using the module <a href='https://www.drupal.org/project/config_ignore' target='_blank'>Config ignore</a>.
@@ -109,8 +116,10 @@ class PoolForm extends EntityForm {
       <i>Hint: If this configuration is saved before the value with the settings.php got set, you need to re-save this configuration once the value within the settings.php got set.</i>", [
         '@settings' => '$settings["drupal_content_sync"]["pools"]["' . $config_machine_name . '"]["site_id"] = "my-site-identifier"',
         '@config_machine_name' => $config_machine_name,
+        '@max_length' => PoolForm::siteIdMaxLength,
       ]),
       '#required' => TRUE,
+      '#maxlength' => PoolForm::siteIdMaxLength,
     ];
 
     // If the site id is set within the settings.php,
@@ -118,9 +127,10 @@ class PoolForm extends EntityForm {
     if (isset($site_id)) {
       $form['site_id']['#disabled'] = TRUE;
       $form['site_id']['#default_value'] = $site_id;
-      $form['site_id']['#description'] = $this->t('Site identifier is set within the environment specific settings.php file.');
+      $form['site_id']['#description'] = $this->t('Site identifier is set within the environment specific settings.php file. The value may automatically be trimmed to @max_length characters due to backend limitations', [
+        '@max_length' => PoolForm::siteIdMaxLength,
+      ]);
     }
-
     return $form;
   }
 
