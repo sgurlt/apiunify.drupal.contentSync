@@ -66,8 +66,13 @@ class DefaultLinkHandler extends FieldHandlerBase {
               'title'   => $link_element['title'],
               'options' => $link_element['options'],
             ];
-            $intent->setField('enabled', [['value' => 1]]);
-            $entity->set('enabled', 1);
+            if ($entity instanceof MenuLinkContent) {
+              $intent->setField('enabled', [['value' => 1]]);
+              $entity->set('enabled', 1);
+            }
+            elseif ($reference instanceof MenuLinkContent) {
+              $reference->set('enabled',1);
+            }
           }
           // Menu items are created before the node as they are embedded
           // entities. For the link to work however the node must already

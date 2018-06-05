@@ -87,7 +87,11 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
       $uri = $link[0]['uri'];
       preg_match('@^internal:/([a-z_0-9]+)\/([a-z0-9-]+)$@', $uri, $found);
       if (!empty($found)) {
-        $intent->setField('enabled', [['value' => 0]]);
+        $referenced = \Drupal::service('entity.repository')
+          ->loadEntityByUuid($found[0][1], $found[0][2]);
+        if(!$referenced) {
+          $intent->setField('enabled', [['value' => 0]]);
+        }
       }
     }
     elseif (!empty($link[0][SyncIntent::ENTITY_TYPE_KEY]) && !empty($link[0][SyncIntent::UUID_KEY])) {
@@ -149,7 +153,7 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
           }
           $exported = TRUE;
         }
-        if (!$exported && !ExportIntent::isExporting($link_entity_type, $reference->uuid(), $intent->getPool())) {
+        if (!$exported && !ExportIntent::isExporting($link_entity_type, $reference->uuid(), $intent->getPool()->id)) {
           return TRUE;
         }
       }

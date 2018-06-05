@@ -11,6 +11,7 @@ use Drupal\drupal_content_sync\ImportIntent;
 use Drupal\drupal_content_sync\Plugin\FieldHandlerBase;
 use Drupal\drupal_content_sync\SyncIntent;
 use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\menu_link_content\Entity\MenuLinkContent;
 use Drupal\paragraphs\Entity\Paragraph;
 
 /**
@@ -123,6 +124,12 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
 
           if ($reference instanceof RevisionableInterface) {
             $reference_data['target_revision_id'] = $reference->getRevisionId();
+          }
+
+          // Make sure that node menu links are enabled after being disabled
+          // automatically on import when the node doesn't exist yet
+          if ($this->fieldName=="menu_link" && $reference instanceof MenuLinkContent) {
+            $reference->set('enabled',1);
           }
 
           $reference_ids[] = $reference_data;
