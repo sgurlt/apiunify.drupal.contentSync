@@ -208,7 +208,7 @@ class ExportIntent extends SyncIntent {
     if ($exported && $exported >= $export && $reason != self::EXPORT_FORCED &&
       $action != SyncIntent::ACTION_DELETE &&
       empty($deletedTranslations[$entity->getEntityTypeId()][$entity->uuid()])) {
-      return TRUE;
+      return FALSE;
     }
 
     /** @var \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository */
@@ -220,7 +220,7 @@ class ExportIntent extends SyncIntent {
       self::$exported = [];
     }
     if (isset(self::$exported[$action][$entity_type][$entity_bundle][$entity_uuid][$this->pool->id])) {
-      return TRUE;
+      return FALSE;
     }
     self::$exported[$action][$entity_type][$entity_bundle][$entity_uuid][$this->pool->id] = TRUE;
 
