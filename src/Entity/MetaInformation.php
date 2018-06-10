@@ -211,6 +211,11 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
       }
     }
 
+    // On sites that don't export, this will be NULL
+    if(empty($data['flow_id'])) {
+      return;
+    }
+
     MetaInformation::saveSelectedExportPoolInfo($entity_type,$bundle,$uuid,$data['flow_id'],$processed);
   }
 
