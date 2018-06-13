@@ -322,7 +322,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
 
           $url     = $pool->getBackendUrl();
           $api     = $pool->id;
-          $site_id = $pool->site_id;
+          $site_id = $pool->getSiteId();
 
           if (strlen($site_id) > PoolForm::siteIdMaxLength) {
             throw new \Exception(t('The site id of pool '.$pool_id.' is having more then '.PoolForm::siteIdMaxLength.' characters. This is not allowed due to backend limitations and will result in an exception when it is trying to be exported.'));

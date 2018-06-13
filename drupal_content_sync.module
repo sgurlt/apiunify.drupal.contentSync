@@ -771,6 +771,12 @@ function _drupal_content_sync_override_embedded_entity_save_meta(\Drupal\Core\En
         $embedded_entity_type = $form_state->getValue(array_merge($tree_position,[$name,$i,'dcs_edit_override__entity_type']));
         $embedded_entity_uuid = $form_state->getValue(array_merge($tree_position,[$name,$i,'dcs_edit_override__entity_uuid']));
 
+        // In case editing has been restricted by other code, we have to
+        // ignore this item
+        if(!$embedded_entity_type || !$embedded_entity_uuid) {
+          continue;
+        }
+
         $embedded_entity = \Drupal::service('entity.repository')
           ->loadEntityByUuid(
             $embedded_entity_type,
