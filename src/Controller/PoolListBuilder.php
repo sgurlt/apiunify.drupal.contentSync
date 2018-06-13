@@ -32,7 +32,7 @@ class PoolListBuilder extends ConfigEntityListBuilder {
     $row['name'] = $entity->label();
     $row['id'] = $entity->id();
     $row['site_id'] = $entity->getSiteId();
-    $row['backend_url'] = $entity->backend_url;
+    $row['backend_url'] = $entity->getBackendUrl();
 
     if (strlen($entity->site_id) > PoolForm::siteIdMaxLength) {
       $messenger = \Drupal::messenger();

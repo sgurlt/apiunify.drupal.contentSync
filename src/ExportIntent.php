@@ -111,7 +111,7 @@ class ExportIntent extends SyncIntent {
    * @return string
    */
   public function getExternalUrl($uuid) {
-    $url = $this->pool->backend_url . '/' . ApiUnifyFlowExport::getExternalConnectionPath(
+    $url = $this->pool->getBackendUrl() . '/' . ApiUnifyFlowExport::getExternalConnectionPath(
         $this->pool->id,
         $this->pool->getSiteId(),
         $this->entityType,
