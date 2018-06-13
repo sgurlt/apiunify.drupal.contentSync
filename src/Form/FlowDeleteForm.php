@@ -67,7 +67,7 @@ class FlowDeleteForm extends EntityConfirmFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Delete config related meta entities.
     $meta_entities = \Drupal::entityTypeManager()->getStorage('dcs_meta_info')
-      ->loadByProperties(['entity_type_config' => $this->getEntity()->id()]);
+      ->loadByProperties(['flow' => $this->getEntity()->id()]);
 
     foreach ($meta_entities as $meta_entity) {
       $entity = MetaInformation::load($meta_entity->id());

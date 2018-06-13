@@ -493,16 +493,18 @@ function drupal_content_sync_entity_update(EntityInterface $entity) {
  *   forbidden, this will throw an error.
  */
 function drupal_content_sync_entity_delete(EntityInterface $entity) {
-  if (!Flow::isLocalDeletionAllowed($entity) &&
-    !ImportIntent::entityHasBeenImportedByRemote($entity->getEntityTypeId(), $entity->uuid())) {
-    throw new \Exception($entity->label() . ' cannot be deleted as it has been imported.');
-  }
+  if ($entity->bundle() != 'dcs_meta_info') {
+    if (!Flow::isLocalDeletionAllowed($entity) &&
+      !ImportIntent::entityHasBeenImportedByRemote($entity->getEntityTypeId(), $entity->uuid())) {
+      throw new \Exception($entity->label() . ' cannot be deleted as it has been imported.');
+    }
 
-  ExportIntent::exportEntityFromUi($entity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_DELETE);
-  // If the entity has been deleted, there will be no "push changes" button, so this content has to be deleted automatically as well.
-  ExportIntent::exportEntityFromUi($entity, ExportIntent::EXPORT_MANUALLY, SyncIntent::ACTION_DELETE);
-  // If the entity has been deleted as a dependency, it's deletion also has to be exported.
-  ExportIntent::exportEntityFromUi($entity, ExportIntent::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_DELETE);
+    ExportIntent::exportEntityFromUi($entity, ExportIntent::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_DELETE);
+    // If the entity has been deleted, there will be no "push changes" button, so this content has to be deleted automatically as well.
+    ExportIntent::exportEntityFromUi($entity, ExportIntent::EXPORT_MANUALLY, SyncIntent::ACTION_DELETE);
+    // If the entity has been deleted as a dependency, it's deletion also has to be exported.
+    ExportIntent::exportEntityFromUi($entity, ExportIntent::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_DELETE);
+  }
 }
 
 /**
