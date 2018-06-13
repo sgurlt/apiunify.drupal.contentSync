@@ -133,7 +133,7 @@ class Pool extends ConfigEntityBase implements PoolInterface {
   public function getBackendUrl() {
     // Check if the BackendUrl got overwritten.
     $dcs_settings = Settings::get('drupal_content_sync');
-    if (isset($dcs_settings) && $dcs_settings['pools'][$this->id]['backend_url'] != '') {
+    if (isset($dcs_settings) && isset($dcs_settings['pools'][$this->id]['backend_url'])) {
       return $dcs_settings['pools'][$this->id]['backend_url'];
     }
     else {
@@ -149,7 +149,7 @@ class Pool extends ConfigEntityBase implements PoolInterface {
   public function getSiteId() {
     // Check if the siteID got overwritten.
     $dcs_settings = Settings::get('drupal_content_sync');
-    if (isset($dcs_settings) && $dcs_settings['pools'][$this->id]['site_id'] != '') {
+    if (isset($dcs_settings) && isset($dcs_settings['pools'][$this->id]['site_id'])) {
       return $dcs_settings['pools'][$this->id]['site_id'];
     }
     else {
