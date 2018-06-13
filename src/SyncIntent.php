@@ -339,7 +339,7 @@ abstract class SyncIntent {
       self::AUTO_EXPORT_KEY   => $auto_export,
       self::SOURCE_CONNECTION_ID_KEY => ApiUnifyFlowExport::getExternalConnectionId(
         $this->pool->id,
-        $this->pool->site_id,
+        $this->pool->getSiteId(),
         $entity_type,
         $bundle,
         $version

@@ -91,7 +91,7 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
   public function export() {
     $url = $this->pool->getBackendUrl();
 
-    if (strlen($this->pool->site_id) > PoolForm::siteIdMaxLength) {
+    if (strlen($this->pool->getSiteId()) > PoolForm::siteIdMaxLength) {
       throw new \Exception(t('The site id of pool '.$this->pool->id().' is having more then '.PoolForm::siteIdMaxLength.' characters. This is not allowed due to backend limitations and will result in an exception when it is trying to be exported.'));
     }
 
@@ -118,7 +118,7 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
       // Create the instance entity.
       $this->sendEntityRequest($url . '/api_unify-api_unify-instance-0_1', [
         'json' => [
-          'id' => $this->pool->site_id,
+          'id' => $this->pool->getSiteId(),
           'api_id' => $this->pool->id . '-' . ApiUnifyPoolExport::CUSTOM_API_VERSION,
         ],
       ]);

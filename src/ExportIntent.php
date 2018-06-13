@@ -113,7 +113,7 @@ class ExportIntent extends SyncIntent {
   public function getExternalUrl($uuid) {
     $url = $this->pool->backend_url . '/' . ApiUnifyFlowExport::getExternalConnectionPath(
         $this->pool->id,
-        $this->pool->site_id,
+        $this->pool->getSiteId(),
         $this->entityType,
         $this->bundle,
         $this->flow->sync_entities[$this->entityType . '-' . $this->bundle]['version']
@@ -300,7 +300,7 @@ class ExportIntent extends SyncIntent {
                     $definition[SyncIntent::API_KEY] = $pool->id;
                     $definition[SyncIntent::SOURCE_CONNECTION_ID_KEY] = ApiUnifyFlowExport::getExternalConnectionId(
                       $pool->id,
-                      $pool->site_id,
+                      $pool->getSiteId(),
                       $embed_entity->getEntityTypeId(),
                       $embed_entity->bundle(),
                       $version

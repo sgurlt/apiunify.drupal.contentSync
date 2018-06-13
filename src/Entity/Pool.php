@@ -140,7 +140,13 @@ class Pool extends ConfigEntityBase implements PoolInterface {
    * @return string
    */
   public function getSiteId() {
-    return $this->site_id;
+    // Check if the siteID got overwritten.
+    $dcs_settings = Settings::get('drupal_content_sync');
+    if(isset($dcs_settings) && $dcs_settings['pools'][$this->id]['site_id'] != '') {
+      return $dcs_settings['pools'][$this->id]['site_id'];
+    } else {
+      return $this->site_id;
+    }
   }
 
   /**
