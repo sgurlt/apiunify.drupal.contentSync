@@ -31,7 +31,7 @@ class PoolListBuilder extends ConfigEntityListBuilder {
      */
     $row['name'] = $entity->label();
     $row['id'] = $entity->id();
-    $row['site_id'] = $entity->site_id;
+    $row['site_id'] = $entity->getSiteId();
     $row['backend_url'] = $entity->backend_url;
 
     if (strlen($entity->site_id) > PoolForm::siteIdMaxLength) {
