@@ -525,7 +525,12 @@ class ExportIntent extends SyncIntent {
       $status = self::exportEntity($entity,$reason,$action,$flow,$pool);
 
       if ($status) {
-        $messenger->addMessage(t('%label has been exported with Drupal Content Sync.', ['%label' => $entity->label()]));
+        if($action==SyncIntent::ACTION_DELETE) {
+          $messenger->addMessage(t('%label has been exported with Drupal Content Sync.', ['%label' => $entity->getEntityTypeId()]));
+        }
+        else {
+          $messenger->addMessage(t('%label has been exported with Drupal Content Sync.', ['%label' => $entity->label()]));
+        }
         return TRUE;
       }
       return FALSE;
