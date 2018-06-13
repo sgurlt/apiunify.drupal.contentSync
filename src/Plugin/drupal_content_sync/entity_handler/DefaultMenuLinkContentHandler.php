@@ -64,7 +64,7 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
    */
   public function ignoreImport(ImportIntent $intent) {
     $action = $intent->getAction();
-    if($action==SyncIntent::ACTION_DELETE) {
+    if ($action == SyncIntent::ACTION_DELETE) {
       return parent::ignoreImport($intent);
     }
 
@@ -89,7 +89,7 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
       if (!empty($found)) {
         $referenced = \Drupal::service('entity.repository')
           ->loadEntityByUuid($found[0][1], $found[0][2]);
-        if(!$referenced) {
+        if (!$referenced) {
           $intent->setField('enabled', [['value' => 0]]);
         }
       }

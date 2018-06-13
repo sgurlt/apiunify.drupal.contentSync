@@ -33,13 +33,13 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
 
   use EntityChangedTrait;
 
-  const FLAG_CLONED                     = 0x00000001;
-  const FLAG_DELETED                    = 0x00000002;
-  const FLAG_USER_ALLOWED_EXPORT        = 0x00000004;
-  const FLAG_EDIT_OVERRIDE              = 0x00000008;
-  const FLAG_IS_SOURCE_ENTITY           = 0x00000010;
-  const FLAG_EXPORT_ENABLED             = 0x00000020;
-  const FLAG_DEPENDENCY_EXPORT_ENABLED  = 0x00000040;
+  const FLAG_CLONED                    = 0x00000001;
+  const FLAG_DELETED                   = 0x00000002;
+  const FLAG_USER_ALLOWED_EXPORT       = 0x00000004;
+  const FLAG_EDIT_OVERRIDE             = 0x00000008;
+  const FLAG_IS_SOURCE_ENTITY          = 0x00000010;
+  const FLAG_EXPORT_ENABLED            = 0x00000020;
+  const FLAG_DEPENDENCY_EXPORT_ENABLED = 0x00000040;
 
   /**
    * {@inheritdoc}
@@ -141,46 +141,52 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
     return reset($entities);
   }
 
+  /**
+   *
+   */
   public static function getLastExportForEntity(FieldableEntityInterface $entity) {
-    $meta_infos = MetaInformation::getInfosForEntity($entity->getEntityTypeId(),$entity->uuid());
+    $meta_infos = MetaInformation::getInfosForEntity($entity->getEntityTypeId(), $entity->uuid());
     $latest = NULL;
-    foreach($meta_infos as $info) {
-      if($info->getLastExport() && (!$latest || $info->getLastExport()>$latest)) {
+    foreach ($meta_infos as $info) {
+      if ($info->getLastExport() && (!$latest || $info->getLastExport() > $latest)) {
         $latest = $info->getLastExport();
       }
     }
     return $latest;
   }
 
-  public static function accessTemporaryExportPoolInfoForField($entity_type, $uuid, $field_name, $delta, $set_flow_id=NULL, $set_pool_ids=NULL, $tree_position=[]) {
-    static $field_storage   = [];
+  /**
+   *
+   */
+  public static function accessTemporaryExportPoolInfoForField($entity_type, $uuid, $field_name, $delta, $set_flow_id = NULL, $set_pool_ids = NULL, $tree_position = []) {
+    static $field_storage = [];
 
-    if($set_flow_id && $set_pool_ids) {
+    if ($set_flow_id && $set_pool_ids) {
       $data = [
         'flow_id'   => $set_flow_id,
         'pool_ids'  => $set_pool_ids,
       ];
-      if(!isset($field_storage[$entity_type][$uuid])) {
+      if (!isset($field_storage[$entity_type][$uuid])) {
         $field_storage[$entity_type][$uuid] = [];
       }
       $setter = &$field_storage[$entity_type][$uuid];
-      foreach($tree_position as $name) {
-        if(!isset($setter[$name])) {
+      foreach ($tree_position as $name) {
+        if (!isset($setter[$name])) {
           $setter[$name] = [];
         }
         $setter = &$setter[$name];
       }
-      if(!isset($setter[$field_name][$delta])) {
+      if (!isset($setter[$field_name][$delta])) {
         $setter[$field_name][$delta] = [];
       }
       $setter = &$setter[$field_name][$delta];
       $setter = $data;
     }
     else {
-      if(!empty($field_storage[$entity_type][$uuid])) {
+      if (!empty($field_storage[$entity_type][$uuid])) {
         $value = $field_storage[$entity_type][$uuid];
-        foreach($tree_position as $name) {
-          if(!isset($value[$name])) {
+        foreach ($tree_position as $name) {
+          if (!isset($value[$name])) {
             return NULL;
           }
           $value = $value[$name];
@@ -192,43 +198,49 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
     return NULL;
   }
 
-  public static function saveSelectedExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta, $entity_type, $bundle, $uuid,$tree_position=[]) {
-    $data = MetaInformation::accessTemporaryExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta,NULL,NULL,$tree_position);
+  /**
+   *
+   */
+  public static function saveSelectedExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta, $entity_type, $bundle, $uuid, $tree_position = []) {
+    $data = MetaInformation::accessTemporaryExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta, NULL, NULL, $tree_position);
 
     $values = $data['pool_ids'];
 
     $processed = [];
     if (is_array($values)) {
-      foreach($values as $id=>$selected) {
-        if($selected && $id!=='ignore') {
+      foreach ($values as $id => $selected) {
+        if ($selected && $id !== 'ignore') {
           $processed[] = $id;
         }
       }
     }
     else {
-      if($values!=='ignore') {
+      if ($values !== 'ignore') {
         $processed[] = $values;
       }
     }
 
-    // On sites that don't export, this will be NULL
-    if(empty($data['flow_id'])) {
+    // On sites that don't export, this will be NULL.
+    if (empty($data['flow_id'])) {
       return;
     }
 
-    MetaInformation::saveSelectedExportPoolInfo($entity_type,$bundle,$uuid,$data['flow_id'],$processed);
+    MetaInformation::saveSelectedExportPoolInfo($entity_type, $bundle, $uuid, $data['flow_id'], $processed);
   }
 
-  public static function saveSelectedExportPoolInfo($entity_type,$bundle,$uuid,$flow_id,$pool_ids) {
-    $flow   = Flow::getAll()[$flow_id];
+  /**
+   *
+   */
+  public static function saveSelectedExportPoolInfo($entity_type, $bundle, $uuid, $flow_id, $pool_ids) {
+    $flow = Flow::getAll()[$flow_id];
     $pools = Pool::getAll();
 
     $entity_type_pools = Pool::getSelectablePools($entity_type, $bundle)[$flow_id]['pools'];
     foreach ($entity_type_pools as $entity_type_pool_id => $config) {
       $pool = $pools[$entity_type_pool_id];
-      $meta = MetaInformation::getInfoForEntity($entity_type,$uuid,$flow,$pool);
-      if(in_array($entity_type_pool_id,$pool_ids)) {
-        if(!$meta) {
+      $meta = MetaInformation::getInfoForEntity($entity_type, $uuid, $flow, $pool);
+      if (in_array($entity_type_pool_id, $pool_ids)) {
+        if (!$meta) {
           $meta = MetaInformation::create([
             'flow' => $flow->id,
             'pool' => $pool->id,
@@ -245,7 +257,7 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
         continue;
       }
 
-      if($meta) {
+      if ($meta) {
         $meta->isExportEnabled(FALSE);
         $meta->save();
       }
@@ -312,7 +324,7 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    *
    * @return bool
    */
-  public function isExportEnabled($setExportEnabled = NULL,$setDependencyExportEnabled = NULL) {
+  public function isExportEnabled($setExportEnabled = NULL, $setDependencyExportEnabled = NULL) {
     if ($setExportEnabled === TRUE) {
       $this->set('flags', $this->get('flags')->value | self::FLAG_EXPORT_ENABLED);
     }
@@ -521,8 +533,8 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    *   "map" storage (so basic types that can be serialized).
    */
   public function setData($key, $value) {
-    $data    = $this->get('data')->getValue();
-    if( !empty($data) ) {
+    $data = $this->get('data')->getValue();
+    if (!empty($data)) {
       $data = $data[0];
     }
     else {

@@ -36,7 +36,7 @@ class PoolListBuilder extends ConfigEntityListBuilder {
 
     if (strlen($entity->site_id) > PoolForm::siteIdMaxLength) {
       $messenger = \Drupal::messenger();
-      $warning = 'The site id of pool '.$entity->id().' is having more then '.PoolForm::siteIdMaxLength.' characters. This is not allowed due to backend limitations and will result in an exception when it is trying to be exported.';
+      $warning = 'The site id of pool ' . $entity->id() . ' is having more then ' . PoolForm::siteIdMaxLength . ' characters. This is not allowed due to backend limitations and will result in an exception when it is trying to be exported.';
       $messenger->addWarning(t($warning));
     }
 
