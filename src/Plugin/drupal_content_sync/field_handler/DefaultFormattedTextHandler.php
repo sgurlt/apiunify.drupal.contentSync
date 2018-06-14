@@ -32,7 +32,7 @@ class DefaultFormattedTextHandler extends FieldHandlerBase {
    * Replace all "/node/..." links with their correct ID for the current site.
    *
    * @TODO If a new entity is added, we should scan the database for existing
-   * references that can now be resolved.
+   * references to it that can now be resolved.
    *
    * @param $text
    *
