@@ -275,8 +275,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         continue;
       }
 
-      // This field cannot be updated
-      if(in_array($key, $static_fields) && $intent->getAction()!=SyncIntent::ACTION_CREATE) {
+      // This field cannot be updated.
+      if (in_array($key, $static_fields) && $intent->getAction() != SyncIntent::ACTION_CREATE) {
         continue;
       }
 
@@ -429,7 +429,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   protected function getStaticFields() {
     return [
       'default_langcode',
-      'langcode'
+      'langcode',
     ];
   }
 
@@ -441,7 +441,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       return FALSE;
     }
 
-    if(!$entity) {
+    if (!$entity) {
       $entity = $intent->getEntity();
     }
 
@@ -465,7 +465,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         continue;
       }
 
-      $intent->embedEntity($item,FALSE);
+      $intent->embedEntity($item, FALSE);
     }
 
     // Preview.

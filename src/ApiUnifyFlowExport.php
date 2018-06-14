@@ -242,9 +242,10 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
     // Check if the base_url is overwritten within the settings.
     $dcs_settings = \Drupal::config('drupal_content_sync.settings');
     $dcs_base_url = $dcs_settings->get('dcs_base_url');
-    if(isset($dcs_settings) && $dcs_base_url != '') {
-      $export_url  = $dcs_base_url;
-    } else {
+    if (isset($dcs_settings) && $dcs_base_url != '') {
+      $export_url = $dcs_base_url;
+    }
+    else {
       $export_url = $base_url;
     }
 
@@ -325,7 +326,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
           $site_id = $pool->getSiteId();
 
           if (strlen($site_id) > PoolForm::siteIdMaxLength) {
-            throw new \Exception(t('The site id of pool '.$pool_id.' is having more then '.PoolForm::siteIdMaxLength.' characters. This is not allowed due to backend limitations and will result in an exception when it is trying to be exported.'));
+            throw new \Exception(t('The site id of pool ' . $pool_id . ' is having more then ' . PoolForm::siteIdMaxLength . ' characters. This is not allowed due to backend limitations and will result in an exception when it is trying to be exported.'));
           }
 
           $entity_type_id = self::getExternalEntityTypeId($api, $entity_type_name, $bundle_name, $version);
@@ -463,11 +464,11 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
               continue;
             }
 
-            if(in_array($key,$forbidden)) {
+            if (in_array($key, $forbidden)) {
               continue;
             }
 
-            if(isset($entity_type['new_properties'][$key])) {
+            if (isset($entity_type['new_properties'][$key])) {
               continue;
             }
 
@@ -494,7 +495,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
 
           // TODO entity types should also contain the entity type handler in their machine name, preventing the following potential errors:
           // - Different flows may use different entity type handlers, resulting in different entity type definitions for the same entity type
-          // - Changing the entity type handler must change the entity type definition which will not work if we don't update the machine name
+          // - Changing the entity type handler must change the entity type definition which will not work if we don't update the machine name.
           $handler->updateEntityTypeDefinition($entity_type);
 
           // Create the entity type.
@@ -578,7 +579,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
           $localConnections[] = $local_connection_id;
 
           // Create a synchronization from the pool to the local connection.
-          if($import != Pool::POOL_USAGE_FORBID && $type['import'] != ImportIntent::IMPORT_DISABLED) {
+          if ($import != Pool::POOL_USAGE_FORBID && $type['import'] != ImportIntent::IMPORT_DISABLED) {
             $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
               'json' => [
                 'id' => $local_connection_id . '--to--drupal',
@@ -601,7 +602,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
               ],
             ]);
           }
-          if($export != Pool::POOL_USAGE_FORBID && $type['export'] != ExportIntent::EXPORT_DISABLED) {
+          if ($export != Pool::POOL_USAGE_FORBID && $type['export'] != ExportIntent::EXPORT_DISABLED) {
             $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
               'json' => [
                 'id' => $local_connection_id . '--to--pool',

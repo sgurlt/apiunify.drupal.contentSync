@@ -60,9 +60,10 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
     // Check if the base_url is overwritten within the settings.
     $dcs_settings = \Drupal::config('drupal_content_sync.settings');
     $dcs_base_url = $dcs_settings->get('dcs_base_url');
-    if(isset($dcs_settings) && $dcs_base_url != '') {
-      $export_url  = $dcs_base_url;
-    } else {
+    if (isset($dcs_settings) && $dcs_base_url != '') {
+      $export_url = $dcs_base_url;
+    }
+    else {
       $export_url = $base_url;
     }
 
@@ -92,7 +93,7 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
     $url = $this->pool->getBackendUrl();
 
     if (strlen($this->pool->getSiteId()) > PoolForm::siteIdMaxLength) {
-      throw new \Exception(t('The site id of pool '.$this->pool->id().' is having more then '.PoolForm::siteIdMaxLength.' characters. This is not allowed due to backend limitations and will result in an exception when it is trying to be exported.'));
+      throw new \Exception(t('The site id of pool ' . $this->pool->id() . ' is having more then ' . PoolForm::siteIdMaxLength . ' characters. This is not allowed due to backend limitations and will result in an exception when it is trying to be exported.'));
     }
 
     // Check if a connection to Drupal Content Sync can be established.
@@ -154,6 +155,9 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
     return TRUE;
   }
 
+  /**
+   *
+   */
   public function remove($removedOnly = TRUE) {
     return TRUE;
   }

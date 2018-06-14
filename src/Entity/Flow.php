@@ -303,7 +303,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
       return FALSE;
     }
 
-    if($reason===ExportIntent::EXPORT_ANY) {
+    if ($reason === ExportIntent::EXPORT_ANY) {
       return TRUE;
     }
 

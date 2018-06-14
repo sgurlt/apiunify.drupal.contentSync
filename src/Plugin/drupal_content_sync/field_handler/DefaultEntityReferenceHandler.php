@@ -2,7 +2,6 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\field_handler;
 
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\drupal_content_sync\Entity\MetaInformation;
@@ -43,6 +42,9 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     return TRUE;
   }
 
+  /**
+   *
+   */
   protected function shouldExportReferencedEntities() {
     return isset($this->settings['handler_settings']['export_referenced_entities']) && $this->settings['handler_settings']['export_referenced_entities'] === 0 ? 0 : 1;
   }
@@ -127,9 +129,9 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
           }
 
           // Make sure that node menu links are enabled after being disabled
-          // automatically on import when the node doesn't exist yet
-          if ($this->fieldName=="menu_link" && $reference instanceof MenuLinkContent) {
-            $reference->set('enabled',1);
+          // automatically on import when the node doesn't exist yet.
+          if ($this->fieldName == "menu_link" && $reference instanceof MenuLinkContent) {
+            $reference->set('enabled', 1);
           }
 
           $reference_ids[] = $reference_data;
@@ -220,14 +222,14 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
         }
       }
 
-      if($this->fieldDefinition->getSetting('target_type')=='paragraph') {
+      if ($this->fieldDefinition->getSetting('target_type') == 'paragraph') {
         foreach ($reference_ids as $def) {
           $paragraph = Paragraph::load($def['target_id']);
-          if(!$paragraph->getParentEntity()) {
+          if (!$paragraph->getParentEntity()) {
             /**
              * @var \Drupal\Core\Entity\ContentEntityInterface $entity
              */
-            $paragraph->setParentEntity($entity,$this->fieldName);
+            $paragraph->setParentEntity($entity, $this->fieldName);
           }
         }
       }
@@ -280,12 +282,12 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
     $storage = $entityTypeManager
       ->getStorage($reference_type);
 
-    $data   = $entity->get($this->fieldName)->getValue();
-    if(!$data && $this->fieldName=='menu_link') {
-      $menu_link_manager  = \Drupal::service('plugin.manager.menu.link');
-      $links = $menu_link_manager->loadLinksByRoute('entity.'.$entity->getEntityTypeId().'.canonical', array($entity->getEntityTypeId() => $entity->id()));
-      $data  = [];
-      foreach($links as $link) {
+    $data = $entity->get($this->fieldName)->getValue();
+    if (!$data && $this->fieldName == 'menu_link') {
+      $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
+      $links = $menu_link_manager->loadLinksByRoute('entity.' . $entity->getEntityTypeId() . '.canonical', [$entity->getEntityTypeId() => $entity->id()]);
+      $data = [];
+      foreach ($links as $link) {
         $uuid   = $link->getDerivativeId();
         $item   = \Drupal::service('entity.repository')
           ->loadEntityByUuid('menu_link_content', $uuid);
@@ -299,7 +301,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
 
     $export_referenced_entities = $this->shouldExportReferencedEntities();
 
-    foreach ($data as $delta=>$value) {
+    foreach ($data as $delta => $value) {
       if (empty($value['target_id'])) {
         continue;
       }
@@ -313,7 +315,7 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
       }
 
       if ($export_referenced_entities) {
-        $result[] = $intent->embedEntity($reference,TRUE);
+        $result[] = $intent->embedEntity($reference, TRUE);
       }
       else {
         $result[] = $intent->embedEntityDefinition(
@@ -333,10 +335,10 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
   /**
    * Save the export settings the user selected for paragraphs.
    *
-   * @param EntityInterface $entity
+   * @param \Drupal\Core\Entity\EntityInterface $entity
    */
-  public static function saveEmbeddedExportPools(FieldableEntityInterface $entity,$parent_entity=NULL,$tree_position=[]) {
-    if(!$parent_entity) {
+  public static function saveEmbeddedExportPools(FieldableEntityInterface $entity, $parent_entity = NULL, $tree_position = []) {
+    if (!$parent_entity) {
       $parent_entity = $entity;
     }
     // Make sure paragraph export settings are saved as well..
@@ -354,8 +356,8 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
         $storage = $entityTypeManager
           ->getStorage($reference_type);
 
-        $data   = $entity->get($name)->getValue();
-        foreach ($data as $delta=>$value) {
+        $data = $entity->get($name)->getValue();
+        foreach ($data as $delta => $value) {
           if (empty($value['target_id'])) {
             continue;
           }
@@ -368,9 +370,9 @@ class DefaultEntityReferenceHandler extends FieldHandlerBase {
             continue;
           }
 
-          MetaInformation::saveSelectedExportPoolInfoForField($parent_entity->getEntityTypeId(),$parent_entity->uuid(),$name,$delta,$reference->getEntityTypeId(),$reference->bundle(),$reference->uuid(),$tree_position);
+          MetaInformation::saveSelectedExportPoolInfoForField($parent_entity->getEntityTypeId(), $parent_entity->uuid(), $name, $delta, $reference->getEntityTypeId(), $reference->bundle(), $reference->uuid(), $tree_position);
 
-          self::saveEmbeddedExportPools($reference,$parent_entity,array_merge($tree_position,[$name,$delta,'subform']));
+          self::saveEmbeddedExportPools($reference, $parent_entity, array_merge($tree_position, [$name, $delta, 'subform']));
         }
       }
     }

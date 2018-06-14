@@ -64,14 +64,14 @@ abstract class SyncIntent {
    * @var string SOURCE_CONNECTION_ID_KEY The API Unify connection ID of the referenced entity.
    * @var string POOL_CONNECTION_ID_KEY   The API Unify connection ID of the pool for this api + entity type + bundle.
    */
-  const API_KEY                   = 'api';
-  const ENTITY_TYPE_KEY           = 'type';
-  const BUNDLE_KEY                = 'bundle';
-  const VERSION_KEY               = 'version';
-  const UUID_KEY                  = 'uuid';
-  const AUTO_EXPORT_KEY           = 'auto_export';
-  const SOURCE_CONNECTION_ID_KEY  = 'connection_id';
-  const POOL_CONNECTION_ID_KEY    = 'next_connection_id';
+  const API_KEY                  = 'api';
+  const ENTITY_TYPE_KEY          = 'type';
+  const BUNDLE_KEY               = 'bundle';
+  const VERSION_KEY              = 'version';
+  const UUID_KEY                 = 'uuid';
+  const AUTO_EXPORT_KEY          = 'auto_export';
+  const SOURCE_CONNECTION_ID_KEY = 'connection_id';
+  const POOL_CONNECTION_ID_KEY   = 'next_connection_id';
 
   /**
    * @var string ACTION_CREATE
@@ -142,7 +142,7 @@ abstract class SyncIntent {
         $this->meta->isSourceEntity(TRUE);
       }
     }
-    elseif(!$this->meta->getLastExport() && !$this->meta->getLastImport()) {
+    elseif (!$this->meta->getLastExport() && !$this->meta->getLastImport()) {
       if (!$source_url && $this instanceof ExportIntent) {
         $this->meta->isSourceEntity(TRUE);
       }
@@ -194,10 +194,10 @@ abstract class SyncIntent {
    *   The entity of the intent, if it already exists locally.
    */
   public function getEntity() {
-    if(!$this->entity) {
+    if (!$this->entity) {
       $entity = \Drupal::service('entity.repository')
         ->loadEntityByUuid($this->entityType, $this->uuid);
-      if($entity) {
+      if ($entity) {
         $this->setEntity($entity);
       }
     }
@@ -213,15 +213,15 @@ abstract class SyncIntent {
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
   public function setEntity(EntityInterface $entity) {
-    if($entity == $this->entity) {
+    if ($entity == $this->entity) {
       return $this->entity;
     }
     if ($this->entity) {
       throw new SyncException(SyncException::CODE_INTERNAL_ERROR, NULL, "Attempting to re-set existing entity.");
     }
     $this->entity = $entity;
-    if($this->entity) {
-      if($this->activeLanguage) {
+    if ($this->entity) {
+      if ($this->activeLanguage) {
         $this->entity = $this->entity->getTranslation($this->activeLanguage);
       }
       else {
@@ -288,8 +288,8 @@ abstract class SyncIntent {
    */
   public function changeTranslationLanguage($language = NULL) {
     $this->activeLanguage = $language;
-    if($this->entity) {
-      if($language) {
+    if ($this->entity) {
+      if ($language) {
         $this->entity = $this->entity->getTranslation($language);
       }
       else {
@@ -327,7 +327,7 @@ abstract class SyncIntent {
    *
    * @return array The definition to be exported.
    */
-  public function getEmbedEntityDefinition($entity_type, $bundle, $uuid, $auto_export=FALSE, $details = NULL) {
+  public function getEmbedEntityDefinition($entity_type, $bundle, $uuid, $auto_export = FALSE, $details = NULL) {
     $version = Flow::getEntityTypeVersion($entity_type, $bundle);
 
     return array_merge([
@@ -377,7 +377,7 @@ abstract class SyncIntent {
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
-  public function embedEntityDefinition($entity_type, $bundle, $uuid, $auto_export=FALSE, $details = NULL) {
+  public function embedEntityDefinition($entity_type, $bundle, $uuid, $auto_export = FALSE, $details = NULL) {
     // Prevent circle references without middle man.
     if ($entity_type == $this->entityType && $uuid == $this->uuid) {
       throw new SyncException(
@@ -391,8 +391,8 @@ abstract class SyncIntent {
     foreach ($this->embedEntities as &$definition) {
       if ($definition[self::ENTITY_TYPE_KEY] == $entity_type && $definition[self::UUID_KEY] == $uuid) {
         // Overwrite auto export flag if it should be set now.
-        if(!$definition[self::AUTO_EXPORT_KEY] && $auto_export) {
-          $definition[self::AUTO_EXPORT_KEY]  = TRUE;
+        if (!$definition[self::AUTO_EXPORT_KEY] && $auto_export) {
+          $definition[self::AUTO_EXPORT_KEY] = TRUE;
         }
         return $this->getEmbedEntityDefinition(
           $entity_type, $bundle, $uuid, $auto_export, $details
@@ -419,7 +419,7 @@ abstract class SyncIntent {
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
-  public function embedEntity($entity, $auto_export=FALSE, $details = NULL) {
+  public function embedEntity($entity, $auto_export = FALSE, $details = NULL) {
     return $this->embedEntityDefinition(
       $entity->getEntityTypeId(),
       $entity->bundle(),

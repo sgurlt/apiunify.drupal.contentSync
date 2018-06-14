@@ -32,24 +32,26 @@ class SettingsForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     global $base_url;
     $config = $this->config('drupal_content_sync.settings');
-    $form['dcs_base_url'] = array(
+    $form['dcs_base_url'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Base URL'),
       '#default_value' => $config->get('dcs_base_url'),
       '#description' => $this->t('By default the global base_url provided by Drupal is used for the communication between the DCS backend and Drupal. However, this setting allows you to override the base_url that should be used for the communication.
       Once this is set, all Settings must be reepxorted. This can be done by either saving them, or using <i>drush dcse</i>. Do not include a trailing slash.'),
       '#attributes' => [
-        'placeholder' => $base_url
+        'placeholder' => $base_url,
       ],
-    );
+    ];
     return parent::buildForm($form, $form_state);
   }
+
   /**
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
   }
+
   /**
    * {@inheritdoc}
    */
@@ -59,4 +61,5 @@ class SettingsForm extends ConfigFormBase {
       ->set('dcs_base_url', $form_state->getValue('dcs_base_url'))
       ->save();
   }
+
 }

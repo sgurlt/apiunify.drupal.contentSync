@@ -2,7 +2,6 @@
 
 namespace Drupal\drupal_content_sync;
 
-use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\Pool;
 
@@ -101,7 +100,7 @@ class ImportIntent extends SyncIntent {
    *   Whether the entity should be cloned or referenced (and kept up-to-date).
    */
   public function __construct(Flow $flow, Pool $pool, $reason, $action, $entity_type, $bundle, $data, $is_clone) {
-    parent::__construct($flow, $pool, $reason, $action, $entity_type, $bundle, $data['uuid'], isset($data['url'])?$data['url']:'');
+    parent::__construct($flow, $pool, $reason, $action, $entity_type, $bundle, $data['uuid'], isset($data['url']) ? $data['url'] : '');
 
     $this->clone = $is_clone;
 
@@ -217,7 +216,7 @@ class ImportIntent extends SyncIntent {
    *
    * @return bool
    */
-  public static function entityHasBeenImportedByRemote($entity_type, $entity_uuid, $set=FALSE) {
+  public static function entityHasBeenImportedByRemote($entity_type, $entity_uuid, $set = FALSE) {
     static $entities = [];
 
     if ($set) {

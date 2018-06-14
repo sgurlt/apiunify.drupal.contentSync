@@ -17,4 +17,3 @@ drupal_content_sync.settings_form:
   title: Settings
   route_name: drupal_content_sync.settings_form
   base_route: entity.drupal_content_sync.introduction
-

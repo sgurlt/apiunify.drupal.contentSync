@@ -131,7 +131,14 @@ class Pool extends ConfigEntityBase implements PoolInterface {
    * @return string
    */
   public function getBackendUrl() {
-    return $this->backend_url;
+    // Check if the BackendUrl got overwritten.
+    $dcs_settings = Settings::get('drupal_content_sync');
+    if (isset($dcs_settings) && isset($dcs_settings['pools'][$this->id]['backend_url'])) {
+      return $dcs_settings['pools'][$this->id]['backend_url'];
+    }
+    else {
+      return $this->backend_url;
+    }
   }
 
   /**
@@ -142,9 +149,10 @@ class Pool extends ConfigEntityBase implements PoolInterface {
   public function getSiteId() {
     // Check if the siteID got overwritten.
     $dcs_settings = Settings::get('drupal_content_sync');
-    if(isset($dcs_settings) && $dcs_settings['pools'][$this->id]['site_id'] != '') {
+    if (isset($dcs_settings) && isset($dcs_settings['pools'][$this->id]['site_id'])) {
       return $dcs_settings['pools'][$this->id]['site_id'];
-    } else {
+    }
+    else {
       return $this->site_id;
     }
   }
@@ -253,16 +261,18 @@ class Pool extends ConfigEntityBase implements PoolInterface {
    *  The entity type the pools should be returned for.
    * @param string $bundle
    *   The bundle the pools should be returned for.
-   * @param \Drupal\Core\Entity\FieldableEntityInterface $parent_entity The
-   *   parent entity, if any. Only required if $field_name is given-
-   * @param string $field_name The name of the parent entity field that
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $parent_entity
+   *   The
+   *   parent entity, if any. Only required if $field_name is given-.
+   * @param string $field_name
+   *   The name of the parent entity field that
    *   references this entity. In this case if the field handler is set to
    *   "automatically export referenced entities", the user doesn't have to
    *   make a choice as it is set automatically anyway.
    *
    * @return array $selectable_pools
    */
-  public static function getSelectablePools($entity_type, $bundle, $parent_entity=NULL, $field_name=NULL) {
+  public static function getSelectablePools($entity_type, $bundle, $parent_entity = NULL, $field_name = NULL) {
     // Get all available flows.
     $flows = Flow::getAll();
     $configs = [];
@@ -271,9 +281,9 @@ class Pool extends ConfigEntityBase implements PoolInterface {
     foreach ($flows as $flow_id => $flow) {
       $flow_entity_config = $flow->getEntityTypeConfig($entity_type, $bundle);
       if ($flow_entity_config['handler'] != 'ignore' && $flow_entity_config['export'] != 'disabled') {
-        if($parent_entity && $field_name) {
-          $parent_flow_config = $flow->sync_entities[$parent_entity->getEntityTypeId().'-'.$parent_entity->bundle().'-'.$field_name];
-          if(!empty($parent_flow_config['handler_settings']['export_referenced_entities'])) {
+        if ($parent_entity && $field_name) {
+          $parent_flow_config = $flow->sync_entities[$parent_entity->getEntityTypeId() . '-' . $parent_entity->bundle() . '-' . $field_name];
+          if (!empty($parent_flow_config['handler_settings']['export_referenced_entities'])) {
             continue;
           }
         }

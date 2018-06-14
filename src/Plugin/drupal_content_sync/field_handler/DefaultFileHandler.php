@@ -99,7 +99,7 @@ class DefaultFileHandler extends FieldHandlerBase {
           ->loadByProperties(['uri' => $value['value']]);
         $file = empty($files) ? NULL : reset($files);
         if ($file) {
-          $result[] = $intent->embedEntity($file,TRUE);
+          $result[] = $intent->embedEntity($file, TRUE);
         }
       }
     }

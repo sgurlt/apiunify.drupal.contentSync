@@ -71,7 +71,7 @@ class DefaultLinkHandler extends FieldHandlerBase {
               $entity->set('enabled', 1);
             }
             elseif ($reference instanceof MenuLinkContent) {
-              $reference->set('enabled',1);
+              $reference->set('enabled', 1);
             }
           }
           // Menu items are created before the node as they are embedded
