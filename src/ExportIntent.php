@@ -295,25 +295,29 @@ class ExportIntent extends SyncIntent {
                     }
                   }
 
-                  if (ExportIntent::exportEntity($embed_entity, self::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_CREATE, $flow, $pool)) {
-                    $definition = $data;
-                    $definition[SyncIntent::API_KEY] = $pool->id;
-                    $definition[SyncIntent::SOURCE_CONNECTION_ID_KEY] = ApiUnifyFlowExport::getExternalConnectionId(
-                      $pool->id,
-                      $pool->getSiteId(),
-                      $embed_entity->getEntityTypeId(),
-                      $embed_entity->bundle(),
-                      $version
-                    );
-                    $definition[SyncIntent::POOL_CONNECTION_ID_KEY] = ApiUnifyFlowExport::getExternalConnectionId(
-                      $pool->id,
-                      ApiUnifyPoolExport::POOL_SITE_ID,
-                      $embed_entity->getEntityTypeId(),
-                      $embed_entity->bundle(),
-                      $version
-                    );
-                    $embedded_entities[] = $definition;
+                  ExportIntent::exportEntity($embed_entity, self::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_CREATE, $flow, $pool);
+
+                  if(!$info->getLastExport()) {
+                    continue;
                   }
+
+                  $definition = $data;
+                  $definition[SyncIntent::API_KEY] = $pool->id;
+                  $definition[SyncIntent::SOURCE_CONNECTION_ID_KEY] = ApiUnifyFlowExport::getExternalConnectionId(
+                    $pool->id,
+                    $pool->getSiteId(),
+                    $embed_entity->getEntityTypeId(),
+                    $embed_entity->bundle(),
+                    $version
+                  );
+                  $definition[SyncIntent::POOL_CONNECTION_ID_KEY] = ApiUnifyFlowExport::getExternalConnectionId(
+                    $pool->id,
+                    ApiUnifyPoolExport::POOL_SITE_ID,
+                    $embed_entity->getEntityTypeId(),
+                    $embed_entity->bundle(),
+                    $version
+                  );
+                  $embedded_entities[] = $definition;
                 }
               }
             }
