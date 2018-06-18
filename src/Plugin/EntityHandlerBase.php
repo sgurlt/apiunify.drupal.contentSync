@@ -284,6 +284,10 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     }
 
     if ($entity instanceof TranslatableInterface && !$intent->getActiveLanguage()) {
+      if($intent->getAction()==SyncIntent::ACTION_CREATE) {
+        $entity->set('langcode', $intent->getField('langcode'));
+      }
+
       $languages = $intent->getTranslationLanguages();
       foreach ($languages as $language) {
         /**
