@@ -383,7 +383,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         ])->render();
       }
 
-      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
+      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message' . "\n" . '@trace', [
         '@reason' => $reason,
         '@action' => $action,
         '@entity_type'  => $entity_type_name,
@@ -392,6 +392,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         '@not' => 'NO',
         '@clone' => $is_clone ? 'as clone' : '',
         '@message' => $message,
+        '@trace' => $e->parentException->getTraceAsString()."\n\n\n".$e->getTraceAsString(),
       ]);
 
       return new ResourceResponse(
@@ -409,7 +410,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     catch (\Exception $e) {
       $message = $e->getMessage();
 
-      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
+      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message' . "\n" . '@trace', [
         '@reason' => $reason,
         '@action' => $action,
         '@entity_type'  => $entity_type_name,
@@ -418,6 +419,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         '@not' => 'NO',
         '@clone' => $is_clone ? 'as clone' : '',
         '@message' => $message,
+        '@trace' => $e->getTraceAsString(),
       ]);
 
       return new ResourceResponse(
