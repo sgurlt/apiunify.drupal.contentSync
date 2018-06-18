@@ -298,7 +298,12 @@ abstract class SyncIntent {
         $this->entity = $this->entity->getTranslation($language);
       }
       else {
-        $this->entity = $this->entity->getUntranslated();
+        if(empty($this->fieldValues['langcode'][0]['value'])) {
+          $this->entity = $this->entity->getUntranslated();
+        }
+        else {
+          $this->entity = $this->entity->getTranslation($this->fieldValues['langcode'][0]['value']);
+        }
       }
     }
   }
