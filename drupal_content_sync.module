@@ -204,7 +204,7 @@ function _drupal_content_sync_paragraphs_export_settings_form(&$element, FormSta
     }
   }
 
-  if ($entity) {
+  if (!empty($entity)) {
     _drupal_content_sync_form_alter_disabled_fields($element, $form_state, $entity);
   }
 
