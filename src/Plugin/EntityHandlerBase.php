@@ -280,14 +280,57 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         continue;
       }
 
+      // In the first run we can only set properties, not fields
+      // Otherwise Drupal will throw Exceptions when using field references
+      // if the translated entity has not been saved before..
+      // Error message is: InvalidArgumentException: Invalid translation language (und) specified. in Drupal\Core\Entity\ContentEntityBase->getTranslation() (line 866 of /var/www/html/docroot/core/lib/Drupal/Core/Entity/ContentEntityBase.php).
+      // Occurs when using translatable media entities referencing files
+      if(substr($key,0,6)=="field_") {
+        continue;
+      }
+
       $handler->import($intent);
     }
 
-    if ($entity instanceof TranslatableInterface && !$intent->getActiveLanguage()) {
-      if($intent->getAction()==SyncIntent::ACTION_CREATE) {
-        $entity->set('langcode', $intent->getField('langcode'));
+    try {
+      $entity->save();
+    }
+    catch (\Exception $e) {
+      throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE, $e);
+    }
+
+    $changed = FALSE;
+    foreach ($field_definitions as $key => $field) {
+      $handler = $this->flow->getFieldHandler($type, $bundle, $key);
+
+      if (!$handler) {
+        continue;
       }
 
+      // This field cannot be updated.
+      if (in_array($key, $static_fields) && $intent->getAction() != SyncIntent::ACTION_CREATE) {
+        continue;
+      }
+
+      // Now we can save all the fields instead of the properties
+      if(substr($key,0,6)!="field_") {
+        continue;
+      }
+
+      $handler->import($intent);
+      $changed = TRUE;
+    }
+
+    try {
+      if($changed) {
+        $entity->save();
+      }
+    }
+    catch (\Exception $e) {
+      throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE, $e);
+    }
+
+    if ($entity instanceof TranslatableInterface && !$intent->getActiveLanguage()) {
       $languages = $intent->getTranslationLanguages();
       foreach ($languages as $language) {
         /**
@@ -322,13 +365,6 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     }
 
     $intent->changeTranslationLanguage();
-
-    try {
-      $entity->save();
-    }
-    catch (\Exception $e) {
-      throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE, $e);
-    }
 
     return TRUE;
   }
@@ -389,7 +425,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
           $intent->getUuid(),
           $intent->getFlow(),
           $intent->getPool()
-          );
+        );
         // The flag means to overwrite locally, so changes should not be pushed.
         if ($meta_info && !$meta_info->isSourceEntity()) {
           return TRUE;
