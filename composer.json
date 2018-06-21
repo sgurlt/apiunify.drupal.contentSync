@@ -15,7 +15,6 @@
     }
   ],
   "require": {
-    "drupal/config_ignore": "^2.1",
     "drupal/webhooks": "^1.0",
     "drupal/encrypt": "^3.0",
     "drupal/real_aes": "^2.0"
