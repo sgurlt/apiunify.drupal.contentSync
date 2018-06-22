@@ -9,6 +9,9 @@ namespace Drupal\Tests\drupal_content_sync\Functional;
  */
 class PoolOverview extends TestBase {
 
+  /**
+   *
+   */
   protected function setUp() {
     parent::setUp();
   }
@@ -28,4 +31,5 @@ class PoolOverview extends TestBase {
     // Test that the a message is shown that no pools are available for now.
     $this->assertSession()->pageTextContains('There is no Pool yet.');
   }
+
 }

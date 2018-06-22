@@ -16,9 +16,12 @@ abstract class TestBase extends BrowserTestBase {
    */
   protected static $modules = [
     'drupal_content_sync',
-    'block'
+    'block',
   ];
 
+  /**
+   *
+   */
   protected function setUp() {
     parent::setUp();
     $this->drupalPlaceBlock('local_actions_block');
@@ -26,4 +29,5 @@ abstract class TestBase extends BrowserTestBase {
     $web_user = $this->drupalCreateUser(['administer site configuration']);
     $this->drupalLogin($web_user);
   }
+
 }

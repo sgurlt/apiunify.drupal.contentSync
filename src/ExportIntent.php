@@ -177,7 +177,7 @@ class ExportIntent extends SyncIntent {
     // export as the result of this request will already tell API Unify it has
     // been deleted. Otherwise API Unify will return a reasonable 404 for
     // deletions.
-    if (ImportIntent::entityHasBeenImportedByRemote($entity->getEntityTypeId(),$entity->uuid())) {
+    if (ImportIntent::entityHasBeenImportedByRemote($entity->getEntityTypeId(), $entity->uuid())) {
       return FALSE;
     }
 
@@ -244,21 +244,21 @@ class ExportIntent extends SyncIntent {
               $flows        = Flow::getAll();
               $version      = Flow::getEntityTypeVersion($embed_entity->getEntityTypeId(), $embed_entity->bundle());
 
-              foreach($flows as $flow) {
-                if(!$flow->canExportEntity($embed_entity,self::EXPORT_AS_DEPENDENCY,SyncIntent::ACTION_CREATE) &&
-                  !$flow->canExportEntity($embed_entity,self::EXPORT_AUTOMATICALLY,SyncIntent::ACTION_CREATE)) {
+              foreach ($flows as $flow) {
+                if (!$flow->canExportEntity($embed_entity, self::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_CREATE) &&
+                  !$flow->canExportEntity($embed_entity, self::EXPORT_AUTOMATICALLY, SyncIntent::ACTION_CREATE)) {
                   continue;
                 }
 
-                foreach($flow->getEntityTypeConfig($embed_entity->getEntityTypeId(),$embed_entity->bundle())['export_pools'] as $pool_id=>$behavior) {
-                  if($behavior==Pool::POOL_USAGE_FORBID) {
+                foreach ($flow->getEntityTypeConfig($embed_entity->getEntityTypeId(), $embed_entity->bundle())['export_pools'] as $pool_id => $behavior) {
+                  if ($behavior == Pool::POOL_USAGE_FORBID) {
                     continue;
                   }
 
                   // If this entity was newly created, it won't have any export groups
                   // selected, unless they're FORCED. In this case we add default sync
-                  // groups based on the parent entity, as you would expect
-                  if($data[SyncIntent::AUTO_EXPORT_KEY]) {
+                  // groups based on the parent entity, as you would expect.
+                  if ($data[SyncIntent::AUTO_EXPORT_KEY]) {
                     if (!isset($pools[$pool_id])) {
                       $pool = $all_pools[$pool_id];
                       $info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
@@ -288,16 +288,16 @@ class ExportIntent extends SyncIntent {
                     $info->save();
                   }
                   else {
-                    $pool     = $all_pools[$pool_id];
-                    $info     = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
-                    if( !$info || !$info->isExportEnabled() ) {
+                    $pool = $all_pools[$pool_id];
+                    $info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
+                    if (!$info || !$info->isExportEnabled()) {
                       continue;
                     }
                   }
 
                   ExportIntent::exportEntity($embed_entity, self::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_CREATE, $flow, $pool);
 
-                  if(!$info->getLastExport()) {
+                  if (!$info->getLastExport()) {
                     continue;
                   }
 
@@ -468,6 +468,7 @@ class ExportIntent extends SyncIntent {
    *   used one after another.
    *
    * @return bool Whether the entity is configured to be exported or not.
+   *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    */
   public static function exportEntity(EntityInterface $entity, $reason, $action, Flow $flow = NULL, Pool $pool = NULL) {
@@ -496,8 +497,7 @@ class ExportIntent extends SyncIntent {
     $intent = new ExportIntent($flow, $pool, $reason, $action, $entity);
     $status = $intent->execute();
 
-    //drupal_set_message($action.' '.$entity->getEntityTypeId().' '.$entity->uuid().' with '.$flow->id.' to '.$pool->id.' as '.$reason.': '.($status?'SUCCESS':'FAILURE'));
-
+    // drupal_set_message($action.' '.$entity->getEntityTypeId().' '.$entity->uuid().' with '.$flow->id.' to '.$pool->id.' as '.$reason.': '.($status?'SUCCESS':'FAILURE'));.
     if ($status) {
       return TRUE;
     }
@@ -526,10 +526,10 @@ class ExportIntent extends SyncIntent {
   public static function exportEntityFromUi(EntityInterface $entity, $reason, $action, Flow $flow = NULL, Pool $pool = NULL) {
     $messenger = \Drupal::messenger();
     try {
-      $status = self::exportEntity($entity,$reason,$action,$flow,$pool);
+      $status = self::exportEntity($entity, $reason, $action, $flow, $pool);
 
       if ($status) {
-        if($action==SyncIntent::ACTION_DELETE) {
+        if ($action == SyncIntent::ACTION_DELETE) {
           $messenger->addMessage(t('%label has been exported with Drupal Content Sync.', ['%label' => $entity->getEntityTypeId()]));
         }
         else {
