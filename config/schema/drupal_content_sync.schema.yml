@@ -31,3 +31,7 @@ drupal_content_sync.pool.*:
     site_id:
       type: string
       label: 'Site Identifier'
+
+action.configuration.node_drupal_content_sync_export_action:
+  type: action_configuration_default
+  label: 'Push changes'
