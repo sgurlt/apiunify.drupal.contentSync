@@ -283,8 +283,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       // Otherwise Drupal will throw Exceptions when using field references
       // if the translated entity has not been saved before..
       // Error message is: InvalidArgumentException: Invalid translation language (und) specified. in Drupal\Core\Entity\ContentEntityBase->getTranslation() (line 866 of /var/www/html/docroot/core/lib/Drupal/Core/Entity/ContentEntityBase.php).
-      // Occurs when using translatable media entities referencing files
-      if(substr($key,0,6)=="field_") {
+      // Occurs when using translatable media entities referencing files.
+      if (substr($key, 0, 6) == "field_") {
         continue;
       }
 
@@ -311,8 +311,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         continue;
       }
 
-      // Now we can save all the fields instead of the properties
-      if(substr($key,0,6)!="field_") {
+      // Now we can save all the fields instead of the properties.
+      if (substr($key, 0, 6) != "field_") {
         continue;
       }
 
@@ -321,7 +321,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
     }
 
     try {
-      if($changed) {
+      if ($changed) {
         $entity->save();
       }
     }

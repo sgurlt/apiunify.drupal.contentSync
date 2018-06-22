@@ -24,7 +24,7 @@ class DefaultFormattedTextHandler extends FieldHandlerBase {
    * {@inheritdoc}
    */
   public static function supports($entity_type, $bundle, $field_name, FieldDefinitionInterface $field) {
-    $allowed = ["text_with_summary","text_long"];
+    $allowed = ["text_with_summary", "text_long"];
     return in_array($field->getType(), $allowed) !== FALSE;
   }
 
@@ -43,7 +43,7 @@ class DefaultFormattedTextHandler extends FieldHandlerBase {
 
     return preg_replace_callback(
       '@data-entity-uuid="([0-9a-z-]+)" href="/node/([0-9]+)"@',
-      function($matches) use ($entity_repository) {
+      function ($matches) use ($entity_repository) {
         $uuid = $matches[1];
         $id   = $matches[2];
 
@@ -53,9 +53,10 @@ class DefaultFormattedTextHandler extends FieldHandlerBase {
             $id = $node->id();
           }
         }
-        catch(\Exception $e){}
+        catch (\Exception $e) {
+        }
 
-        return 'data-entity-uuid="'.$uuid.'" href="/node/'.$id.'"';
+        return 'data-entity-uuid="' . $uuid . '" href="/node/' . $id . '"';
       },
       $text
     );
@@ -90,7 +91,7 @@ class DefaultFormattedTextHandler extends FieldHandlerBase {
 
       foreach ($data as $item) {
         if (!empty($item['value'])) {
-          // Replace node links correctly
+          // Replace node links correctly.
           $item['value'] = $this->replaceEntityReferenceLinks($item['value']);
         }
         $result[] = $item;

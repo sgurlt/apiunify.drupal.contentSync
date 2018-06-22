@@ -8,7 +8,6 @@ dependencies:
   - user
   - rest
   - serialization
-  - config_ignore
   - encrypt
   - real_aes
   - menu_link_content
