@@ -19,7 +19,7 @@ class FlowOverview extends TestBase {
   /**
    * Ensure the flow overview page is reachable.
    */
-  public function testPoolOverview() {
+  public function testFlowOverview() {
     $this->drupalGet('admin/config/services/drupal_content_sync/flow');
 
     // Test that the flow overview is reachable.
