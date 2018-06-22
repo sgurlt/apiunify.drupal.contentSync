@@ -234,9 +234,8 @@ class FlowForm extends EntityForm {
         $this->t('Import pool configuration'),
         $this->t('Import deletion settings'),
         $this->t('Import updates'),
-        $this->t('Clone'),
-        '',
-        $this->t('Preview'),
+        /*'',
+        $this->t('Preview'),*/
       ]),
     ];
 
@@ -285,7 +284,6 @@ class FlowForm extends EntityForm {
               'allow_local_deletion_of_import' => FALSE,
             ],
             'import_updates' => ImportIntent::IMPORT_UPDATE_FORCE,
-            'import_clone' => FALSE,
             'preview' => NULL,
             'display_name' => $this->t('@bundle', [
               '@bundle' => $entity_bundle['label'],
@@ -401,7 +399,7 @@ class FlowForm extends EntityForm {
             '#title' => $this->t($pool->label()),
             '#options' => [
               Pool::POOL_USAGE_FORCE => $this->t('Force'),
-              Pool::POOL_USAGE_ALLOW => $this->t('Allow'),
+//              Pool::POOL_USAGE_ALLOW => $this->t('Allow'),
               Pool::POOL_USAGE_FORBID => $this->t('Forbid'),
             ],
             '#default_value' => $row_default_values['export_pools'][$pool->id()],
@@ -469,13 +467,7 @@ class FlowForm extends EntityForm {
           '#default_value' => $row_default_values['import_updates'],
         ];
 
-        $entity_bundle_row['import_clone'] = [
-          '#type' => 'checkbox',
-          '#title' => $this->t('Clone'),
-          '#default_value' => $row_default_values['import_clone'],
-        ];
-
-        $entity_bundle_row['has_preview_mode'] = [
+        /*$entity_bundle_row['has_preview_mode'] = [
           '#type' => 'hidden',
           '#default_value' => (int) $has_preview_mode,
           '#title' => $this->t('Has preview mode'),
@@ -490,7 +482,7 @@ class FlowForm extends EntityForm {
             'excluded' => $this->t('Excluded')->render(),
           ], $handler_id == 'ignore' ? ['table' => $this->t('Table')->render()] : $handler->getAllowedPreviewOptions()),
           '#default_value' => $row_default_values['preview'],
-        ];
+        ];*/
 
         $entity_table[$type_key . '-' . $entity_bundle_name] = $entity_bundle_row;
 
@@ -533,7 +525,6 @@ class FlowForm extends EntityForm {
                 'id' => $field_id,
                 'export' => NULL,
                 'import' => NULL,
-                'import_clone' => FALSE,
                 'preview' => NULL,
                 'entity_type' => $type_key,
                 'entity_bundle' => $entity_bundle_name,
@@ -667,17 +658,13 @@ class FlowForm extends EntityForm {
               '#markup' => '',
             ];
 
-            $field_row['import_clone'] = [
+            /*$field_row['has_preview'] = [
               '#markup' => '',
-            ];
+            ];*/
 
-            $field_row['has_preview'] = [
+            /*$field_row['preview'] = [
               '#markup' => '',
-            ];
-
-            $field_row['preview'] = [
-              '#markup' => '',
-            ];
+            ];*/
 
             $entity_table[$field_id] = $field_row;
           }

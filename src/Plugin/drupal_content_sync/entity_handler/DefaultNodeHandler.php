@@ -43,18 +43,6 @@ class DefaultNodeHandler extends EntityHandlerBase {
   /**
    * @inheritdoc
    */
-  public function getAllowedImportOptions() {
-    return [
-      ImportIntent::IMPORT_DISABLED,
-      ImportIntent::IMPORT_AUTOMATICALLY,
-      ImportIntent::IMPORT_AS_DEPENDENCY,
-      ImportIntent::IMPORT_MANUALLY,
-    ];
-  }
-
-  /**
-   * @inheritdoc
-   */
   public function getAllowedPreviewOptions() {
     return [
       'table' => 'Table',

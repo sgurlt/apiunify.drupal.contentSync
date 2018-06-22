@@ -6,7 +6,6 @@ use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\drupal_content_sync\ApiUnifyPoolExport;
-use GuzzleHttp\Client;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Site\Settings;
 
@@ -166,7 +165,7 @@ class PoolForm extends EntityForm {
     }
 
     $url    = $form_state->getValue('backend_url');
-    $client = new Client();
+    $client = \Drupal::httpClient();
     try {
       $response = $client->get($url . '/status');
       if ($response->getStatusCode() != 200) {
