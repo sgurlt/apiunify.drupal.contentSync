@@ -1,0 +1,17 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - drupal_content_sync
+  enforced:
+    module:
+      - drupal_content_sync
+id: drupal_content_sync_preview_resource
+plugin_id: drupal_content_sync_preview_resource
+granularity: method
+configuration:
+  GET:
+    supported_formats:
+      - json
+    supported_auth:
+      - cookie
