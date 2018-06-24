@@ -45,6 +45,7 @@ class DefaultFieldHandler extends FieldHandlerBase {
       "list_integer",
       "viewfield",
       "video_embed_field",
+      "telephone",
     ];
     return in_array($field->getType(), $allowed) !== FALSE;
   }
