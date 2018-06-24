@@ -68,13 +68,19 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   }
 
   /**
-   * @param $entity_type
-   * @param $entity_uuid
+   * @param string $entity_type
+   * @param string $entity_uuid
    * @param \Drupal\drupal_content_sync\Entity\Pool $pool
    *
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation[]
    */
   public static function getInfoForPool($entity_type, $entity_uuid, Pool $pool) {
+    if(!$entity_type) {
+      throw new \Exception('$entity_type is required.' );
+    }
+    if(!$entity_uuid) {
+      throw new \Exception('$entity_uuid is required.' );
+    }
     /**
      * @var \Drupal\drupal_content_sync\Entity\MetaInformation[] $entities
      */
@@ -102,6 +108,12 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation[]
    */
   public static function getInfosForEntity($entity_type, $entity_uuid, $filter = NULL) {
+    if(!$entity_type) {
+      throw new \Exception('$entity_type is required.' );
+    }
+    if(!$entity_uuid) {
+      throw new \Exception('$entity_uuid is required.' );
+    }
     $base_filter = [
       'entity_type' => $entity_type,
       'entity_uuid' => $entity_uuid,
@@ -125,7 +137,13 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    *
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation|mixed
    */
-  public static function getInfoForEntity($entity_type, $entity_uuid, $flow, $pool) {
+  public static function getInfoForEntity($entity_type, $entity_uuid, Flow $flow, Pool $pool) {
+    if(!$entity_type) {
+      throw new \Exception('$entity_type is required.' );
+    }
+    if(!$entity_uuid) {
+      throw new \Exception('$entity_uuid is required.' );
+    }
     /**
      * @var \Drupal\drupal_content_sync\Entity\MetaInformation[] $entities
      */
