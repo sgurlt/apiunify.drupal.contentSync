@@ -5,7 +5,6 @@ namespace Drupal\drupal_content_sync;
 use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\Pool;
 use Drupal\encrypt\Entity\EncryptionProfile;
-use Drupal\Core\Url;
 use Drupal\user\Entity\User;
 use GuzzleHttp\Exception\RequestException;
 use Drupal\drupal_content_sync\Form\PoolForm;
