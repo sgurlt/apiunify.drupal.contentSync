@@ -170,6 +170,9 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    * @return bool
    */
   public static function isLocalDeletionAllowed(EntityInterface $entity) {
+    if(!$entity->uuid()) {
+      return TRUE;
+    }
     $meta_infos = MetaInformation::getInfosForEntity(
       $entity->getEntityTypeId(),
       $entity->uuid()
