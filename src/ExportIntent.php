@@ -205,7 +205,7 @@ class ExportIntent extends SyncIntent {
     }
 
     // If the entity didn't change, it doesn't have to be re-exported.
-    if ($exported && $exported >= $export && $reason != self::EXPORT_FORCED &&
+    if ($this->meta->getLastExport() && $this->meta->getLastExport() >= $export && $reason != self::EXPORT_FORCED &&
       $action != SyncIntent::ACTION_DELETE &&
       empty($deletedTranslations[$entity->getEntityTypeId()][$entity->uuid()])) {
       return FALSE;
@@ -260,13 +260,13 @@ class ExportIntent extends SyncIntent {
                   // groups based on the parent entity, as you would expect.
                   if ($data[SyncIntent::AUTO_EXPORT_KEY]) {
                     if (!isset($pools[$pool_id])) {
-                      $pool = $all_pools[$pool_id];
-                      $info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
-                      if ($info) {
-                        $info->isExportEnabled(NULL, FALSE);
-                        $info->save();
-                      }
-
+                      // TODO: Save all parent > child relationships so we can check if this pool is used somewhere else
+                      //$pool = $all_pools[$pool_id];
+                      //$info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
+                      //if ($info) {
+                      //  $info->isExportEnabled(NULL, FALSE);
+                      //  $info->save();
+                      //}
                       continue;
                     }
 
