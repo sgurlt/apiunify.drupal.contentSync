@@ -581,7 +581,18 @@ function drupal_content_sync_encrypt_values(array $values) {
  * @param \Drupal\Core\Entity\EntityInterface $entity
  */
 function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormStateInterface $form_state, EntityInterface $entity) {
-  $value_path = !empty($form['#field_parents']) ? array_merge($form['#field_parents'],['dcs_edit_override']) : ['dcs_edit_override'];
+  $value_path = [];
+  if(!empty($form['#field_parents'])) {
+    $value_path = $form['#field_parents'];
+  }
+
+  if($entity->getEntityTypeId()=='paragraph') {
+    $value_path[] = $entity->get('parent_field_name')->value;
+    $value_path[] = $form['#delta'];
+  }
+
+  $value_path[] = 'dcs_edit_override';
+
   if ($form_state->hasValue($value_path)) {
     $value = boolval($form_state->getValue($value_path));
   }
