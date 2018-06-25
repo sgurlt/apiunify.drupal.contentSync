@@ -222,6 +222,11 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   public static function saveSelectedExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta, $entity_type, $bundle, $uuid, $tree_position = []) {
     $data = MetaInformation::accessTemporaryExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta, NULL, NULL, $tree_position);
 
+    // On sites that don't export, this will be NULL.
+    if (empty($data['flow_id'])) {
+      return;
+    }
+
     $values = $data['pool_ids'];
 
     $processed = [];
@@ -236,11 +241,6 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
       if ($values !== 'ignore') {
         $processed[] = $values;
       }
-    }
-
-    // On sites that don't export, this will be NULL.
-    if (empty($data['flow_id'])) {
-      return;
     }
 
     MetaInformation::saveSelectedExportPoolInfo($entity_type, $bundle, $uuid, $data['flow_id'], $processed);
