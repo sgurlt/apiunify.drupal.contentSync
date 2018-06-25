@@ -4,4 +4,5 @@ v1.0
 v1.0.1
 - Added sanity checks
 - Fixed bug that may lead to some pools not being used on export if multiple pools are used for the same entity
+- Fixed bug that lead to incorrect default "override" checks when using nested paragraphs for subform editing
 - Added field handler for "telephone" and "soundcloud"
