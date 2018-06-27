@@ -392,7 +392,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         '@not' => 'NO',
         '@clone' => $is_clone ? 'as clone' : '',
         '@message' => $message,
-        '@trace' => $e->parentException->getTraceAsString() . "\n\n\n" . $e->getTraceAsString(),
+        '@trace' => ($e->parentException?$e->parentException->getTraceAsString() . "\n\n\n":"") . $e->getTraceAsString(),
       ]);
 
       return new ResourceResponse(
