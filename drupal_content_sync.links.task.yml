@@ -17,3 +17,8 @@ drupal_content_sync.settings_form:
   title: Settings
   route_name: drupal_content_sync.settings_form
   base_route: entity.drupal_content_sync.introduction
+
+drupal_content_sync.dcs_debug_form:
+  title: Debug
+  route_name: drupal_content_sync.dcs_debug_form
+  base_route: entity.drupal_content_sync.introduction
