@@ -359,6 +359,26 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   }
 
   /**
+   * Returns the information if the entity has been chosen by the user to
+   * be exported with this flow and pool.
+   *
+   * @return bool
+   */
+  public function isManualExportEnabled() {
+    return (bool) ($this->get('flags')->value & (self::FLAG_EXPORT_ENABLED));
+  }
+
+  /**
+   * Returns the information if the entity has been exported with this flow and
+   * pool as a dependency.
+   *
+   * @return bool
+   */
+  public function isDependencyExportEnabled() {
+    return (bool) ($this->get('flags')->value & (self::FLAG_DEPENDENCY_EXPORT_ENABLED));
+  }
+
+  /**
    * Returns the information if the user override the entity locally.
    *
    * @param bool $set
