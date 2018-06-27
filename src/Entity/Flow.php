@@ -254,10 +254,12 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    *   {@see Flow::EXPORT_*}.
    * @param string $action
    *   {@see ::ACTION_*}.
+   * @param boolean $include_forced
+   *   Include forced pools. Otherwise only use-selected / referenced ones.
    *
    * @return \Drupal\drupal_content_sync\Entity\Pool[]
    */
-  public function getUsedExportPools(EntityInterface $entity, $reason, $action) {
+  public function getUsedExportPools(EntityInterface $entity, $reason, $action, $include_forced=TRUE) {
     $config = $this->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
     if (!$this->canExportEntity($entity, $reason, $action)) {
       return [];
@@ -274,7 +276,9 @@ class Flow extends ConfigEntityBase implements FlowInterface {
       }
 
       if ($setting == Pool::POOL_USAGE_FORCE) {
-        $result[$id] = $pool;
+        if($include_forced) {
+          $result[$id] = $pool;
+        }
         continue;
       }
 
