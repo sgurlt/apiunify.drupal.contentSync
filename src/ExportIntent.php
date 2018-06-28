@@ -290,11 +290,13 @@ class ExportIntent extends SyncIntent {
                     $info->isExportEnabled(NULL, TRUE);
                     $info->save();
                   }
-                  elseif($behavior==Pool::POOL_USAGE_ALLOW) {
+                  else {
                     $pool = $all_pools[$pool_id];
-                    $info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
-                    if (!$info || !$info->isExportEnabled()) {
-                      continue;
+                    if($behavior==Pool::POOL_USAGE_ALLOW) {
+                      $info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
+                      if (!$info || !$info->isExportEnabled()) {
+                        continue;
+                      }
                     }
                   }
 
