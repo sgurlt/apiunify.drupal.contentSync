@@ -1,17 +1,17 @@
 {
   "name": "drupal/drupal_content_sync",
-  "description": "Provides an integration with Drupal Content Sync.",
+  "description": "Drupal Content Sync is a module that provides content synchronization features between multiple Drupal sites using a Node.js based Content Sync backend.",
   "type": "drupal-module",
   "license": "GPL-2.0+",
   "keywords": [
     "Drupal",
     "Content Sync"
   ],
-  "homepage": "https://github.com/sgurlt/apiunify.drupal.contentSync",
+  "homepage": "https://cms-content-sync.io/",
   "authors": [
     {
-      "name": "Bright Solutions GmbH",
-      "homepage": "https://www.brightsolutions.de/"
+      "name": "Edge Box GmbH",
+      "homepage": "https://cms-content-sync.io/"
     }
   ],
   "require": {
