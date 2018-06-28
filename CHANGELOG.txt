@@ -1,7 +1,7 @@
 v1.0
 - Initial release
 
-v1.0.1
+v1.1
 - Improved robustness by adding various sanity checks
 - Fixed bug that may lead to some pools not being used on export if multiple pools are used for the same entity
 - Fixed bug that lead to incorrect default "override" checks when using nested paragraphs with subform editing
