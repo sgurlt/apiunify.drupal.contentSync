@@ -291,7 +291,7 @@ class DebugForm extends ConfigFormBase {
           $this->t('Flow'),
           $this->t('Pool'),
           $this->t('Flags'),
-          $this->t('Last export'),
+          $this->t('Last export edit date'),
           $this->t('Last import'),
           $this->t('Latest log messages'),
         ]),
