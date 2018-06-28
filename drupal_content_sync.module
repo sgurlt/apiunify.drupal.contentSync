@@ -306,13 +306,13 @@ function _drupal_content_sync_add_export_pool_form(&$form, $selectable_exportabl
   $exported_pools = [];
   $selected_pools = [];
   if ($entity) {
-    foreach ($selected_flow->getUsedExportPools($entity, ExportIntent::EXPORT_ANY, SyncIntent::ACTION_CREATE) as $pool) {
+    foreach ($selected_flow->getUsedExportPools($entity, ExportIntent::EXPORT_ANY, SyncIntent::ACTION_CREATE, FALSE) as $pool) {
       $exported_pools[] = $pool->id;
     }
     $selected_pools = $exported_pools;
   }
   elseif ($parentEntity) {
-    foreach ($selected_flow->getUsedExportPools($parentEntity, ExportIntent::EXPORT_ANY, SyncIntent::ACTION_UPDATE) as $pool) {
+    foreach ($selected_flow->getUsedExportPools($parentEntity, ExportIntent::EXPORT_ANY, SyncIntent::ACTION_UPDATE, FALSE) as $pool) {
       if (!isset($options['pools'][$pool->id])) {
         continue;
       }
@@ -581,14 +581,31 @@ function drupal_content_sync_encrypt_values(array $values) {
  * @param \Drupal\Core\Entity\EntityInterface $entity
  */
 function _drupal_content_sync_form_alter_disabled_fields(array &$form, FormStateInterface $form_state, EntityInterface $entity) {
-  if ($form_state->hasValue('dcs_edit_override')) {
-    $value = boolval($form_state->getValue('dcs_edit_override'));
+  $value_path = [];
+  if(!empty($form['#field_parents'])) {
+    $value_path = $form['#field_parents'];
   }
-  elseif (isset($form_state->getUserInput()["dcs_edit_override"])) {
-    $value = boolval($form_state->getUserInput()["dcs_edit_override"]);
+
+  if($entity->getEntityTypeId()=='paragraph') {
+    $value_path[] = $entity->get('parent_field_name')->value;
+    $value_path[] = $form['#delta'];
+  }
+
+  $value_path[] = 'dcs_edit_override';
+
+  if ($form_state->hasValue($value_path)) {
+    $value = boolval($form_state->getValue($value_path));
   }
   else {
-    $value = FALSE;
+    $input = $form_state->getUserInput();
+    foreach($value_path as $key) {
+      if(empty($input[$key])) {
+        $input = NULL;
+        break;
+      }
+      $input = $input[$key];
+    }
+    $value = boolval($input);
   }
 
   $meta_infos = MetaInformation::getInfosForEntity(

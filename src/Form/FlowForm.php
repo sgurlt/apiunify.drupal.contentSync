@@ -399,7 +399,7 @@ class FlowForm extends EntityForm {
             '#title' => $this->t($pool->label()),
             '#options' => [
               Pool::POOL_USAGE_FORCE => $this->t('Force'),
-//              Pool::POOL_USAGE_ALLOW => $this->t('Allow'),
+              Pool::POOL_USAGE_ALLOW => $this->t('Allow'),
               Pool::POOL_USAGE_FORBID => $this->t('Forbid'),
             ],
             '#default_value' => $row_default_values['export_pools'][$pool->id()],
@@ -437,7 +437,7 @@ class FlowForm extends EntityForm {
             '#title' => $this->t($pool->label()),
             '#options' => [
               Pool::POOL_USAGE_FORCE => $this->t('Force'),
-              Pool::POOL_USAGE_ALLOW => $this->t('Allow'),
+//              Pool::POOL_USAGE_ALLOW => $this->t('Allow'),
               Pool::POOL_USAGE_FORBID => $this->t('Forbid'),
             ],
             '#default_value' => $row_default_values['import_pools'][$pool->id()],

@@ -219,13 +219,14 @@ abstract class SyncIntent {
     if ($this->entity) {
       throw new SyncException(SyncException::CODE_INTERNAL_ERROR, NULL, "Attempting to re-set existing entity.");
     }
+    /**
+     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
+     * @var \Drupal\Core\Entity\TranslatableInterface $entity
+     */
     $this->entity = $entity;
     if ($this->entity) {
       if ($this->activeLanguage) {
         $this->entity = $this->entity->getTranslation($this->activeLanguage);
-      }
-      else {
-        $this->entity = $this->entity->getTranslation($this->fieldValues['langcode'][0]['value']);
       }
     }
     return $this->entity;

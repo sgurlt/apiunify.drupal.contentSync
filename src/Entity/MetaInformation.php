@@ -68,13 +68,19 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   }
 
   /**
-   * @param $entity_type
-   * @param $entity_uuid
+   * @param string $entity_type
+   * @param string $entity_uuid
    * @param \Drupal\drupal_content_sync\Entity\Pool $pool
    *
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation[]
    */
   public static function getInfoForPool($entity_type, $entity_uuid, Pool $pool) {
+    if(!$entity_type) {
+      throw new \Exception('$entity_type is required.' );
+    }
+    if(!$entity_uuid) {
+      throw new \Exception('$entity_uuid is required.' );
+    }
     /**
      * @var \Drupal\drupal_content_sync\Entity\MetaInformation[] $entities
      */
@@ -102,6 +108,12 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation[]
    */
   public static function getInfosForEntity($entity_type, $entity_uuid, $filter = NULL) {
+    if(!$entity_type) {
+      throw new \Exception('$entity_type is required.' );
+    }
+    if(!$entity_uuid) {
+      throw new \Exception('$entity_uuid is required.' );
+    }
     $base_filter = [
       'entity_type' => $entity_type,
       'entity_uuid' => $entity_uuid,
@@ -125,7 +137,13 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    *
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation|mixed
    */
-  public static function getInfoForEntity($entity_type, $entity_uuid, $flow, $pool) {
+  public static function getInfoForEntity($entity_type, $entity_uuid, Flow $flow, Pool $pool) {
+    if(!$entity_type) {
+      throw new \Exception('$entity_type is required.' );
+    }
+    if(!$entity_uuid) {
+      throw new \Exception('$entity_uuid is required.' );
+    }
     /**
      * @var \Drupal\drupal_content_sync\Entity\MetaInformation[] $entities
      */
@@ -204,6 +222,11 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
   public static function saveSelectedExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta, $entity_type, $bundle, $uuid, $tree_position = []) {
     $data = MetaInformation::accessTemporaryExportPoolInfoForField($parent_entity_type, $parent_uuid, $parent_field_name, $parent_field_delta, NULL, NULL, $tree_position);
 
+    // On sites that don't export, this will be NULL.
+    if (empty($data['flow_id'])) {
+      return;
+    }
+
     $values = $data['pool_ids'];
 
     $processed = [];
@@ -218,11 +241,6 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
       if ($values !== 'ignore') {
         $processed[] = $values;
       }
-    }
-
-    // On sites that don't export, this will be NULL.
-    if (empty($data['flow_id'])) {
-      return;
     }
 
     MetaInformation::saveSelectedExportPoolInfo($entity_type, $bundle, $uuid, $data['flow_id'], $processed);
@@ -338,6 +356,26 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
       $this->set('flags', $this->get('flags')->value & ~self::FLAG_DEPENDENCY_EXPORT_ENABLED);
     }
     return (bool) ($this->get('flags')->value & (self::FLAG_EXPORT_ENABLED | self::FLAG_DEPENDENCY_EXPORT_ENABLED));
+  }
+
+  /**
+   * Returns the information if the entity has been chosen by the user to
+   * be exported with this flow and pool.
+   *
+   * @return bool
+   */
+  public function isManualExportEnabled() {
+    return (bool) ($this->get('flags')->value & (self::FLAG_EXPORT_ENABLED));
+  }
+
+  /**
+   * Returns the information if the entity has been exported with this flow and
+   * pool as a dependency.
+   *
+   * @return bool
+   */
+  public function isDependencyExportEnabled() {
+    return (bool) ($this->get('flags')->value & (self::FLAG_DEPENDENCY_EXPORT_ENABLED));
   }
 
   /**

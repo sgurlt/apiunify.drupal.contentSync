@@ -267,6 +267,8 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
 
     $static_fields = $this->getStaticFields();
 
+    $is_translation = boolval($intent->getActiveLanguage());
+
     foreach ($field_definitions as $key => $field) {
       $handler = $this->flow->getFieldHandler($type, $bundle, $key);
 
@@ -276,6 +278,10 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
 
       // This field cannot be updated.
       if (in_array($key, $static_fields) && $intent->getAction() != SyncIntent::ACTION_CREATE) {
+        continue;
+      }
+
+      if($is_translation && !$field->isTranslatable()) {
         continue;
       }
 
@@ -284,46 +290,15 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       // if the translated entity has not been saved before..
       // Error message is: InvalidArgumentException: Invalid translation language (und) specified. in Drupal\Core\Entity\ContentEntityBase->getTranslation() (line 866 of /var/www/html/docroot/core/lib/Drupal/Core/Entity/ContentEntityBase.php).
       // Occurs when using translatable media entities referencing files.
-      if (substr($key, 0, 6) == "field_") {
+      /*if (substr($key, 0, 6) == "field_") {
         continue;
-      }
+      }*/
 
       $handler->import($intent);
     }
 
     try {
       $entity->save();
-    }
-    catch (\Exception $e) {
-      throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE, $e);
-    }
-
-    $changed = FALSE;
-    foreach ($field_definitions as $key => $field) {
-      $handler = $this->flow->getFieldHandler($type, $bundle, $key);
-
-      if (!$handler) {
-        continue;
-      }
-
-      // This field cannot be updated.
-      if (in_array($key, $static_fields) && $intent->getAction() != SyncIntent::ACTION_CREATE) {
-        continue;
-      }
-
-      // Now we can save all the fields instead of the properties.
-      if (substr($key, 0, 6) != "field_") {
-        continue;
-      }
-
-      $handler->import($intent);
-      $changed = TRUE;
-    }
-
-    try {
-      if ($changed) {
-        $entity->save();
-      }
     }
     catch (\Exception $e) {
       throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE, $e);

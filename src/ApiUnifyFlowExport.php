@@ -5,7 +5,6 @@ namespace Drupal\drupal_content_sync;
 use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\Pool;
 use Drupal\encrypt\Entity\EncryptionProfile;
-use Drupal\Core\Url;
 use Drupal\user\Entity\User;
 use GuzzleHttp\Exception\RequestException;
 use Drupal\drupal_content_sync\Form\PoolForm;
@@ -248,6 +247,9 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
     else {
       $export_url = $base_url;
     }
+
+    $dcs_disable_optimization = boolval(\Drupal::config('drupal_content_sync.debug')
+      ->get('dcs_disable_optimization'));
 
     $user = User::load(DRUPAL_CONTENT_SYNC_USER_ID);
     // During the installation from an existing config for some reason DRUPAL_CONTENT_SYNC_USER_ID is not set right after the installation of the module, so we've to double check that...
@@ -512,6 +514,9 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
               'hash' => self::getExternalConnectionPath($api, ApiUnifyPoolExport::POOL_SITE_ID, $entity_type_name, $bundle_name, $version),
               'usage' => 'EXTERNAL',
               'status' => 'READY',
+              'options' => [
+                'update_all' => $dcs_disable_optimization,
+              ],
               'entity_type_id' => $entity_type_id,
             ],
           ]);
@@ -555,6 +560,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
               'password' => $loginData['userPass'],
               'base_url' => $export_url,
             ],
+            'update_all' => $dcs_disable_optimization,
             'crud' => &$crud_operations,
           ];
 
@@ -587,9 +593,9 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
                 'options' => [
                   'dependency_connection_id' => self::DEPENDENCY_CONNECTION_ID,
                   'create_entities' => TRUE,
+                  'force_updates' => TRUE,
                   'update_entities' => !$type['import_clone'],
                   'delete_entities' => boolval($type['import_deletion_settings']['import_deletion']),
-                  'clone_entities' => boolval($type['import_clone']),
                   'dependent_entities_only' => $type['import'] == ImportIntent::IMPORT_AS_DEPENDENCY,
                   'update_none_when_loading' => TRUE,
                   'exclude_reference_properties' => [
@@ -620,6 +626,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
                   'create_entities' => TRUE,
                   'update_entities' => TRUE,
                   'delete_entities' => boolval($type['export_deletion_settings']['export_deletion']),
+                  'force_updates' => TRUE,
                   'dependent_entities_only' => $export != Pool::POOL_USAGE_FORBID && $type['export'] == ExportIntent::EXPORT_AS_DEPENDENCY,
                   'update_none_when_loading' => TRUE,
                   'exclude_reference_properties' => [

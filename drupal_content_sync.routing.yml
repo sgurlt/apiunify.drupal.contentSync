@@ -89,6 +89,15 @@ drupal_content_sync.settings_form:
   requirements:
     _permission: 'administer site configuration'
 
+# Debug form
+drupal_content_sync.dcs_debug_form:
+  path: '/admin/config/services/drupal_content_sync/debug'
+  defaults:
+    _form: '\Drupal\drupal_content_sync\Form\DebugForm'
+    _title: 'Debug - Drupal Content Sync'
+  requirements:
+    _permission: 'administer site configuration'
+
 # DCS - Push changes
 drupal_content_sync.publish_changes:
   path: '/drupal-content-sync/publish-changes/{flow_id}/{entity}/{entity_type}'

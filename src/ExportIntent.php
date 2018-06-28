@@ -204,8 +204,11 @@ class ExportIntent extends SyncIntent {
       }
     }
 
+    $dcs_disable_optimization = boolval(\Drupal::config('drupal_content_sync.debug')
+      ->get('dcs_disable_optimization'));
+
     // If the entity didn't change, it doesn't have to be re-exported.
-    if ($exported && $exported >= $export && $reason != self::EXPORT_FORCED &&
+    if (!$dcs_disable_optimization && $this->meta->getLastExport() && $this->meta->getLastExport() >= $export && $reason != self::EXPORT_FORCED &&
       $action != SyncIntent::ACTION_DELETE &&
       empty($deletedTranslations[$entity->getEntityTypeId()][$entity->uuid()])) {
       return FALSE;
@@ -240,7 +243,7 @@ class ExportIntent extends SyncIntent {
                */
               $embed_entity = $entity_repository->loadEntityByUuid($data[SyncIntent::ENTITY_TYPE_KEY], $data[SyncIntent::UUID_KEY]);
               $all_pools    = Pool::getAll();
-              $pools        = $this->flow->getUsedExportPools($entity, $this->getReason(), $this->getAction());
+              $pools        = $this->flow->getUsedExportPools($entity, $this->getReason(), $this->getAction(), TRUE);
               $flows        = Flow::getAll();
               $version      = Flow::getEntityTypeVersion($embed_entity->getEntityTypeId(), $embed_entity->bundle());
 
@@ -260,13 +263,13 @@ class ExportIntent extends SyncIntent {
                   // groups based on the parent entity, as you would expect.
                   if ($data[SyncIntent::AUTO_EXPORT_KEY]) {
                     if (!isset($pools[$pool_id])) {
-                      $pool = $all_pools[$pool_id];
-                      $info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
-                      if ($info) {
-                        $info->isExportEnabled(NULL, FALSE);
-                        $info->save();
-                      }
-
+                      // TODO: Save all parent > child relationships so we can check if this pool is used somewhere else
+                      //$pool = $all_pools[$pool_id];
+                      //$info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
+                      //if ($info) {
+                      //  $info->isExportEnabled(NULL, FALSE);
+                      //  $info->save();
+                      //}
                       continue;
                     }
 
@@ -287,7 +290,7 @@ class ExportIntent extends SyncIntent {
                     $info->isExportEnabled(NULL, TRUE);
                     $info->save();
                   }
-                  else {
+                  elseif($behavior==Pool::POOL_USAGE_ALLOW) {
                     $pool = $all_pools[$pool_id];
                     $info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
                     if (!$info || !$info->isExportEnabled()) {
@@ -297,6 +300,7 @@ class ExportIntent extends SyncIntent {
 
                   ExportIntent::exportEntity($embed_entity, self::EXPORT_AS_DEPENDENCY, SyncIntent::ACTION_CREATE, $flow, $pool);
 
+                  $info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
                   if (!$info->getLastExport()) {
                     continue;
                   }
@@ -400,12 +404,14 @@ class ExportIntent extends SyncIntent {
     if (!$this->meta->getLastExport() && !$this->meta->getLastImport() && isset($body['url'])) {
       $this->meta->set('source_url', $body['url']);
     }
-    $this->meta->save();
+    $this->meta->setLastExport($export);
 
-    $this->pool->setTimestamp($entity_type, $entity_uuid, $export, FALSE);
     if ($action == SyncIntent::ACTION_DELETE) {
+      $this->meta->isDeleted(TRUE);
       $this->pool->markDeleted($entity_type, $entity_uuid);
     }
+
+    $this->meta->save();
 
     return TRUE;
   }
@@ -486,7 +492,7 @@ class ExportIntent extends SyncIntent {
     }
 
     if (!$pool) {
-      $pools = $flow->getUsedExportPools($entity, $reason, $action);
+      $pools = $flow->getUsedExportPools($entity, $reason, $action, TRUE);
       $result = FALSE;
       foreach ($pools as $pool) {
         $result |= self::exportEntity($entity, $reason, $action, $flow, $pool);
