@@ -8,6 +8,6 @@ v1.1
 - Fixed bug that may lead to incorrect language handling if only one language was available on subsites
 - Improved codestyle
 - Improved documentation
-- Added field handler for "telephone" and "soundcloud"
+- Added field handler for "telephone", "soundcloud" and "color_field_type"
 - Added "Debug" tab, allowing you to check all sync data of a specific entity, including it's child data
 - Added option to "Disable optimizations", allowing you to sync content completely regardless of state. May be useful if your software encounters a bug and doesn't save data correctly or if you had to change / reset content and want it all to be back up again.

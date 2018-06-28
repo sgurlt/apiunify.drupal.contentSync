@@ -47,6 +47,7 @@ class DefaultFieldHandler extends FieldHandlerBase {
       "video_embed_field",
       "telephone",
       "soundcloud",
+      "color_field_type",
     ];
     return in_array($field->getType(), $allowed) !== FALSE;
   }
