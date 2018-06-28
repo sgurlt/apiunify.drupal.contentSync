@@ -158,11 +158,14 @@ class ImportIntent extends SyncIntent {
   public function execute() {
     $import = $this->pool->getNewestTimestamp($this->entityType, $this->uuid, TRUE);
     if (!$import) {
-      $import = time();
+      if ($this->action == SyncIntent::ACTION_UPDATE) {
+        $this->action = SyncIntent::ACTION_CREATE;
+      }
     }
     elseif ($this->action == SyncIntent::ACTION_CREATE) {
       $this->action = SyncIntent::ACTION_UPDATE;
     }
+    $import = time();
 
     if ($this->pool->isEntityDeleted($this->entityType, $this->uuid)) {
       return TRUE;
