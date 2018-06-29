@@ -336,9 +336,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
           $entity->removeTranslation($language);
         }
       }
-    }
 
-    $intent->changeTranslationLanguage();
+      $intent->changeTranslationLanguage();
+    }
 
     return TRUE;
   }

@@ -2,10 +2,11 @@
 
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
+use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\PhpStorage\PhpStorageFactory;
 use Drupal\drupal_content_sync\ExportIntent;
 use Drupal\drupal_content_sync\ImportIntent;
 use Drupal\drupal_content_sync\SyncIntent;
-use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\MetaInformation;
 use Drupal\drupal_content_sync\Plugin\EntityHandlerBase;
 
@@ -42,6 +43,25 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
   /**
    * @inheritdoc
    */
+  public function updateEntityTypeDefinition(&$definition) {
+    parent::updateEntityTypeDefinition($definition);
+
+    $module_handler = \Drupal::service('module_handler');
+    if($module_handler->moduleExists('menu_token')) {
+      $definition['new_properties']['menu_token_options'] = [
+        'type' => 'object',
+        'default_value' => NULL,
+        'multiple' => FALSE,
+      ];
+      $definition['new_property_lists']['details']['menu_token_options'] = 'value';
+      $definition['new_property_lists']['database']['menu_token_options'] = 'value';
+      $definition['new_property_lists']['modifiable']['menu_token_options'] = 'value';
+    }
+  }
+
+  /**
+   * @inheritdoc
+   */
   public function getHandlerSettings() {
     $menus = menu_ui_get_menus();
     return [
@@ -57,6 +77,66 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
         '#options' => $menus,
       ],
     ];
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public function export(ExportIntent $intent, FieldableEntityInterface $entity = NULL) {
+    $result = parent::export($intent, $entity);
+
+    if($result && $intent->getAction()!=SyncIntent::ACTION_DELETE) {
+      $module_handler = \Drupal::service('module_handler');
+      if ($module_handler->moduleExists('menu_token')) {
+        $uuid = $intent->getUuid();
+        $config_menu = \Drupal::entityTypeManager()
+          ->getStorage('link_configuration_storage')
+          ->load($uuid);
+        if (!empty($config_menu)) {
+          $config_array = unserialize($config_menu->get('configurationSerialized'));
+          $intent->setField('menu_token_options', $config_array);
+        }
+      }
+    }
+
+    return $result;
+  }
+
+  /**
+   * @inheritdoc
+   */
+  protected function setEntityValues(ImportIntent $intent, FieldableEntityInterface $entity = NULL) {
+    $result = parent::setEntityValues($intent, $entity);
+
+    if($intent->getAction()!=SyncIntent::ACTION_DELETE ) {
+      $module_handler = \Drupal::service('module_handler');
+      if($module_handler->moduleExists('menu_token')) {
+        $config_array = $intent->getField('menu_token_options');
+        if(!empty($config_array)) {
+          $uuid = $intent->getUuid();
+          $config_menu = \Drupal::entityTypeManager()
+            ->getStorage('link_configuration_storage')
+            ->load($uuid);
+          if (empty($config_menu)) {
+            $config_menu = \Drupal::entityTypeManager()
+              ->getStorage('link_configuration_storage')
+              ->create([
+                'id' => $uuid,
+                'label' => 'Menu token link configuration',
+                'linkid' => (string) $intent->getField('link')[0]['uri'],
+                'configurationSerialized' => serialize($config_array),
+              ]);
+          }
+          else {
+            $config_menu->set("linkid", (string) $intent->getField('link')[0]['uri']);
+            $config_menu->set("configurationSerialized", serialize($config_array));
+          }
+          $config_menu->save();
+        }
+      }
+    }
+
+    return $result;
   }
 
   /**
