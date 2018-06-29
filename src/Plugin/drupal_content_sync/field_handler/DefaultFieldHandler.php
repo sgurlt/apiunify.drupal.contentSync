@@ -36,7 +36,6 @@ class DefaultFieldHandler extends FieldHandlerBase {
       "text_with_summary",
       "uri",
       "email",
-      "path",
       "timestamp",
       "text_long",
       "metatag",
