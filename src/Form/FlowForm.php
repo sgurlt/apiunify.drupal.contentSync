@@ -198,7 +198,7 @@ class FlowForm extends EntityForm {
       '#type' => 'machine_name',
       '#default_value' => $flow->id(),
       '#machine_name' => [
-        'exists' => [$this, 'exist'],
+        'exists' => [$this, 'exists'],
         'source' => ['name'],
       ],
       '#disabled' => !$flow->isNew(),
@@ -283,6 +283,7 @@ class FlowForm extends EntityForm {
               'import_deletion' => FALSE,
               'allow_local_deletion_of_import' => FALSE,
             ],
+            'handler_settings' => [],
             'import_updates' => ImportIntent::IMPORT_UPDATE_FORCE,
             'preview' => NULL,
             'display_name' => $this->t('@bundle', [

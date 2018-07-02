@@ -59,7 +59,7 @@ class DefaultNodeHandler extends EntityHandlerBase {
       'ignore_unpublished' => [
         '#type' => 'checkbox',
         '#title' => 'Ignore unpublished content',
-        '#default_value' => $this->settings['handler_settings']['ignore_unpublished'] === 0 ? 0 : 1,
+        '#default_value' => isset($this->settings['handler_settings']['ignore_unpublished']) && $this->settings['handler_settings']['ignore_unpublished'] === 0 ? 0 : 1,
       ],
     ];
   }

@@ -68,12 +68,12 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
       'ignore_unpublished' => [
         '#type' => 'checkbox',
         '#title' => 'Ignore disabled',
-        '#default_value' => $this->settings['handler_settings']['ignore_unpublished'] === 0 ? 0 : 1,
+        '#default_value' => isset($this->settings['handler_settings']['ignore_unpublished']) && $this->settings['handler_settings']['ignore_unpublished'] === 0 ? 0 : 1,
       ],
       'restrict_menus' => [
         '#type' => 'checkboxes',
         '#title' => 'Restrict to menus',
-        '#default_value' => $this->settings['handler_settings']['restrict_menus'],
+        '#default_value' => isset($this->settings['handler_settings']['restrict_menus']) ? $this->settings['handler_settings']['restrict_menus'] : [],
         '#options' => $menus,
       ],
     ];
