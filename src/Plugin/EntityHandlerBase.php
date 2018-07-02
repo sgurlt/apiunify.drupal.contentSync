@@ -151,7 +151,6 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    */
   public function import(ImportIntent $intent) {
     $action   = $intent->getAction();
-    $is_clone = $intent->isClone();
 
     if ($this->ignoreImport($intent)) {
       return FALSE;
@@ -169,7 +168,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       return FALSE;
     }
 
-    if ($is_clone || !$entity) {
+    if (!$entity) {
       $entity_type = \Drupal::entityTypeManager()->getDefinition($intent->getEntityType());
 
       $base_data = [
@@ -177,9 +176,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         $entity_type->getKey('label') => $intent->getField('title'),
       ];
 
-      if (!$is_clone) {
-        $base_data[$entity_type->getKey('uuid')] = $intent->getUuid();
-      }
+      $base_data[$entity_type->getKey('uuid')] = $intent->getUuid();
 
       $storage = \Drupal::entityTypeManager()->getStorage($intent->getEntityType());
       $entity = $storage->create($base_data);

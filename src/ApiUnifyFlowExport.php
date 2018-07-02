@@ -154,7 +154,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
    * @return string
    */
   public static function getInternalCreateItemUrl($api_id, $entity_type_name, $bundle_name, $version) {
-    return ApiUnifyPoolExport::getInternalUrl($api_id, $entity_type_name, $bundle_name, $version) . '&is_clone=[is_clone]';
+    return ApiUnifyPoolExport::getInternalUrl($api_id, $entity_type_name, $bundle_name, $version);
   }
 
   /**
@@ -530,7 +530,6 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
                 'create_entities' => TRUE,
                 'update_entities' => TRUE,
                 'delete_entities' => TRUE,
-                'clone_entities' => FALSE,
                 'update_none_when_loading' => TRUE,
                 'exclude_reference_properties' => [
                   'pSource',
@@ -594,7 +593,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
                   'dependency_connection_id' => self::DEPENDENCY_CONNECTION_ID,
                   'create_entities' => TRUE,
                   'force_updates' => TRUE,
-                  'update_entities' => !$type['import_clone'],
+                  'update_entities' => TRUE,
                   'delete_entities' => boolval($type['import_deletion_settings']['import_deletion']),
                   'dependent_entities_only' => $type['import'] == ImportIntent::IMPORT_AS_DEPENDENCY,
                   'update_none_when_loading' => TRUE,
@@ -621,7 +620,6 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
                   // 'create_entities' => TRUE,
                   // 'update_entities' => TRUE,
                   // 'delete_entities' => TRUE,
-                  // 'clone_entities'  => FALSE,
                   // 'dependent_entities_only'  => FALSE,.
                   'create_entities' => TRUE,
                   'update_entities' => TRUE,

@@ -72,8 +72,6 @@ class ImportIntent extends SyncIntent {
   const IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN = 'allow_override';
 
 
-
-  protected $clone;
   protected $mergeChanges;
 
   /**
@@ -96,13 +94,9 @@ class ImportIntent extends SyncIntent {
    * @param array $data
    *   The data provided from API Unify for imports.
    *   Format is the same as in ::getData()
-   * @param bool $is_clone
-   *   Whether the entity should be cloned or referenced (and kept up-to-date).
    */
-  public function __construct(Flow $flow, Pool $pool, $reason, $action, $entity_type, $bundle, $data, $is_clone) {
+  public function __construct(Flow $flow, Pool $pool, $reason, $action, $entity_type, $bundle, $data) {
     parent::__construct($flow, $pool, $reason, $action, $entity_type, $bundle, $data['uuid'], isset($data['url']) ? $data['url'] : '');
-
-    $this->clone = $is_clone;
 
     if (!empty($data['embed_entities'])) {
       $this->embedEntities = $data['embed_entities'];
@@ -135,21 +129,7 @@ class ImportIntent extends SyncIntent {
   }
 
   /**
-   * @return bool
-   */
-  public function isClone() {
-    return $this->clone;
-  }
-
-  /**
    * Import the provided entity.
-   *
-   * @param string $entity_type_name
-   * @param string $entity_bundle
-   * @param array $data
-   * @param bool $is_clone
-   * @param string $reason
-   * @param string $action
    *
    * @throws \Drupal\drupal_content_sync\Exception\SyncException
    *
@@ -178,14 +158,13 @@ class ImportIntent extends SyncIntent {
 
     $result = $handler->import($this);
 
-    \Drupal::logger('drupal_content_sync')->info('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
+    \Drupal::logger('drupal_content_sync')->info('@not IMPORT @action @entity_type:@bundle @uuid @reason: @message', [
       '@reason' => $this->reason,
       '@action' => $this->action,
       '@entity_type'  => $this->entityType,
       '@bundle' => $this->bundle,
       '@uuid' => $this->uuid,
       '@not' => $result ? '' : 'NO',
-      '@clone' => $this->clone ? 'as clone' : '',
       '@message' => $result ? t('The entity has been imported.') : t('The entity handler denied to import this entity.'),
     ]);
 

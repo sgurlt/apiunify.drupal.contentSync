@@ -299,21 +299,19 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     }
 
     $is_dependency = isset($_GET['is_dependency']) && $_GET['is_dependency'] == 'true';
-    $is_clone      = isset($_GET['is_clone']) && $_GET['is_clone'] == 'true';
     $is_manual     = isset($_GET['is_manual']) && $_GET['is_manual'] == 'true';
     $reason        = $is_dependency ? ImportIntent::IMPORT_AS_DEPENDENCY :
       ($is_manual ? ImportIntent::IMPORT_MANUALLY : ImportIntent::IMPORT_AUTOMATICALLY);
 
     $pool = Pool::getAll()[$api];
     if (empty($pool)) {
-      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
+      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason: @message', [
         '@reason' => $reason,
         '@action' => $action,
         '@entity_type'  => $entity_type_name,
         '@bundle' => $entity_bundle,
         '@uuid' => $data['uuid'],
         '@not' => 'NO',
-        '@clone' => $is_clone ? 'as clone' : '',
         '@message' => t('No pool config matches this request (@api).', [
           '@api' => $api,
         ])->render(),
@@ -323,16 +321,15 @@ class DrupalContentSyncEntityResource extends ResourceBase {
       );
     }
 
-    $flow = Flow::getFlowForApiAndEntityType($pool, $entity_type_name, $entity_bundle, $reason, $action, $is_clone);
+    $flow = Flow::getFlowForApiAndEntityType($pool, $entity_type_name, $entity_bundle, $reason, $action);
     if (empty($flow)) {
-      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
+      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason: @message', [
         '@reason' => $reason,
         '@action' => $action,
         '@entity_type'  => $entity_type_name,
         '@bundle' => $entity_bundle,
         '@uuid' => $data['uuid'],
         '@not' => 'NO',
-        '@clone' => $is_clone ? 'as clone' : '',
         '@message' => t('No synchronization config matches this request (dependency: @dependency, manual: @manual).', [
           '@dependency' => $is_dependency ? 'YES' : 'NO',
           '@manual' => $is_manual ? 'YES' : 'NO',
@@ -345,14 +342,13 @@ class DrupalContentSyncEntityResource extends ResourceBase {
 
     $local_version = Flow::getEntityTypeVersion($entity_type_name, $entity_bundle);
     if ($entity_type_version != $local_version) {
-      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message', [
+      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason: @message', [
         '@reason' => $reason,
         '@action' => $action,
         '@entity_type'  => $entity_type_name,
         '@bundle' => $entity_bundle,
         '@uuid' => $data['uuid'],
         '@not' => 'NO',
-        '@clone' => $is_clone ? 'as clone' : '',
         '@message' => t('The requested entity type version @requested doesn\'t match the local entity type version @local.', [
           '@requested' => $entity_type_version,
           '@local' => $local_version,
@@ -364,7 +360,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     }
 
     try {
-      $intent = new ImportIntent($flow, $pool, $reason, $action, $entity_type_name, $entity_bundle, $data, $is_clone);
+      $intent = new ImportIntent($flow, $pool, $reason, $action, $entity_type_name, $entity_bundle, $data);
       $status = $intent->execute();
     }
     catch (SyncException $e) {
@@ -383,14 +379,13 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         ])->render();
       }
 
-      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message' . "\n" . '@trace', [
+      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason: @message' . "\n" . '@trace', [
         '@reason' => $reason,
         '@action' => $action,
         '@entity_type'  => $entity_type_name,
         '@bundle' => $entity_bundle,
         '@uuid' => $data['uuid'],
         '@not' => 'NO',
-        '@clone' => $is_clone ? 'as clone' : '',
         '@message' => $message,
         '@trace' => ($e->parentException?$e->parentException->getTraceAsString() . "\n\n\n":"") . $e->getTraceAsString(),
       ]);
@@ -410,14 +405,13 @@ class DrupalContentSyncEntityResource extends ResourceBase {
     catch (\Exception $e) {
       $message = $e->getMessage();
 
-      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason @clone: @message' . "\n" . '@trace', [
+      \Drupal::logger('drupal_content_sync')->error('@not IMPORT @action @entity_type:@bundle @uuid @reason: @message' . "\n" . '@trace', [
         '@reason' => $reason,
         '@action' => $action,
         '@entity_type'  => $entity_type_name,
         '@bundle' => $entity_bundle,
         '@uuid' => $data['uuid'],
         '@not' => 'NO',
-        '@clone' => $is_clone ? 'as clone' : '',
         '@message' => $message,
         '@trace' => $e->getTraceAsString(),
       ]);

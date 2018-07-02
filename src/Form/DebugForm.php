@@ -174,9 +174,6 @@ class DebugForm extends ConfigFormBase {
       $current_row['pool']  = ['#markup'=>$info->getPool()->label()];
 
       $current_row['flags'] = ['#theme'=>'item_list'];
-      if($info->isCloned()) {
-        $current_row['flags']['#items'][]['#markup'] = 'Cloned';
-      }
       if($info->isSourceEntity()) {
         $current_row['flags']['#items'][]['#markup'] = 'Source';
       }

@@ -372,17 +372,16 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    * @param string $bundle_name
    * @param string $reason
    * @param string $action
-   * @param bool $is_clone
    *
    * @return \Drupal\drupal_content_sync\Entity\Flow[]
    */
-  public static function getImportSynchronizationsForEntityType($entity_type_name, $bundle_name, $reason, $action = SyncIntent::ACTION_CREATE, $is_clone = FALSE) {
+  public static function getImportSynchronizationsForEntityType($entity_type_name, $bundle_name, $reason, $action = SyncIntent::ACTION_CREATE) {
     $flows = self::getAll();
 
     $result = [];
 
     foreach ($flows as $flow) {
-      if ($flow->canImportEntity($entity_type_name, $bundle_name, $reason, $action, $is_clone)) {
+      if ($flow->canImportEntity($entity_type_name, $bundle_name, $reason, $action)) {
         $result[] = $flow;
       }
     }
@@ -399,15 +398,14 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    * @param string $bundle_name
    * @param string $reason
    * @param string $action
-   * @param bool $is_clone
    *
    * @return \Drupal\drupal_content_sync\Entity\Flow|null
    */
-  public static function getFlowForApiAndEntityType($pool, $entity_type_name, $bundle_name, $reason, $action = SyncIntent::ACTION_CREATE, $is_clone = FALSE) {
+  public static function getFlowForApiAndEntityType($pool, $entity_type_name, $bundle_name, $reason, $action = SyncIntent::ACTION_CREATE) {
     $flows = self::getAll();
 
     foreach ($flows as $flow) {
-      if (!$flow->canImportEntity($entity_type_name, $bundle_name, $reason, $action, $is_clone)) {
+      if (!$flow->canImportEntity($entity_type_name, $bundle_name, $reason, $action)) {
         continue;
       }
       if ($pool && !in_array($pool, $flow->getUsedImportPools($entity_type_name, $bundle_name))) {
@@ -427,16 +425,12 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    * @param string $bundle_name
    * @param string $reason
    * @param string $action
-   * @param bool $is_clone
    *
    * @return bool
    */
-  public function canImportEntity($entity_type_name, $bundle_name, $reason, $action = SyncIntent::ACTION_CREATE, $is_clone = FALSE) {
+  public function canImportEntity($entity_type_name, $bundle_name, $reason, $action = SyncIntent::ACTION_CREATE) {
     $config = $this->getEntityTypeConfig($entity_type_name, $bundle_name);
     if (empty($config) || $config['handler'] == self::HANDLER_IGNORE) {
-      return FALSE;
-    }
-    if ($config['import_clone'] != $is_clone) {
       return FALSE;
     }
     if ($action == SyncIntent::ACTION_DELETE && !boolval($config['import_deletion_settings']['import_deletion'])) {

@@ -33,7 +33,7 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
 
   use EntityChangedTrait;
 
-  const FLAG_CLONED                    = 0x00000001;
+  const FLAG_UNUSED_CLONED             = 0x00000001;
   const FLAG_DELETED                   = 0x00000002;
   const FLAG_USER_ALLOWED_EXPORT       = 0x00000004;
   const FLAG_EDIT_OVERRIDE             = 0x00000008;
@@ -292,24 +292,6 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
       $this->getEntityTypeName(),
       $this->getUuid()
     );
-  }
-
-  /**
-   * Returns the information if the entity is cloned or not.
-   *
-   * @param bool $set
-   *   Optional parameter to the the value for cloned.
-   *
-   * @return bool
-   */
-  public function isCloned($set = NULL) {
-    if ($set === TRUE) {
-      $this->set('flags', $this->get('flags')->value | self::FLAG_CLONED);
-    }
-    elseif ($set === FALSE) {
-      $this->set('flags', $this->get('flags')->value & ~self::FLAG_CLONED);
-    }
-    return (bool) ($this->get('flags')->value & self::FLAG_CLONED);
   }
 
   /**
