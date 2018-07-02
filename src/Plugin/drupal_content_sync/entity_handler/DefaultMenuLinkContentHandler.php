@@ -3,7 +3,6 @@
 namespace Drupal\drupal_content_sync\Plugin\drupal_content_sync\entity_handler;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
-use Drupal\Core\PhpStorage\PhpStorageFactory;
 use Drupal\drupal_content_sync\ExportIntent;
 use Drupal\drupal_content_sync\ImportIntent;
 use Drupal\drupal_content_sync\SyncIntent;
@@ -47,7 +46,7 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
     parent::updateEntityTypeDefinition($definition);
 
     $module_handler = \Drupal::service('module_handler');
-    if($module_handler->moduleExists('menu_token')) {
+    if ($module_handler->moduleExists('menu_token')) {
       $definition['new_properties']['menu_token_options'] = [
         'type' => 'object',
         'default_value' => NULL,
@@ -85,7 +84,7 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
   public function export(ExportIntent $intent, FieldableEntityInterface $entity = NULL) {
     $result = parent::export($intent, $entity);
 
-    if($result && $intent->getAction()!=SyncIntent::ACTION_DELETE) {
+    if ($result && $intent->getAction() != SyncIntent::ACTION_DELETE) {
       $module_handler = \Drupal::service('module_handler');
       if ($module_handler->moduleExists('menu_token')) {
         $uuid = $intent->getUuid();
@@ -108,11 +107,11 @@ class DefaultMenuLinkContentHandler extends EntityHandlerBase {
   protected function setEntityValues(ImportIntent $intent, FieldableEntityInterface $entity = NULL) {
     $result = parent::setEntityValues($intent, $entity);
 
-    if($intent->getAction()!=SyncIntent::ACTION_DELETE ) {
+    if ($intent->getAction() != SyncIntent::ACTION_DELETE) {
       $module_handler = \Drupal::service('module_handler');
-      if($module_handler->moduleExists('menu_token')) {
+      if ($module_handler->moduleExists('menu_token')) {
         $config_array = $intent->getField('menu_token_options');
-        if(!empty($config_array)) {
+        if (!empty($config_array)) {
           $uuid = $intent->getUuid();
           $config_menu = \Drupal::entityTypeManager()
             ->getStorage('link_configuration_storage')

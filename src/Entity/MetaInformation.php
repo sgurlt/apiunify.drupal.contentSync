@@ -75,11 +75,11 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation[]
    */
   public static function getInfoForPool($entity_type, $entity_uuid, Pool $pool) {
-    if(!$entity_type) {
-      throw new \Exception('$entity_type is required.' );
+    if (!$entity_type) {
+      throw new \Exception('$entity_type is required.');
     }
-    if(!$entity_uuid) {
-      throw new \Exception('$entity_uuid is required.' );
+    if (!$entity_uuid) {
+      throw new \Exception('$entity_uuid is required.');
     }
     /**
      * @var \Drupal\drupal_content_sync\Entity\MetaInformation[] $entities
@@ -108,11 +108,11 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation[]
    */
   public static function getInfosForEntity($entity_type, $entity_uuid, $filter = NULL) {
-    if(!$entity_type) {
-      throw new \Exception('$entity_type is required.' );
+    if (!$entity_type) {
+      throw new \Exception('$entity_type is required.');
     }
-    if(!$entity_uuid) {
-      throw new \Exception('$entity_uuid is required.' );
+    if (!$entity_uuid) {
+      throw new \Exception('$entity_uuid is required.');
     }
     $base_filter = [
       'entity_type' => $entity_type,
@@ -138,11 +138,11 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation|mixed
    */
   public static function getInfoForEntity($entity_type, $entity_uuid, Flow $flow, Pool $pool) {
-    if(!$entity_type) {
-      throw new \Exception('$entity_type is required.' );
+    if (!$entity_type) {
+      throw new \Exception('$entity_type is required.');
     }
-    if(!$entity_uuid) {
-      throw new \Exception('$entity_uuid is required.' );
+    if (!$entity_uuid) {
+      throw new \Exception('$entity_uuid is required.');
     }
     /**
      * @var \Drupal\drupal_content_sync\Entity\MetaInformation[] $entities

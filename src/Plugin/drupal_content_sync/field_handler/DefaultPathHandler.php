@@ -25,7 +25,7 @@ class DefaultPathHandler extends FieldHandlerBase {
    * {@inheritdoc}
    */
   public static function supports($entity_type, $bundle, $field_name, FieldDefinitionInterface $field) {
-    return $field->getType()=="path";
+    return $field->getType() == "path";
   }
 
   /**
@@ -45,7 +45,7 @@ class DefaultPathHandler extends FieldHandlerBase {
     }
 
     $value = $entity->get($this->fieldName)->getValue();
-    if(!empty($value)) {
+    if (!empty($value)) {
       unset($value[0]['pid']);
       unset($value[0]['source']);
       $intent->setField($this->fieldName, $value);

@@ -387,7 +387,7 @@ class DrupalContentSyncEntityResource extends ResourceBase {
         '@uuid' => $data['uuid'],
         '@not' => 'NO',
         '@message' => $message,
-        '@trace' => ($e->parentException?$e->parentException->getTraceAsString() . "\n\n\n":"") . $e->getTraceAsString(),
+        '@trace' => ($e->parentException ? $e->parentException->getTraceAsString() . "\n\n\n" : "") . $e->getTraceAsString(),
       ]);
 
       return new ResourceResponse(

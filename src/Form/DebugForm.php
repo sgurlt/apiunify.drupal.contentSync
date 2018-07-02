@@ -6,14 +6,12 @@ use Drupal\Component\Utility\Xss;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\Core\Datetime\Element\Datetime;
 use Drupal\Core\Entity\EntityFieldManager;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Logger\RfcLogLevel;
-use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\MetaInformation;
 use Drupal\drupal_content_sync\ExportIntent;
 use Drupal\drupal_content_sync\SyncIntent;
@@ -124,22 +122,24 @@ class DebugForm extends ConfigFormBase {
   }
 
   /**
-   * @param array $result The table render array
+   * @param array $result
+   *   The table render array.
    * @param \Drupal\Core\Entity\EntityInterface $entity
-   * @param array $parent_entities Entities that have already been processed up the ladder
+   * @param array $parent_entities
+   *   Entities that have already been processed up the ladder.
    */
-  protected function debugEntity(&$result, $entity, $parent_entities=[]) {
-    $label = str_repeat('+',count($parent_entities)).' ';
+  protected function debugEntity(&$result, $entity, $parent_entities = []) {
+    $label = str_repeat('+', count($parent_entities)) . ' ';
     /*foreach($parent_entities as $parent_entity) {
-      $label .= $parent_entity->label().' => ';
+    $label .= $parent_entity->label().' => ';
     }*/
     $label .= $entity->label();
 
-    $moduleHandler  = \Drupal::service('module_handler');
-    $dblog_enabled  = $moduleHandler->moduleExists('dblog');
-    if($dblog_enabled) {
-      $connection     = \Drupal::database();
-      $log_levels     = RfcLogLevel::getLevels();
+    $moduleHandler = \Drupal::service('module_handler');
+    $dblog_enabled = $moduleHandler->moduleExists('dblog');
+    if ($dblog_enabled) {
+      $connection = \Drupal::database();
+      $log_levels = RfcLogLevel::getLevels();
     }
     else {
       drupal_set_message('dblog is disabled, so no log messages will be displayed.');
@@ -147,104 +147,104 @@ class DebugForm extends ConfigFormBase {
 
     $children = [];
 
-    $infos = MetaInformation::getInfosForEntity($entity->getEntityTypeId(),$entity->uuid());
-    if(!count($infos)) {
+    $infos = MetaInformation::getInfosForEntity($entity->getEntityTypeId(), $entity->uuid());
+    if (!count($infos)) {
       return;
     }
 
-    foreach($infos as $index=>$info) {
+    foreach ($infos as $index => $info) {
       $current_row = [];
-      if($index==0) {
-        $current_row['label'] = ['#markup'=>$label];
-        $current_row['entity_type'] = ['#markup'=>$entity->getEntityTypeId()];
-        $current_row['bundle'] = ['#markup'=>$entity->bundle()];
-        $current_row['id'] = ['#markup'=>$entity->id()];
-        $current_row['uuid'] = ['#markup'=>$entity->uuid()];
+      if ($index == 0) {
+        $current_row['label'] = ['#markup' => $label];
+        $current_row['entity_type'] = ['#markup' => $entity->getEntityTypeId()];
+        $current_row['bundle'] = ['#markup' => $entity->bundle()];
+        $current_row['id'] = ['#markup' => $entity->id()];
+        $current_row['uuid'] = ['#markup' => $entity->uuid()];
       }
       else {
-        $current_row['label'] = ['#markup'=>''];
-        $current_row['entity_type'] = ['#markup'=>''];
-        $current_row['bundle'] = ['#markup'=>''];
-        $current_row['id'] = ['#markup'=>''];
-        $current_row['uuid'] = ['#markup'=>''];
+        $current_row['label'] = ['#markup' => ''];
+        $current_row['entity_type'] = ['#markup' => ''];
+        $current_row['bundle'] = ['#markup' => ''];
+        $current_row['id'] = ['#markup' => ''];
+        $current_row['uuid'] = ['#markup' => ''];
       }
 
-      $current_row['meta_id']  = ['#markup'=>$info->id->value];
-      $current_row['flow']  = ['#markup'=>$info->getFlow()->label()];
-      $current_row['pool']  = ['#markup'=>$info->getPool()->label()];
+      $current_row['meta_id'] = ['#markup' => $info->id->value];
+      $current_row['flow'] = ['#markup' => $info->getFlow()->label()];
+      $current_row['pool'] = ['#markup' => $info->getPool()->label()];
 
-      $current_row['flags'] = ['#theme'=>'item_list'];
-      if($info->isSourceEntity()) {
+      $current_row['flags'] = ['#theme' => 'item_list'];
+      if ($info->isSourceEntity()) {
         $current_row['flags']['#items'][]['#markup'] = 'Source';
       }
-      if($info->isManualExportEnabled()) {
+      if ($info->isManualExportEnabled()) {
         $current_row['flags']['#items'][]['#markup'] = 'Export enabled';
       }
-      if($info->didUserAllowExport()) {
+      if ($info->didUserAllowExport()) {
         $current_row['flags']['#items'][]['#markup'] = 'Exported by user';
       }
-      if($info->isDependencyExportEnabled()) {
+      if ($info->isDependencyExportEnabled()) {
         $current_row['flags']['#items'][]['#markup'] = 'Exported as dependency';
       }
-      if($info->isOverriddenLocally()) {
+      if ($info->isOverriddenLocally()) {
         $current_row['flags']['#items'][]['#markup'] = 'Overridden locally';
       }
 
       $timestamp = $info->getLastExport();
-      $current_row['last_export']  = ['#markup'=>$timestamp ? \Drupal::service('date.formatter')->format($timestamp, 'long') : 'NEVER'];
+      $current_row['last_export'] = ['#markup' => $timestamp ? \Drupal::service('date.formatter')->format($timestamp, 'long') : 'NEVER'];
 
       $timestamp = $info->getLastImport();
-      $current_row['last_import']  = ['#markup'=>$timestamp ? \Drupal::service('date.formatter')->format($timestamp, 'long') : 'NEVER'];
+      $current_row['last_import'] = ['#markup' => $timestamp ? \Drupal::service('date.formatter')->format($timestamp, 'long') : 'NEVER'];
 
-      $current_row['log_messages'] = ['#theme'=>'item_list','#items'=>[]];
+      $current_row['log_messages'] = ['#theme' => 'item_list', '#items' => []];
       $query = $connection
-        ->select('watchdog','w')
-        ->fields('w',['timestamp','severity','message','variables'])
-        ->orderBy('timestamp','DESC')
+        ->select('watchdog', 'w')
+        ->fields('w', ['timestamp', 'severity', 'message', 'variables'])
+        ->orderBy('timestamp', 'DESC')
         ->range(0, 3)
-        ->condition('type','drupal_content_sync')
-        ->condition('variables','%'.$connection->escapeLike($entity->uuid()).'%','LIKE');
+        ->condition('type', 'drupal_content_sync')
+        ->condition('variables', '%' . $connection->escapeLike($entity->uuid()) . '%', 'LIKE');
       $query = $query->execute();
       $rows = $query->fetchAll();
-      foreach($rows as $res) {
+      foreach ($rows as $res) {
         $message =
-          '<strong>'.
-          $log_levels[$res->severity].
-          '</strong> <em>'.
-          \Drupal::service('date.formatter')->format($res->timestamp, 'long').
-          '</em> '.
+          '<strong>' .
+          $log_levels[$res->severity] .
+          '</strong> <em>' .
+          \Drupal::service('date.formatter')->format($res->timestamp, 'long') .
+          '</em> ' .
           $this->formatMessage($res)->render();
 
         $current_row['log_messages']['#items'][]['#markup'] = $message;
       }
 
-      $intent     = new ExportIntent($info->getFlow(),$info->getPool(),ExportIntent::EXPORT_FORCED,SyncIntent::ACTION_CREATE,$entity);
+      $intent     = new ExportIntent($info->getFlow(), $info->getPool(), ExportIntent::EXPORT_FORCED, SyncIntent::ACTION_CREATE, $entity);
       $serialized = [];
       $intent->serialize($serialized);
-      foreach($serialized['embed_entities'] as $child) {
-        $id = $child[SyncIntent::ENTITY_TYPE_KEY].$child[SyncIntent::UUID_KEY];
-        if(isset($children[$id])) {
+      foreach ($serialized['embed_entities'] as $child) {
+        $id = $child[SyncIntent::ENTITY_TYPE_KEY] . $child[SyncIntent::UUID_KEY];
+        if (isset($children[$id])) {
           continue;
         }
         $children[$id] = $child;
       }
 
-      $result[]    = $current_row;
+      $result[] = $current_row;
     }
 
-    $result[0]['label']['#attributes']['rowspan'] = $index+1;
-    $result[0]['entity_type']['#attributes']['rowspan'] = $index+1;
-    $result[0]['bundle']['#attributes']['rowspan'] = $index+1;
-    $result[0]['id']['#attributes']['rowspan'] = $index+1;
-    $result[0]['uuid']['#attributes']['rowspan'] = $index+1;
+    $result[0]['label']['#attributes']['rowspan'] = $index + 1;
+    $result[0]['entity_type']['#attributes']['rowspan'] = $index + 1;
+    $result[0]['bundle']['#attributes']['rowspan'] = $index + 1;
+    $result[0]['id']['#attributes']['rowspan'] = $index + 1;
+    $result[0]['uuid']['#attributes']['rowspan'] = $index + 1;
 
     /** @var \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository */
     $entity_repository = \Drupal::service('entity.repository');
 
     $parent_entities[] = $entity;
-    foreach($children as $child) {
-      $child_entity = $entity_repository->loadEntityByUuid($child[SyncIntent::ENTITY_TYPE_KEY],$child[SyncIntent::UUID_KEY]);
-      $this->debugEntity($result,$child_entity,$parent_entities);
+    foreach ($children as $child) {
+      $child_entity = $entity_repository->loadEntityByUuid($child[SyncIntent::ENTITY_TYPE_KEY], $child[SyncIntent::UUID_KEY]);
+      $this->debugEntity($result, $child_entity, $parent_entities);
     }
   }
 
@@ -258,23 +258,23 @@ class DebugForm extends ConfigFormBase {
    *   The debug output table.
    */
   public function inspectEntity($form, FormStateInterface $form_state) {
-    $entity_type = $form_state->getValue(['dcs_inspect_entity','entity_type']);
-    $entity_id   = $form_state->getValue(['dcs_inspect_entity','entity_id']);
+    $entity_type = $form_state->getValue(['dcs_inspect_entity', 'entity_type']);
+    $entity_id   = $form_state->getValue(['dcs_inspect_entity', 'entity_id']);
 
     $result = [];
 
-    if($entity_type && $entity_id) {
+    if ($entity_type && $entity_id) {
       $storage = $this->entityTypeManager->getStorage($entity_type);
-      $entity  = $storage->load($entity_id);
-      if(!$entity) {
-        $form_state->setError($form['dcs_inspect_entity']['entity_id'],'This entity doesn\'t exist.');
+      $entity = $storage->load($entity_id);
+      if (!$entity) {
+        $form_state->setError($form['dcs_inspect_entity']['entity_id'], 'This entity doesn\'t exist.');
         return $result;
       }
     }
 
     $ajax_response = new AjaxResponse();
 
-    if($entity) {
+    if ($entity) {
       $result = [
         '#type' => 'table',
         '#sticky' => TRUE,
@@ -329,7 +329,7 @@ class DebugForm extends ConfigFormBase {
       if (!isset($field_map[$type_key])) {
         continue;
       }
-      if($entity_type->getProvider()=='drupal_content_sync') {
+      if ($entity_type->getProvider() == 'drupal_content_sync') {
         continue;
       }
 
