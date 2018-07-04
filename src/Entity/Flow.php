@@ -105,6 +105,17 @@ class Flow extends ConfigEntityBase implements FlowInterface {
   }
 
   /**
+   * Ensure that pools are imported before the flows.
+   */
+  public function calculateDependencies() {
+    parent::calculateDependencies();
+    $pools = Pool::getAll();
+    foreach ($pools as $pool) {
+      $this->addDependency('config', 'drupal_content_sync.pool.'.$pool->id);
+    }
+  }
+
+  /**
    * {@inheritdoc}
    */
   public static function preDelete(EntityStorageInterface $storage, array $entities) {
