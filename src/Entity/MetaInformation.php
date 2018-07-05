@@ -27,6 +27,9 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *     "entity_type_version" = "entity_type_version",
  *     "flags" = "flags",
  *   },
+ *   handlers = {
+ *     "views_data" = "Drupal\views\EntityViewsData",
+ *   },
  * )
  */
 class MetaInformation extends ContentEntityBase implements MetaInformationInterface {
