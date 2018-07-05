@@ -120,27 +120,7 @@ class DefaultFileHandler extends EntityHandlerBase {
       throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST);
     }
 
-    if ($action == SyncIntent::ACTION_CREATE) {
-      if ($entity) {
-        if (file_save_data(base64_decode($content), $entity->getFileUri(), FILE_EXISTS_REPLACE)) {
-          return TRUE;
-        }
-        throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE);
-      }
-
-      $directory = \Drupal::service('file_system')->dirname($uri);
-      $was_prepared = file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
-
-      if ($was_prepared) {
-        $entity = file_save_data(base64_decode($content), $uri);
-        $entity->setPermanent();
-        $entity->set('uuid', $intent->getUuid());
-      }
-
-      $entity->save();
-      return TRUE;
-    }
-    if ($action == SyncIntent::ACTION_UPDATE) {
+    if ($action == SyncIntent::ACTION_UPDATE || $entity) {
       $content = $intent->getField('apiu_file_content');
       if (!$content) {
         throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST);
@@ -155,11 +135,24 @@ class DefaultFileHandler extends EntityHandlerBase {
         $entity->set('uuid', $intent->getUuid());
         $entity->save();
         return TRUE;
-      };
+      }
+
       throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE);
     }
+    else {
+      $directory = \Drupal::service('file_system')->dirname($uri);
+      $was_prepared = file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
 
-    throw new SyncException(SyncException::CODE_INVALID_IMPORT_REQUEST);
+      if ($was_prepared) {
+        $entity = file_save_data(base64_decode($content), $uri);
+        $entity->setPermanent();
+        $entity->set('uuid', $intent->getUuid());
+        $entity->save();
+        return TRUE;
+      }
+
+      throw new SyncException(SyncException::CODE_ENTITY_API_FAILURE);
+    }
   }
 
   /**
