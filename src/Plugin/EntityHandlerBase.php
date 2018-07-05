@@ -425,9 +425,9 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
       $entity_type_entity->getKey('bundle'),
       $entity_type_entity->getKey('uuid'),
       $entity_type_entity->getKey('label'),
+      // These are not relevant or misleading when synchronized
       'revision_default',
       'revision_translation_affected',
-      'content_translation_source',
       'content_translation_outdated',
     ];
   }
