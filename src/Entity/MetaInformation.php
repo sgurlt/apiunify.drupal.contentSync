@@ -610,12 +610,12 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
       ->setDescription(t('The entities source URL.'))
       ->setRequired(FALSE);
 
-    $fields['last_export'] = BaseFieldDefinition::create('integer')
+    $fields['last_export'] = BaseFieldDefinition::create('timestamp')
       ->setLabel(t('Last exported'))
       ->setDescription(t('The last time the entity got exported.'))
       ->setRequired(FALSE);
 
-    $fields['last_import'] = BaseFieldDefinition::create('integer')
+    $fields['last_import'] = BaseFieldDefinition::create('timestamp')
       ->setLabel(t('Last import'))
       ->setDescription(t('The last time the entity got imported.'))
       ->setRequired(FALSE);
