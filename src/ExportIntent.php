@@ -264,12 +264,12 @@ class ExportIntent extends SyncIntent {
                   if ($data[SyncIntent::AUTO_EXPORT_KEY]) {
                     if (!isset($pools[$pool_id])) {
                       // TODO: Save all parent > child relationships so we can check if this pool is used somewhere else
-                      //$pool = $all_pools[$pool_id];
-                      //$info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
-                      //if ($info) {
+                      // $pool = $all_pools[$pool_id];
+                      // $info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
+                      // if ($info) {
                       //  $info->isExportEnabled(NULL, FALSE);
                       //  $info->save();
-                      //}
+                      // }
                       continue;
                     }
 
@@ -292,7 +292,7 @@ class ExportIntent extends SyncIntent {
                   }
                   else {
                     $pool = $all_pools[$pool_id];
-                    if($behavior==Pool::POOL_USAGE_ALLOW) {
+                    if ($behavior == Pool::POOL_USAGE_ALLOW) {
                       $info = MetaInformation::getInfoForEntity($embed_entity->getEntityTypeId(), $embed_entity->uuid(), $flow, $pool);
                       if (!$info || !$info->isExportEnabled()) {
                         continue;

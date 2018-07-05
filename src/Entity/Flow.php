@@ -105,6 +105,17 @@ class Flow extends ConfigEntityBase implements FlowInterface {
   }
 
   /**
+   * Ensure that pools are imported before the flows.
+   */
+  public function calculateDependencies() {
+    parent::calculateDependencies();
+    $pools = Pool::getAll();
+    foreach ($pools as $pool) {
+      $this->addDependency('config', 'drupal_content_sync.pool.'.$pool->id);
+    }
+  }
+
+  /**
    * {@inheritdoc}
    */
   public static function preDelete(EntityStorageInterface $storage, array $entities) {
@@ -170,7 +181,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    * @return bool
    */
   public static function isLocalDeletionAllowed(EntityInterface $entity) {
-    if(!$entity->uuid()) {
+    if (!$entity->uuid()) {
       return TRUE;
     }
     $meta_infos = MetaInformation::getInfosForEntity(
@@ -254,12 +265,12 @@ class Flow extends ConfigEntityBase implements FlowInterface {
    *   {@see Flow::EXPORT_*}.
    * @param string $action
    *   {@see ::ACTION_*}.
-   * @param boolean $include_forced
+   * @param bool $include_forced
    *   Include forced pools. Otherwise only use-selected / referenced ones.
    *
    * @return \Drupal\drupal_content_sync\Entity\Pool[]
    */
-  public function getUsedExportPools(EntityInterface $entity, $reason, $action, $include_forced=TRUE) {
+  public function getUsedExportPools(EntityInterface $entity, $reason, $action, $include_forced = TRUE) {
     $config = $this->getEntityTypeConfig($entity->getEntityTypeId(), $entity->bundle());
     if (!$this->canExportEntity($entity, $reason, $action)) {
       return [];
@@ -276,7 +287,7 @@ class Flow extends ConfigEntityBase implements FlowInterface {
       }
 
       if ($setting == Pool::POOL_USAGE_FORCE) {
-        if($include_forced) {
+        if ($include_forced) {
           $result[$id] = $pool;
         }
         continue;

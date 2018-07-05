@@ -150,7 +150,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
    * @inheritdoc
    */
   public function import(ImportIntent $intent) {
-    $action   = $intent->getAction();
+    $action = $intent->getAction();
 
     if ($this->ignoreImport($intent)) {
       return FALSE;
@@ -278,7 +278,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
         continue;
       }
 
-      if($is_translation && !$field->isTranslatable()) {
+      if ($is_translation && !$field->isTranslatable()) {
         continue;
       }
 

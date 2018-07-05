@@ -27,6 +27,9 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *     "entity_type_version" = "entity_type_version",
  *     "flags" = "flags",
  *   },
+ *   handlers = {
+ *     "views_data" = "Drupal\views\EntityViewsData",
+ *   },
  * )
  */
 class MetaInformation extends ContentEntityBase implements MetaInformationInterface {
@@ -75,11 +78,11 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation[]
    */
   public static function getInfoForPool($entity_type, $entity_uuid, Pool $pool) {
-    if(!$entity_type) {
-      throw new \Exception('$entity_type is required.' );
+    if (!$entity_type) {
+      throw new \Exception('$entity_type is required.');
     }
-    if(!$entity_uuid) {
-      throw new \Exception('$entity_uuid is required.' );
+    if (!$entity_uuid) {
+      throw new \Exception('$entity_uuid is required.');
     }
     /**
      * @var \Drupal\drupal_content_sync\Entity\MetaInformation[] $entities
@@ -108,11 +111,11 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation[]
    */
   public static function getInfosForEntity($entity_type, $entity_uuid, $filter = NULL) {
-    if(!$entity_type) {
-      throw new \Exception('$entity_type is required.' );
+    if (!$entity_type) {
+      throw new \Exception('$entity_type is required.');
     }
-    if(!$entity_uuid) {
-      throw new \Exception('$entity_uuid is required.' );
+    if (!$entity_uuid) {
+      throw new \Exception('$entity_uuid is required.');
     }
     $base_filter = [
       'entity_type' => $entity_type,
@@ -138,11 +141,11 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
    * @return \Drupal\drupal_content_sync\Entity\MetaInformation|mixed
    */
   public static function getInfoForEntity($entity_type, $entity_uuid, Flow $flow, Pool $pool) {
-    if(!$entity_type) {
-      throw new \Exception('$entity_type is required.' );
+    if (!$entity_type) {
+      throw new \Exception('$entity_type is required.');
     }
-    if(!$entity_uuid) {
-      throw new \Exception('$entity_uuid is required.' );
+    if (!$entity_uuid) {
+      throw new \Exception('$entity_uuid is required.');
     }
     /**
      * @var \Drupal\drupal_content_sync\Entity\MetaInformation[] $entities
@@ -610,12 +613,12 @@ class MetaInformation extends ContentEntityBase implements MetaInformationInterf
       ->setDescription(t('The entities source URL.'))
       ->setRequired(FALSE);
 
-    $fields['last_export'] = BaseFieldDefinition::create('integer')
+    $fields['last_export'] = BaseFieldDefinition::create('timestamp')
       ->setLabel(t('Last exported'))
       ->setDescription(t('The last time the entity got exported.'))
       ->setRequired(FALSE);
 
-    $fields['last_import'] = BaseFieldDefinition::create('integer')
+    $fields['last_import'] = BaseFieldDefinition::create('timestamp')
       ->setLabel(t('Last import'))
       ->setDescription(t('The last time the entity got imported.'))
       ->setRequired(FALSE);

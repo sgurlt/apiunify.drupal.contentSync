@@ -33,4 +33,5 @@ class SettingsPage extends TestBase {
     $this->drupalGet('admin/config/services/drupal_content_sync/settings');
     $this->assertSession()->fieldValueEquals('edit-dcs-base-url', $test_dcs_base_url);
   }
+
 }
