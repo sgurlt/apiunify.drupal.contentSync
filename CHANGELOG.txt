@@ -1,5 +1,8 @@
-v1.0
-- Initial release
+v1.2
+- Check if a default value for a pool within the flow form is already set, if not the pool is set to forbidden
+- Automatically add all pools as dependencies to flow configurations to ensure that pools are imported before flows
+- Change base field definition of meta info for "last_import" and "last_export" from integer to timestamp
+- Add views integration for meta info entities
 
 v1.1
 - Improved robustness by adding various sanity checks
@@ -11,3 +14,6 @@ v1.1
 - Added field handler for "telephone", "soundcloud", "color_field_type", "path" and "menu_tokens"
 - Added "Debug" tab, allowing you to check all sync data of a specific entity, including it's child data
 - Added option to "Disable optimizations", allowing you to sync content completely regardless of state. May be useful if your software encounters a bug and doesn't save data correctly or if you had to change / reset content and want it all to be back up again.
+
+v1.0
+- Initial release
