@@ -7,6 +7,7 @@
 
 use Drupal\user\Entity\User;
 use Drupal\Core\Config\FileStorage;
+use Drupal\Core\Field\BaseFieldDefinition;
 
 /**
  * Implements hook_install().
@@ -64,4 +65,76 @@ function drupal_content_sync_uninstall() {
 
   // Delete entry from key value table.
   \Drupal::service('keyvalue.database')->get('drupal_content_sync_user')->delete('uid');
+}
+
+/**
+ * Implements hook_update_N();
+ *
+ * Update field type for dcs_meta_info entity. Fields: last_export, last_import.
+ */
+function drupal_content_sync_update_8001(&$sandbox) {
+  $entity_type_manager = \Drupal::entityTypeManager();
+  $bundle_of = 'dcs_meta_info';
+
+  $storage = $entity_type_manager->getStorage($bundle_of);
+  $bundle_definition = $entity_type_manager->getDefinition($bundle_of);
+  $id_key = $bundle_definition->getKey('id');
+  $table_name = $storage->getDataTable() ?: $storage->getBaseTable();
+  $database = \Drupal::database();
+  $definition_manager = \Drupal::entityDefinitionUpdateManager();
+
+  // Store the existing values for last_export.
+  $last_export_values = $database->select($table_name)
+    ->fields($table_name, [$id_key, 'last_export'])
+    ->execute()
+    ->fetchAllKeyed();
+
+  // Store the existing values for last_import.
+  $last_import_values = $database->select($table_name)
+    ->fields($table_name, [$id_key, 'last_import'])
+    ->execute()
+    ->fetchAllKeyed();
+
+  // Clear out the values.
+  $database->update($table_name)
+    ->fields([
+      'last_export' => NULL,
+      'last_import' => NULL
+    ])
+    ->execute();
+
+  // Uninstall the old fields.
+  $field_storage_definition_last_export = $definition_manager->getFieldStorageDefinition('last_export', $bundle_of);
+  $definition_manager->uninstallFieldStorageDefinition($field_storage_definition_last_export);
+  $field_storage_definition_last_import = $definition_manager->getFieldStorageDefinition('last_import', $bundle_of);
+  $definition_manager->uninstallFieldStorageDefinition($field_storage_definition_last_import);
+
+  // Prepare new fields.
+  $new_last_export = BaseFieldDefinition::create('timestamp')
+    ->setLabel(t('Last exported'))
+    ->setDescription(t('The last time the entity got exported.'))
+    ->setRequired(FALSE);
+
+  $new_last_import = BaseFieldDefinition::create('timestamp')
+    ->setLabel(t('Last import'))
+    ->setDescription(t('The last time the entity got imported.'))
+    ->setRequired(FALSE);
+
+  // Create new fields.
+  $definition_manager->installFieldStorageDefinition('last_export', $bundle_of, $bundle_of, $new_last_export);
+  $definition_manager->installFieldStorageDefinition('last_import', $bundle_of, $bundle_of, $new_last_import);
+
+  // Restore the values.
+  foreach ($last_export_values as $id => $value) {
+    $database->update($table_name)
+      ->fields(['last_export' => $value])
+      ->condition($id_key, $id)
+      ->execute();
+  }
+  foreach ($last_import_values as $id => $value) {
+    $database->update($table_name)
+      ->fields(['last_import' => $value])
+      ->condition($id_key, $id)
+      ->execute();
+  }
 }
