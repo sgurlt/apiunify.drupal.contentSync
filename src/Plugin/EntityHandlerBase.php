@@ -98,6 +98,7 @@ abstract class EntityHandlerBase extends PluginBase implements ContainerFactoryP
   public function getAllowedImportOptions() {
     return [
       ImportIntent::IMPORT_DISABLED,
+      ImportIntent::IMPORT_MANUALLY,
       ImportIntent::IMPORT_AUTOMATICALLY,
       ImportIntent::IMPORT_AS_DEPENDENCY,
     ];

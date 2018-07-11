@@ -126,4 +126,37 @@ abstract class ApiUnifyExport {
     return $resultUrl->toUriString();
   }
 
+  /**
+   * Get the base URL of the site. Either the configured one or global $base_url
+   * as default.
+   *
+   * @return string
+   */
+  public static function getBaseUrl() {
+    global $base_url;
+
+    // Check if the base_url is overwritten within the settings.
+    $dcs_settings = \Drupal::config('drupal_content_sync.settings');
+    $dcs_base_url = $dcs_settings->get('dcs_base_url');
+    if (isset($dcs_settings) && $dcs_base_url != '') {
+      $url = $dcs_base_url;
+    }
+    else {
+      $url = $base_url;
+    }
+
+    return $url;
+  }
+
+  /**
+   * Check if exporting previews for each entity should be enabled.
+   *
+   * @return boolean
+   */
+  public static function isPreviewEnabled() {
+    // Check if the base_url is overwritten within the settings.
+    $dcs_settings = \Drupal::config('drupal_content_sync.settings');
+    return boolval($dcs_settings->get('dcs_enable_preview'));
+  }
+
 }

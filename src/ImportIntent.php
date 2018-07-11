@@ -64,7 +64,7 @@ class ImportIntent extends SyncIntent {
    */
   const IMPORT_UPDATE_FORCE_AND_FORBID_EDITING = 'force_and_forbid_editing';
   /**
-   * @var stringIMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN
+   * @var string IMPORT_UPDATE_FORCE_UNLESS_OVERRIDDEN
    *   Import all changes and forbid local editors to change the content unless
    *   they check the "override" checkbox. As long as that is checked, we
    *   ignore any incoming updates in favor of the local changes.

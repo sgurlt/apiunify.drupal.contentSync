@@ -128,11 +128,10 @@ node.drupal_content_sync_export_publish_changes_confirm:
   requirements:
     _permission: 'publish drupal content sync changes'
 
-# @ToDo: The dashboard for manual content import is currently not working and needs to be refactored.
-#entity.drupal_content_sync.content:
-#  path: '/admin/content/drupal_content_synchronization/{drupal_content_sync}'
-#  defaults:
-#    _controller: '\Drupal\drupal_content_sync\Controller\DrupalContentSynchronizationController::content'
-#    _title: 'Drupal Content Synchronization'
-#  requirements:
-#    _permission: 'access drupal content sync content overview'
+entity.drupal_content_sync.content:
+  path: '/admin/content/import'
+  defaults:
+    _controller: '\Drupal\drupal_content_sync\Controller\ManualImportController::content'
+    _title: 'Import Content'
+  requirements:
+    _permission: 'access drupal content sync content overview'

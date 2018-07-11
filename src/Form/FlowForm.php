@@ -234,8 +234,7 @@ class FlowForm extends EntityForm {
         $this->t('Import pool configuration'),
         $this->t('Import deletion settings'),
         $this->t('Import updates'),
-        /*'',
-        $this->t('Preview'),*/
+        $this->t('Preview'),
       ]),
     ];
 
@@ -268,8 +267,19 @@ class FlowForm extends EntityForm {
 
         $version = Flow::getEntityTypeVersion($type_key, $entity_bundle_name);
 
-        $current_display_mode = $type_key . '.' . $entity_bundle_name . '.' . self::DRUPAL_CONTENT_SYNC_PREVIEW_FIELD;
-        $has_preview_mode = in_array($current_display_mode, $display_modes_ids) || $type_key == 'file';
+        $available_preview_modes = [];
+        foreach($display_modes_ids as $id) {
+          $length = strlen($type_key)+strlen($entity_bundle_name)+2;
+          if(substr($id,0,$length)!=$type_key . '.' . $entity_bundle_name . '.') {
+            continue;
+          }
+          $id    = substr($id,$length);
+          $label = $display_modes[$id]->label();
+          if(empty($label)) {
+            $label = $id;
+          }
+          $available_preview_modes[$id] = $label;
+        }
 
         if (!isset($def_sync_entities[$type_key . '-' . $entity_bundle_name])) {
           $row_default_values = [
@@ -438,7 +448,7 @@ class FlowForm extends EntityForm {
             '#title' => $this->t($pool->label()),
             '#options' => [
               Pool::POOL_USAGE_FORCE => $this->t('Force'),
-//              Pool::POOL_USAGE_ALLOW => $this->t('Allow'),
+              Pool::POOL_USAGE_ALLOW => $this->t('Allow'),
               Pool::POOL_USAGE_FORBID => $this->t('Forbid'),
             ],
             '#default_value' => isset($row_default_values['import_pools'][$pool->id()]) ? $row_default_values['import_pools'][$pool->id()] : Pool::POOL_USAGE_FORBID,
@@ -468,22 +478,18 @@ class FlowForm extends EntityForm {
           '#default_value' => $row_default_values['import_updates'],
         ];
 
-        /*$entity_bundle_row['has_preview_mode'] = [
-          '#type' => 'hidden',
-          '#default_value' => (int) $has_preview_mode,
-          '#title' => $this->t('Has preview mode'),
-          '#title_display' => 'invisible',
-        ];
-
+        $options = array_merge([
+          Flow::PREVIEW_DISABLED => $this->t('Disabled')->render(),
+        ], $handler_id == 'ignore' ? [] : array_merge([Flow::PREVIEW_TABLE => $this->t('Table')->render()], $available_preview_modes));
+        $default = $handler_id == 'ignore' ? Flow::PREVIEW_DISABLED : Flow::PREVIEW_TABLE;
         $entity_bundle_row['preview'] = [
           '#type' => 'select',
           '#title' => $this->t('Preview'),
           '#title_display' => 'invisible',
-          '#options' => array_merge([
-            'excluded' => $this->t('Excluded')->render(),
-          ], $handler_id == 'ignore' ? ['table' => $this->t('Table')->render()] : $handler->getAllowedPreviewOptions()),
-          '#default_value' => $row_default_values['preview'],
-        ];*/
+          '#options' => $options,
+          '#default_value' => $row_default_values['preview'] || $handler_id=='ignore' ? $row_default_values['preview'] : $default,
+          '#description' => $this->t('Make sure to go to the general "Settings" and enable preview export to make use of this.'),
+        ];
 
         $entity_table[$type_key . '-' . $entity_bundle_name] = $entity_bundle_row;
 
@@ -659,13 +665,9 @@ class FlowForm extends EntityForm {
               '#markup' => '',
             ];
 
-            /*$field_row['has_preview'] = [
+            $field_row['preview'] = [
               '#markup' => '',
-            ];*/
-
-            /*$field_row['preview'] = [
-              '#markup' => '',
-            ];*/
+            ];
 
             $entity_table[$field_id] = $field_row;
           }

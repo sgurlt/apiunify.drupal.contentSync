@@ -235,18 +235,8 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
    * @throws \Exception If the user profile for import is not available.
    */
   protected function createEntityTypes() {
-    global $base_url;
-
-    // @ToDo: Move to method.
-    // Check if the base_url is overwritten within the settings.
-    $dcs_settings = \Drupal::config('drupal_content_sync.settings');
-    $dcs_base_url = $dcs_settings->get('dcs_base_url');
-    if (isset($dcs_settings) && $dcs_base_url != '') {
-      $export_url = $dcs_base_url;
-    }
-    else {
-      $export_url = $base_url;
-    }
+    $export = static::getBaseUrl();
+    $enable_preview = static::isPreviewEnabled();
 
     $dcs_disable_optimization = boolval(\Drupal::config('drupal_content_sync.debug')
       ->get('dcs_disable_optimization'));
@@ -522,24 +512,26 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
           ]);
 
           // Create a synchronization from the pool to the preview connection.
-          /*$this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
-            'json' => [
-              'id' => $pool_connection_id . '--to--preview',
-              'name' => 'Synchronization Pool ' . $entity_type_name . '-' . $bundle_name . ' -> Preview',
-              'options' => [
-                'create_entities' => TRUE,
-                'update_entities' => TRUE,
-                'delete_entities' => TRUE,
-                'update_none_when_loading' => TRUE,
-                'exclude_reference_properties' => [
-                  'pSource',
+          if($enable_preview) {
+            $this->sendEntityRequest($url . '/api_unify-api_unify-connection_synchronisation-0_1', [
+              'json' => [
+                'id' => $pool_connection_id . '--to--preview',
+                'name' => 'Synchronization Pool ' . $entity_type_name . '-' . $bundle_name . ' -> Preview',
+                'options' => [
+                  'create_entities' => TRUE,
+                  'update_entities' => TRUE,
+                  'delete_entities' => TRUE,
+                  'update_none_when_loading' => TRUE,
+                  'exclude_reference_properties' => [
+                    'pSource',
+                  ],
                 ],
+                'status' => 'READY',
+                'source_connection_id' => $pool_connection_id,
+                'destination_connection_id' => self::PREVIEW_CONNECTION_ID,
               ],
-              'status' => 'READY',
-              'source_connection_id' => $pool_connection_id,
-              'destination_connection_id' => self::PREVIEW_CONNECTION_ID,
-            ],
-          ]);*/
+            ]);
+          }
 
           $crud_operations = [
             'create_item' => [

@@ -32,6 +32,7 @@ class SettingsForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     global $base_url;
     $config = $this->config('drupal_content_sync.settings');
+
     $form['dcs_base_url'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Base URL'),
@@ -42,6 +43,14 @@ class SettingsForm extends ConfigFormBase {
         'placeholder' => $base_url,
       ],
     ];
+
+    $form['dcs_enable_preview'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable preview'),
+      '#default_value' => $config->get('dcs_enable_preview'),
+      '#description' => $this->t('If you want to import content from this site on other sites via the UI ("Manual" import action) and you\'re using custom Preview display modes, check this box to actually export them so they become available on remote sites.'),
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -59,6 +68,9 @@ class SettingsForm extends ConfigFormBase {
     parent::submitForm($form, $form_state);
     $this->config('drupal_content_sync.settings')
       ->set('dcs_base_url', $form_state->getValue('dcs_base_url'))
+      ->save();
+    $this->config('drupal_content_sync.settings')
+      ->set('dcs_enable_preview', boolval($form_state->getValue('dcs_enable_preview')))
       ->save();
   }
 

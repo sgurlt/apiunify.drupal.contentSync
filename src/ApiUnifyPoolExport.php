@@ -17,6 +17,12 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
   const POOL_SITE_ID = '_pool';
 
   /**
+   * @var string EXTERNAL_PREVIEW_PATH
+   *   The path to find the preview entities at.
+   */
+  const EXTERNAL_PREVIEW_PATH = 'drupal/drupal-content-sync/preview';
+
+  /**
    * @var string CUSTOM_API_VERSION
    *   The API version used to identify APIs as. Breaking changes in
    *   Flow will require this version to be increased and all
@@ -54,18 +60,7 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
    * @return string
    */
   public static function getInternalUrl($api_id, $entity_type_name, $bundle_name, $version, $entity_uuid = NULL) {
-    global $base_url;
-
-    // @ToDo: Move to method.
-    // Check if the base_url is overwritten within the settings.
-    $dcs_settings = \Drupal::config('drupal_content_sync.settings');
-    $dcs_base_url = $dcs_settings->get('dcs_base_url');
-    if (isset($dcs_settings) && $dcs_base_url != '') {
-      $export_url = $dcs_base_url;
-    }
-    else {
-      $export_url = $base_url;
-    }
+    $export_url = static::getBaseUrl();
 
     $url = sprintf('%s/rest/dcs/%s/%s/%s/%s',
       $export_url,
@@ -129,7 +124,7 @@ class ApiUnifyPoolExport extends ApiUnifyExport {
         'json' => [
           'id' => ApiUnifyFlowExport::PREVIEW_CONNECTION_ID,
           'name' => 'Drupal preview connection',
-          'hash' => 'drupal/drupal-content-sync/preview',
+          'hash' => static::EXTERNAL_PREVIEW_PATH,
           'usage' => 'EXTERNAL',
           'status' => 'READY',
           'entity_type_id' => ApiUnifyFlowExport::PREVIEW_ENTITY_ID,

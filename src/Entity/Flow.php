@@ -46,6 +46,18 @@ class Flow extends ConfigEntityBase implements FlowInterface {
   const HANDLER_IGNORE = 'ignore';
 
   /**
+   * @var string PREVIEW_DISABLED
+   *    Hide these entities completely.
+   */
+  const PREVIEW_DISABLED = 'disabled';
+
+  /**
+   * @var string PREVIEW_TABLE
+   *    Show these entities in a table view.
+   */
+  const PREVIEW_TABLE = 'table';
+
+  /**
    * The Flow ID.
    *
    * @var string
