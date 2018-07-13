@@ -27,7 +27,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   label = @Translation("DCS Import"),
  *   uri_paths = {
  *     "canonical" = "/rest/dcs-import/{pool}",
- *     "https://www.drupal.org/link-relations/create" = "/rest/dcs-import/{pool}"
+ *     "https://www.drupal.org/link-relations/create" = "/rest/dcs-import/{pool}/{entity_type_name}/{bundle_name}/{uuid}"
  *   }
  * )
  */
@@ -144,7 +144,7 @@ class DrupalContentSyncImportEntity extends ResourceBase {
     $pool = Pool::getAll()[$pool_id];
 
     if(!$pool) {
-      return new ResourceResponse(['message'=>"Unknown flow ID $pool_id."],self::CODE_NOT_FOUND);
+      return new ResourceResponse(['message'=>"Unknown pool $pool_id."],self::CODE_NOT_FOUND);
     }
 
     $entity_type_ids = [];
@@ -196,66 +196,80 @@ class DrupalContentSyncImportEntity extends ResourceBase {
 
     $url = Url::fromUri($url, [
       'query' => $arguments,
-    ]);
+    ])->toUriString();
 
     $client = \Drupal::httpClient();
 
     $response = $client->get($url);
-    $data     = json_decode($response->getBody());
+    $data     = json_decode($response->getBody(),TRUE);
     if($response->getStatusCode()!=200) {
       return new ResourceResponse($data,$response->getStatusCode());
     }
 
+
     foreach($data['items'] as &$item) {
-      $uuid = $item['source_id'];
-      $entity_type_id = $item['entity_type_id'];
-      list($drupal,$pool_id,$entity_type_name,$bundle_name,$version) = explode('-', $entity_type_id);
+      $this->enrichPreviewItem($item);
+    }
 
-      /**
-       * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
-       */
-      $entity = \Drupal::service('entity.repository')
-        ->loadEntityByUuid($entity_type_name, $uuid);
-      if($entity) {
-        if ($entity->hasLinkTemplate('canonical')) {
-          try {
-            $url = $entity->toUrl('canonical', ['absolute' => TRUE])
-              ->toString(TRUE)
-              ->getGeneratedUrl();
-            $item['local_url'] = $url;
-          }
-          catch (\Exception $e) {
-          }
-        }
-      }
+    $cache_build = [
+      '#cache' => [
+        'max-age' => 0,
+      ],
+    ];
 
-      $metas = MetaInformation::getInfosForEntity($entity_type_name,$uuid);
+    $resource_response = new ResourceResponse($data);
+    $resource_response->addCacheableDependency($cache_build);
 
-      $item['meta_information'] = [];
-      $item['last_import'] = NULL;
-      $item['last_export'] = NULL;
-      $item['deleted'] = FALSE;
-      foreach ($metas as $info) {
-        $item['meta_information'][] = [
-          'flow_id' => $info->getFlow()->id,
-          'pool_id' => $info->getPool()->id,
-          'last_import' => $info->getLastImport(),
-          'last_export' => $info->getLastExport(),
-          'flags' => $info->flags,
-        ];
-        if(!$item['last_import'] || $item['last_import']<$info->getLastImport()) {
-          $item['last_import'] = $info->getLastImport();
+    return $resource_response;
+  }
+
+  protected function enrichPreviewItem(&$item) {
+    $uuid = $item['id'];
+    $entity_type_id = $item['entity_type_id'];
+    list($drupal,$pool_id,$entity_type_name,$bundle_name,$version) = explode('-', $entity_type_id);
+
+    /**
+     * @var \Drupal\Core\Entity\FieldableEntityInterface $entity
+     */
+    $entity = \Drupal::service('entity.repository')
+      ->loadEntityByUuid($entity_type_name, $uuid);
+    if($entity) {
+      if ($entity->hasLinkTemplate('canonical')) {
+        try {
+          $url = $entity->toUrl('canonical', ['absolute' => TRUE])
+            ->toString(TRUE)
+            ->getGeneratedUrl();
+          $item['local_url'] = $url;
         }
-        if(!$item['last_export'] || $item['last_export']<$info->getLastExport()) {
-          $item['last_export'] = $info->getLastExport();
-        }
-        if($info->isDeleted()) {
-          $item['deleted'] = TRUE;
+        catch (\Exception $e) {
         }
       }
     }
 
-    return new ResourceResponse($data);
+    $metas = MetaInformation::getInfosForEntity($entity_type_name,$uuid);
+
+    $item['meta_information'] = [];
+    $item['last_import'] = NULL;
+    $item['last_export'] = NULL;
+    $item['deleted'] = FALSE;
+    foreach ($metas as $info) {
+      $item['meta_information'][] = [
+        'flow_id' => $info->getFlow()->id,
+        'pool_id' => $info->getPool()->id,
+        'last_import' => $info->getLastImport(),
+        'last_export' => $info->getLastExport(),
+        'flags' => $info->flags,
+      ];
+      if(!$item['last_import'] || $item['last_import']<$info->getLastImport()) {
+        $item['last_import'] = $info->getLastImport();
+      }
+      if(!$item['last_export'] || $item['last_export']<$info->getLastExport()) {
+        $item['last_export'] = $info->getLastExport();
+      }
+      if($info->isDeleted()) {
+        $item['deleted'] = TRUE;
+      }
+    }
   }
 
   /**
@@ -278,7 +292,8 @@ class DrupalContentSyncImportEntity extends ResourceBase {
 
     $base_url = $pool->getBackendUrl();
 
-    $responses = [];
+    $response = NULL;
+    $client = \Drupal::httpClient();
 
     foreach (Flow::getAll() as $flow) {
       foreach ($flow->getEntityTypeConfig() as $definition) {
@@ -295,7 +310,7 @@ class DrupalContentSyncImportEntity extends ResourceBase {
           continue;
         }
 
-        $local_connection_id = self::getExternalConnectionId(
+        $local_connection_id = ApiUnifyFlowExport::getExternalConnectionId(
           $pool->id,
           $pool->getSiteId(),
           $entity_type_name,
@@ -305,18 +320,31 @@ class DrupalContentSyncImportEntity extends ResourceBase {
         $sync_id = $local_connection_id . '--to--drupal';
 
         $url = $base_url . '/api_unify-api_unify-connection_synchronisation-0_1/' . $sync_id . '/clone/' . $uuid;
-        $client = \Drupal::httpClient();
 
         $response = $client->post($url);
-        $data     = json_decode($response->getBody());
-        $responses[] = [
-          'success' => $response->getStatusCode()==200,
-          'response' => $data,
-        ];
+        $data     = json_decode($response->getBody(),TRUE);
+        if($response->getStatusCode()!=200) {
+          return new ResourceResponse($data,$response->getStatusCode());
+        }
       }
     }
 
-    return new ResourceResponse($responses);
+    if(!$response) {
+      return new ResourceResponse(['message'=>"Missing flow for pool $pool_id."],self::CODE_NOT_FOUND);
+    }
+
+    $url = $pool->getBackendUrl();
+    $url .= '/' . ApiUnifyPoolExport::EXTERNAL_PREVIEW_PATH . '/' . $uuid;
+
+    $response = $client->get($url);
+    $data     = array_merge( json_decode($response->getBody(),TRUE), $data );
+    if($response->getStatusCode()!=200) {
+      return new ResourceResponse($data,$response->getStatusCode());
+    }
+
+    $this->enrichPreviewItem($data);
+
+    return new ResourceResponse($data);
   }
 
 }

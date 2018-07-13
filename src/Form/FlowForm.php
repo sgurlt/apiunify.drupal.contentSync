@@ -273,8 +273,8 @@ class FlowForm extends EntityForm {
           if(substr($id,0,$length)!=$type_key . '.' . $entity_bundle_name . '.') {
             continue;
           }
-          $id    = substr($id,$length);
           $label = $display_modes[$id]->label();
+          $id    = substr($id,$length);
           if(empty($label)) {
             $label = $id;
           }

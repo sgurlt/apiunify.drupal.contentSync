@@ -3,12 +3,10 @@
 namespace Drupal\drupal_content_sync\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\drupal_content_sync\ApiUnifyFlowExport;
 use Drupal\drupal_content_sync\ApiUnifyPoolExport;
 use Drupal\drupal_content_sync\Entity\Flow;
 use Drupal\drupal_content_sync\Entity\Pool;
 use Drupal\drupal_content_sync\ImportIntent;
-use Drupal\drupal_content_sync\SyncIntent;
 
 /**
  * Provides a listing of Flow.
@@ -21,6 +19,20 @@ class ManualImportController extends ControllerBase {
    * @return array
    */
   public function content() {
+    /*$config_path    = drupal_get_path('module', 'drupal_content_sync') . '/config/install';
+    $source         = new \Drupal\Core\Config\FileStorage($config_path);
+    $config_storage = \Drupal::service('config.storage');
+
+    $configsNames = [
+      'rest.resource.drupal_content_sync_import_entity',
+    ];
+
+    foreach ($configsNames as $name) {
+      $config_storage->write($name, $source->read($name));
+    }
+
+    drupal_set_message('Imported config.');*/
+
     $config = [
       'pools' => [],
       'flows' => [],

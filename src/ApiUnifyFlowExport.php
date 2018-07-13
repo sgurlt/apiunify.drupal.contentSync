@@ -235,7 +235,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
    * @throws \Exception If the user profile for import is not available.
    */
   protected function createEntityTypes() {
-    $export = static::getBaseUrl();
+    $export_url = static::getBaseUrl();
     $enable_preview = static::isPreviewEnabled();
 
     $dcs_disable_optimization = boolval(\Drupal::config('drupal_content_sync.debug')
@@ -583,9 +583,9 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
                 'name' => 'Synchronization for ' . $entity_type_name . '/' . $bundle_name . '/' . $version . ' from Pool -> ' . $site_id,
                 'options' => [
                   'dependency_connection_id' => self::DEPENDENCY_CONNECTION_ID,
-                  'create_entities' => TRUE,
-                  'force_updates' => TRUE,
-                  'update_entities' => TRUE,
+                  'create_entities' => $type['import'] != ImportIntent::IMPORT_MANUALLY,
+                  'force_updates' => $dcs_disable_optimization,
+                  'update_entities' => $type['import'] != ImportIntent::IMPORT_MANUALLY,
                   'delete_entities' => boolval($type['import_deletion_settings']['import_deletion']),
                   'dependent_entities_only' => $type['import'] == ImportIntent::IMPORT_AS_DEPENDENCY,
                   'update_none_when_loading' => TRUE,
@@ -616,7 +616,7 @@ class ApiUnifyFlowExport extends ApiUnifyExport {
                   'create_entities' => TRUE,
                   'update_entities' => TRUE,
                   'delete_entities' => boolval($type['export_deletion_settings']['export_deletion']),
-                  'force_updates' => TRUE,
+                  'force_updates' => $dcs_disable_optimization,
                   'dependent_entities_only' => $export != Pool::POOL_USAGE_FORBID && $type['export'] == ExportIntent::EXPORT_AS_DEPENDENCY,
                   'update_none_when_loading' => TRUE,
                   'exclude_reference_properties' => [
